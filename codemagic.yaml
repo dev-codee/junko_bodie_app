@@ -9,7 +9,7 @@ workflows:
       flutter: stable
       xcode: latest
       groups:
-        - app_store_credentials
+        - junko
       # These env vars must be set in Codemagic UI (app_store_credentials group):
       #   APP_STORE_CONNECT_ISSUER_ID   - Your Issuer ID
       #   APP_STORE_CONNECT_KEY_IDENTIFIER - Your Key ID
