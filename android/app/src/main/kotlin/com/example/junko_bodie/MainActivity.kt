@@ -1,4 +1,4 @@
-package com.example.junko_bodie
+package com.junkobodieroulette.app
 
 import io.flutter.embedding.android.FlutterActivity
 

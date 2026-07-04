@@ -9,7 +9,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>io.supabase.junkobodie</string>
+				<string>com.junkobodieroulette.app</string>
 			</array>
 		</dict>
 	</array>

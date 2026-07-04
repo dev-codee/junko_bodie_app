@@ -72,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signInWithGoogle() async {
     await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'io.supabase.junkobodie://login-callback/',
+      redirectTo: 'com.junkobodieroulette.app://login-callback/',
     );
   }
 
