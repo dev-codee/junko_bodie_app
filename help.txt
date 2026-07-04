@@ -1,0 +1,442 @@
+# Junko Bodie — Complete Project Handoff Document
+
+> **Purpose**: This document gives a new AI assistant everything it needs to continue converting the Junko Bodie Roulette Tournament from Next.js to Flutter. Read this fully before making any changes.
+
+---
+
+## 1. What Is Junko Bodie?
+
+**Junko Bodie Roulette Tournament** is a premium, play-money roulette simulator. Users pay a subscription ($4.99/month or $54.99/year with 7-day trial) to access:
+- **Solo play** — American or European roulette against the house
+- **Tournament mode** — 6-player tournaments (1 human + 5 bots) with rounds, eliminations, points
+- **Season rankings** — Annual championship qualification based on tournament points
+- **Profile & badges** — Stats tracking, founder badge, champion badge, elite status
+
+The app has a **dark/gold casino aesthetic** with premium typography (Playfair Display, Crimson Pro, Inter), animated roulette wheel, sound effects, background music, and speech synthesis commentary during tournaments.
+
+---
+
+## 2. Workspace Layout
+
+| Workspace | Path | Role |
+|-----------|------|------|
+| **Next.js Web App** (COMPLETE) | `c:\Users\Faizan\Desktop\junko_bodie` | The fully working web app. Serves as API backend for Flutter. **DO NOT MODIFY.** |
+| **Flutter App** (IN PROGRESS) | `e:\junko_bodie_app` | The Flutter mobile app being built. All new code goes here. |
+
+**Live deployment**: `https://junkobodieroulette.com` (Vercel)
+- The Flutter app calls this URL for all API requests
+- During local dev, you can also use `http://LOCAL_IP:3000` if running Next.js locally
+
+---
+
+## 3. Next.js Architecture (Reference Only — Do Not Modify)
+
+### Tech Stack
+- **Framework**: Next.js 16 (App Router)
+- **Auth**: Supabase (Google OAuth + email/password)
+- **Database**: MongoDB (via `mongodb` driver, with `mongodb-memory-server` for local dev)
+- **Payments**: Stripe (subscriptions with webhooks)
+- **UI**: React 19, Tailwind CSS 4, Framer Motion, PixiJS (wheel), Howler.js (audio)
+- **Fonts**: Google Fonts — Playfair Display, Crimson Pro, Cinzel Decorative, Inter
+
+### Supabase Config
+```
+URL:  https://yxwtfbnajhjzhkusfiyg.supabase.co
+Key:  sb_publishable_WFdIem-RkS85RS0DjLoOOg_w9nayrlU
+```
+These same credentials are used in the Flutter app via `supabase_flutter`.
+
+### Source Structure (`c:\Users\Faizan\Desktop\junko_bodie\src\`)
+```
+src/
+├── app/                          # Next.js App Router pages
+│   ├── page.tsx                  # Landing/pricing page (public)
+│   ├── layout.tsx                # Root layout (fonts, providers)
+│   ├── globals.css               # Global styles
+│   ├── homepage.module.css       # Lobby CSS module
+│   ├── login/page.tsx            # Login (Google + email/password)
+│   ├── lobby/page.tsx            # Main hub after login
+│   ├── game/page.tsx             # Solo roulette game
+│   ├── tournament/page.tsx       # Tournament lobby & list
+│   ├── tournament/[id]/          # Active tournament game
+│   ├── profile/page.tsx          # Player profile & stats
+│   ├── rankings/page.tsx         # Global leaderboard
+│   ├── season/page.tsx           # Season rankings
+│   ├── subscribe/page.tsx        # Subscription checkout
+│   ├── subscribe/success/        # Post-payment success
+│   ├── account/billing/          # Billing management
+│   └── api/                      # REST API routes (see Section 4)
+├── components/
+│   ├── Providers.tsx             # GameProvider wrapper
+│   ├── chips/                    # Chip.tsx, ChipStack.tsx, ChipTray.tsx
+│   ├── table/                    # RouletteWheel.tsx, RouletteTable.tsx, BettingLayout.tsx
+│   ├── tournament/               # Scoreboard.tsx, LiveBettingFeed.tsx, TournamentRules.tsx
+│   ├── subscription/             # BrandShell.tsx (reusable card wrapper)
+│   └── ui/                       # Avatar, BetTimer, BettingControlBar, ProfileModal, 
+│                                 #   ResultDisplay, SessionStats, SettingsModal, SpinButton,
+│                                 #   SpinHistory, Toast, WelcomeVideoModal, WelcomeLobbyVideo,
+│                                 #   WinCelebration
+├── context/
+│   └── GameContext.tsx            # Global state (auth, balance, settings, subscription gate)
+├── hooks/
+│   ├── useGameState.ts           # Solo game state machine
+│   └── useGameCycle.ts           # Game phase cycle controller
+├── lib/
+│   ├── auth.ts                   # Server-side auth helpers (getUser, ensureUserProfile)
+│   ├── bets.ts                   # All bet type definitions & payout multipliers
+│   ├── rng.ts                    # Wheel spin RNG, wheel pocket orders, number classification
+│   ├── payouts.ts                # Payout calculator
+│   ├── gamePhases.ts             # GamePhase enum
+│   ├── subscription.ts           # hasActiveAccess() logic
+│   ├── audioEngine.ts            # Full audio engine (15 sounds, 4 bg tracks, TTS commentary)
+│   ├── db/mongodb.ts             # MongoDB client singleton
+│   ├── db/setup.ts               # DB setup/indexes
+│   ├── models/                   # TypeScript interfaces (Player, Tournament, Round, Spin, SeasonRanking)
+│   ├── stripe/server.ts          # Stripe SDK config
+│   ├── supabase/client.ts        # Browser Supabase client
+│   ├── supabase/server.ts        # Server Supabase client
+│   └── tournament/               # TournamentContext.tsx, botBetting.ts, botNames.ts, points.ts, rewards.ts
+└── styles/
+    └── theme.ts                  # Design tokens (colors, fonts, spacing, chip config, timing)
+```
+
+---
+
+## 4. API Endpoints (Flutter Calls These)
+
+All endpoints are relative to `https://junkobodieroulette.com`.
+
+### Authentication
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/auth/callback` | OAuth callback handler |
+
+### User
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/user/profile` | Get current user's profile from MongoDB |
+| PATCH | `/api/user/profile` | Update profile (name, avatar, settings) |
+| PATCH | `/api/user/balance` | Update balance (`{ amount, action: 'set' }`) |
+
+### Subscription
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/subscription/status` | Check if user has active subscription |
+
+### Stripe
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/stripe/checkout` | Create Stripe checkout session |
+| POST | `/api/stripe/portal` | Create Stripe billing portal session |
+| GET | `/api/stripe/verify` | Verify payment status |
+| POST | `/api/stripe/webhook` | Stripe webhook (server-to-server) |
+
+### Tournament
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/tournament/create` | Create new tournament |
+| GET | `/api/tournament/[id]` | Get tournament state |
+| POST | `/api/tournament/[id]/start` | Start tournament |
+| POST | `/api/tournament/[id]/round` | Start new round |
+| POST | `/api/tournament/[id]/bets` | Submit bets for a round |
+| POST | `/api/tournament/[id]/spin` | Execute spin |
+| POST | `/api/tournament/[id]/complete` | Complete tournament |
+| POST | `/api/tournament/[id]/rewards` | Distribute rewards |
+| POST | `/api/tournament/[id]/sync` | Sync tournament state |
+
+### Leaderboard & Season
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/leaderboard` | Top 100 players by balance |
+| GET | `/api/season/rankings` | Season rankings |
+| GET | `/api/season/annual-championship` | Annual championship data |
+
+### Players
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/players/[id]` | Get specific player data |
+
+### Database
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/db/setup` | Initialize database indexes |
+
+---
+
+## 5. Data Models
+
+### Player
+```dart
+// Supabase ID links auth → MongoDB profile
+// Key fields: supabase_id, username, email, avatar_url, balance, starting_balance
+// Settings: is_sound_enabled, is_timer_enabled, is_popup_enabled
+// Stats: tournaments_played, tournaments_won, best_finish
+// Badges: champion, elite_status, all_time_champion, founder
+// Season: year, points, rank
+// Subscription: stripe_customer_id, status, plan, current_period_end, trial_end
+```
+
+### Tournament
+```dart
+// status: waiting | active | completed
+// current_round, winner_id, wheel_type (american | european)
+// players[]: player_id, username, avatar_url, is_bot, starting_chips, current_chips,
+//            status (active | eliminated), eliminated_round, final_position, points_earned
+```
+
+### Round
+```dart
+// tournament_id, round_number, status, spins_completed
+// players_remaining[], eliminated_player_id
+// betting_ends_at, bot_bets[]
+```
+
+### Spin
+```dart
+// tournament_id, round_id, spin_number
+// result: { number, color, parity, dozen, column, half }
+// player_results[]: { player_id, bets_placed, chips_before, chips_after, net_change }
+```
+
+### SeasonRanking
+```dart
+// year, rankings[]: { player_id, username, points, rank, tournaments_played, tournaments_won }
+```
+
+---
+
+## 6. Game Logic Summary
+
+### Betting System (`bets.ts`)
+- **15 bet types**: straight (35:1), split (17:1), street (11:1), corner (8:1), sixline (5:1), dozen (2:1), column (2:1), red/black/odd/even/low/high (1:1), trio (11:1), basket (6:1/8:1)
+- **Number 37 = 00** (internal representation for American double-zero)
+- `BET_MAP`: flat lookup map from betId → BetDefinition
+- All bet definitions are generated programmatically (straights, splits, corners, etc.)
+
+### RNG (`rng.ts`)
+- `AMERICAN_WHEEL_ORDER`: 38 pockets (0, 00, 1-36)
+- `EUROPEAN_WHEEL_ORDER`: 37 pockets (0, 1-36)
+- `spinWheel()`: uses `crypto.getRandomValues()` for fair random
+- `getNumberColor()`: red/black/green classification
+- Result includes: number, displayNumber, color, parity, dozen, column, half
+
+### Payouts (`payouts.ts`)
+- `calculatePayouts(bets, spinResult)` → outcomes per bet + totals
+- Win = bet amount × payout multiplier; total returned = stake + winnings
+
+### Game Phases (`gamePhases.ts`)
+- `BETTING` → `LOCKED` → `SPINNING` → `RESULT` → `RESET` → repeat
+
+### Tournament Points
+- 1st place: 1000 pts, 2nd: 100, 3rd: 50, 4th-6th: 0
+- Elite status threshold: 5000 season points
+
+---
+
+## 7. Audio System
+
+15+ sound effects and 4 background music tracks. All files in `assets/sounds/`.
+
+| Sound | File | Usage |
+|-------|------|-------|
+| Chip place | `soundreality-pen-click-411629.mp3` | When placing a chip |
+| Spin loop | `spin.mp3` | During wheel spin (looping) |
+| Win | `win.mp3` | Win result |
+| Loss | `lose.mp3` | Loss result |
+| Click | `click.mp3` | UI button clicks |
+| Swoosh | `dheerajakam4jor-swoosh-....mp3` | Transitions |
+| Spin button | `skyscraper_seven-click-....mp3` | Spin button press |
+| 2X/Notification | `universfield-new-notification-....mp3` | Double bet |
+| Lock | `lock.mp3` | Betting locked |
+| Denied | `denied.mp3` | Invalid action |
+| Place Bets | `placeBets.mp3` | "Place your bets" voice |
+| Background | `background.mp3` | Solo game music (looping) |
+| Waiting BG | `waiting_background.mp3` | Tournament waiting (looping) |
+| Tourney BG | `tourney_background.mp3` | Active tournament (looping) |
+| Entry BG | `background_entery.mp3` | Tournament entry (looping) |
+
+**Speech synthesis**: Used for tournament commentary (round announcements, eliminations, leader changes). Flutter equivalent: `flutter_tts` package.
+
+**Music ducking**: Background music volume drops to 15% during speech/announcements, then restores.
+
+---
+
+## 8. Design System
+
+### Colors
+| Token | Hex | Usage |
+|-------|-----|-------|
+| black | `#0a0a0a` | Primary background |
+| gold | `#c9a84c` | Accent, buttons, text highlights |
+| goldLight | `#d4b85c` | Hover states |
+| goldDark | `#b8973e` | Pressed states |
+| deepGreen | `#1a3a2a` | Structural elements |
+| feltGreen | `#1e4d2b` | Table surface |
+| rouletteRed | `#c0392b` | Red numbers |
+| rouletteBlack | `#1a1a1a` | Black numbers |
+| rouletteGreen | `#267b4b` | Zero/double-zero |
+
+### Chip Denominations
+| Value | Color | Text Color |
+|-------|-------|------------|
+| $1 | White `#f5f5f5` | Black |
+| $2 | Orange `#e67e22` | White |
+| $5 | Red `#c0392b` | White |
+| $10 | Blue `#2b52a2` | White |
+| $25 | Green `#27ae60` | White |
+| $100 | Black `#1a1a1a` | Gold |
+| $500 | Purple `#8e44ad` | White |
+| $1000 | Yellow `#f1c40f` | Black |
+
+### Fonts
+- **Display**: Playfair Display (serif) — headings, branding
+- **Body**: Inter (sans-serif) — UI text, labels
+- **Brand**: Cinzel Decorative — logo text
+- **Accent**: Crimson Pro — secondary serif
+
+---
+
+## 9. Flutter Project Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **State Management** | Provider | Simplest, maps closely to React Context pattern used in web app |
+| **Navigation** | go_router | Declarative routing with auth guards, similar to Next.js App Router |
+| **HTTP Client** | http / dio | Standard, reliable |
+| **Audio** | audioplayers | Well-maintained, supports looping, volume control |
+| **TTS** | flutter_tts | Replaces Web Speech API for tournament commentary |
+| **Animations** | flutter_animate | Replaces Framer Motion, similar API feel |
+| **Payments** | In-App Purchase (later) | Required for Play Store / App Store distribution |
+| **Backend** | Existing Next.js on Vercel | `https://junkobodieroulette.com/api/*` — no changes needed |
+| **Target** | Android + iOS | Both stores |
+
+---
+
+## 10. Flutter Folder Structure
+
+```
+e:\junko_bodie_app\lib\
+├── main.dart                     # Entry point, Supabase init
+├── app.dart                      # MaterialApp, theme, router
+├── config/
+│   ├── constants.dart            # API_BASE_URL, Supabase keys
+│   ├── theme.dart                # ThemeData, colors, typography
+│   └── routes.dart               # go_router configuration
+├── models/
+│   ├── player.dart
+│   ├── tournament.dart
+│   ├── round.dart
+│   ├── spin.dart
+│   └── season_ranking.dart
+├── services/
+│   ├── api_service.dart          # Base HTTP client with auth headers
+│   ├── auth_service.dart
+│   ├── user_service.dart
+│   ├── tournament_service.dart
+│   ├── subscription_service.dart
+│   ├── leaderboard_service.dart
+│   └── season_service.dart
+├── providers/
+│   ├── auth_provider.dart
+│   ├── game_provider.dart
+│   └── tournament_provider.dart
+├── logic/
+│   ├── bets.dart
+│   ├── rng.dart
+│   ├── payouts.dart
+│   ├── game_phases.dart
+│   ├── bot_betting.dart
+│   └── tournament_points.dart
+├── audio/
+│   └── audio_engine.dart
+├── screens/
+│   ├── landing_screen.dart
+│   ├── login_screen.dart
+│   ├── lobby_screen.dart
+│   ├── game_screen.dart
+│   ├── tournament_screen.dart
+│   ├── profile_screen.dart
+│   ├── rankings_screen.dart
+│   ├── season_screen.dart
+│   ├── subscribe_screen.dart
+│   └── account_screen.dart
+└── widgets/
+    ├── roulette_wheel.dart
+    ├── betting_layout.dart
+    ├── chip.dart, chip_stack.dart, chip_tray.dart
+    ├── avatar_widget.dart
+    ├── brand_shell.dart
+    ├── spin_button.dart
+    ├── result_display.dart
+    ├── scoreboard.dart
+    ├── settings_modal.dart
+    └── win_celebration.dart
+```
+
+---
+
+## 11. Conversion Progress Tracker
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Project setup, deps, assets, theme | 🔄 In Progress |
+| 2 | Data models & pure logic port | ⬜ Not Started |
+| 3 | API service layer | ⬜ Not Started |
+| 4 | Authentication (Supabase) | ⬜ Not Started |
+| 5 | Core screens (Landing, Lobby, Profile, Rankings, Season, Settings) | ⬜ Not Started |
+| 6 | Audio engine | ⬜ Not Started |
+| 7 | Solo game (wheel, betting, chips, spin, payouts) | ⬜ Not Started |
+| 8 | Tournament mode | ⬜ Not Started |
+| 9 | Subscription & payments | ⬜ Not Started |
+| 10 | Polish, animations, testing | ⬜ Not Started |
+
+---
+
+## 12. Critical Rules
+
+> [!CAUTION]
+> 1. **NEVER modify the Next.js web app** at `c:\Users\Faizan\Desktop\junko_bodie`. It is the working production app and the API backend. Read-only reference.
+> 2. **All Flutter code** goes in `e:\junko_bodie_app`.
+> 3. **API base URL** is `https://junkobodieroulette.com`. All API calls go through this.
+> 4. **Same Supabase project** — use the same URL and key. Do not create a new Supabase project.
+> 5. **Number 37 = "00"** in the internal representation. This is used throughout bets, RNG, and payouts.
+> 6. **Subscription gate**: Signed-in users without active subscription are redirected to subscribe screen. Allowed paths without subscription: landing, subscribe, login, auth callback, billing.
+> 7. **Provider** for state management (chosen by user as "easy and good").
+> 8. **Target**: Both Play Store and App Store.
+
+---
+
+## 13. Key File Mapping (Next.js → Flutter)
+
+| Next.js Source | Flutter Destination | Type |
+|---------------|--------------------|----|
+| `src/styles/theme.ts` | `lib/config/theme.dart` | Design tokens |
+| `src/lib/models/*.ts` | `lib/models/*.dart` | Data models |
+| `src/lib/bets.ts` | `lib/logic/bets.dart` | Game logic |
+| `src/lib/rng.ts` | `lib/logic/rng.dart` | Game logic |
+| `src/lib/payouts.ts` | `lib/logic/payouts.dart` | Game logic |
+| `src/lib/gamePhases.ts` | `lib/logic/game_phases.dart` | Game logic |
+| `src/lib/tournament/points.ts` | `lib/logic/tournament_points.dart` | Game logic |
+| `src/lib/tournament/botBetting.ts` | `lib/logic/bot_betting.dart` | Game logic |
+| `src/lib/tournament/botNames.ts` | `lib/logic/bot_names.dart` | Game logic |
+| `src/lib/audioEngine.ts` | `lib/audio/audio_engine.dart` | Audio |
+| `src/context/GameContext.tsx` | `lib/providers/game_provider.dart` | State |
+| `src/lib/tournament/TournamentContext.tsx` | `lib/providers/tournament_provider.dart` | State |
+| `src/app/page.tsx` | `lib/screens/landing_screen.dart` | Screen |
+| `src/app/login/page.tsx` | `lib/screens/login_screen.dart` | Screen |
+| `src/app/lobby/page.tsx` | `lib/screens/lobby_screen.dart` | Screen |
+| `src/app/game/page.tsx` | `lib/screens/game_screen.dart` | Screen |
+| `src/app/tournament/page.tsx` | `lib/screens/tournament_screen.dart` | Screen |
+| `src/app/profile/page.tsx` | `lib/screens/profile_screen.dart` | Screen |
+| `src/app/rankings/page.tsx` | `lib/screens/rankings_screen.dart` | Screen |
+| `src/app/season/page.tsx` | `lib/screens/season_screen.dart` | Screen |
+| `src/app/subscribe/page.tsx` | `lib/screens/subscribe_screen.dart` | Screen |
+| `src/components/table/RouletteWheel.tsx` | `lib/widgets/roulette_wheel.dart` | Widget |
+| `src/components/table/BettingLayout.tsx` | `lib/widgets/betting_layout.dart` | Widget |
+| `src/components/table/RouletteTable.tsx` | `lib/widgets/roulette_table.dart` | Widget |
+| `src/components/chips/*.tsx` | `lib/widgets/chip*.dart` | Widget |
+| `src/components/ui/SettingsModal.tsx` | `lib/widgets/settings_modal.dart` | Widget |
+| `src/components/ui/Avatar.tsx` | `lib/widgets/avatar_widget.dart` | Widget |
+| `src/components/subscription/BrandShell.tsx` | `lib/widgets/brand_shell.dart` | Widget |
+| `public/sounds/*` | `assets/sounds/*` | Audio assets |
+| `public/avatars/*` | `assets/avatars/*` | Image assets |

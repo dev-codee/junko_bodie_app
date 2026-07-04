@@ -1,0 +1,208 @@
+import 'package:flutter/material.dart';
+import 'package:junko_bodie/config/theme.dart';
+import 'package:junko_bodie/widgets/chip.dart';
+
+Color getChipColor(double val) {
+  if (val == 1.0) return AppColors.chipWhite;
+  if (val == 2.0) return AppColors.chipOrange;
+  if (val == 5.0) return AppColors.chipRed;
+  if (val == 10.0) return AppColors.chipBlue;
+  if (val == 25.0) return AppColors.chipGreen;
+  if (val == 100.0) return AppColors.chipBlack;
+  if (val == 500.0) return AppColors.chipPurple;
+  if (val == 1000.0) return AppColors.chipYellow;
+  return AppColors.gold;
+}
+
+Color getChipTextColor(double val) {
+  if (val == 1.0 || val == 1000.0) return Colors.black;
+  if (val == 100.0) return AppColors.gold;
+  return Colors.white;
+}
+
+/// A smaller, lightweight chip drawn on the betting layout felt.
+class MiniChip extends StatelessWidget {
+  final double chipVal;
+  final double yOffset;
+  final int zIndex;
+  final String? customColor;
+
+  const MiniChip({
+    super.key,
+    required this.chipVal,
+    required this.yOffset,
+    required this.zIndex,
+    this.customColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = getChipColor(chipVal);
+    final textColor = getChipTextColor(chipVal);
+    const size = 24.0;
+
+    Color? parsedCustomColor;
+    if (customColor != null) {
+      try {
+        final cleanHex = customColor!.replaceAll('#', '');
+        parsedCustomColor = Color(int.parse('0xFF$cleanHex'));
+      } catch (_) {}
+    }
+
+    return Positioned(
+      top: yOffset,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: parsedCustomColor != null
+                  ? parsedCustomColor.withOpacity(0.5)
+                  : Colors.black.withOpacity(0.6),
+              blurRadius: 3,
+              offset: const Offset(0, 1.5),
+            ),
+          ],
+          border: Border.all(
+            color: parsedCustomColor ?? AppColors.gold.withOpacity(0.75),
+            width: 1.2,
+          ),
+        ),
+        child: ClipOval(
+          child: CustomPaint(
+            painter: ChipPainter(
+              color: color,
+              isSelected: false,
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 1.0),
+                child: Text(
+                  chipVal >= 1000 ? '${(chipVal / 1000).toInt()}k' : '${chipVal.toInt()}',
+                  style: playfairDisplay(
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    color: textColor,
+                  ).copyWith(
+                    letterSpacing: -0.5,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget showing a stack of chips placed on a betting grid cell.
+/// Displays up to the last 4 chips vertically offset, with count indicators.
+class ChipStackWidget extends StatelessWidget {
+  final List<double> chips;
+  final String phase;
+  final bool deleteMode;
+  final bool isMine;
+  final String? customColor;
+  final String? playerInitial;
+  final bool isHovered;
+
+  const ChipStackWidget({
+    super.key,
+    required this.chips,
+    required this.phase,
+    this.deleteMode = false,
+    this.isMine = true,
+    this.customColor,
+    this.playerInitial,
+    this.isHovered = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    // Show last 4 chips visually in the stack
+    final visibleChips = chips.length > 4 ? chips.sublist(chips.length - 4) : chips;
+    final hiddenCount = chips.length - 4;
+
+    // Size the container to the ACTUAL stack height so that when it's centered
+    // inside a bet cell / on a line intersection, the chips land dead-center
+    // rather than being top-anchored inside an oversized 33px box.
+    const double chipSize = 24.0;
+    const double chipStep = 3.0;
+    final double stackHeight = chipSize + (visibleChips.length - 1) * chipStep;
+
+    return SizedBox(
+      width: chipSize,
+      height: stackHeight,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        children: [
+          // Render the visible chips from bottom to top
+          ...List.generate(visibleChips.length, (idx) {
+            final chipVal = visibleChips[idx];
+            return MiniChip(
+              key: ValueKey('chip-${chips.length - visibleChips.length + idx}'),
+              chipVal: chipVal,
+              yOffset: (visibleChips.length - 1 - idx) * 3.0,
+              zIndex: idx,
+              customColor: customColor,
+            );
+          }),
+
+          // Delete icon badge overlay (if deleteMode is enabled)
+          if (deleteMode && isMine)
+            Positioned(
+              top: -6,
+              right: -6,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.red[700],
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.0),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  '✕',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+
+          // Hovered "+N" hidden count badge
+          if (hiddenCount > 0 && isHovered)
+            Positioned(
+              bottom: -15,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text(
+                  '+$hiddenCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
