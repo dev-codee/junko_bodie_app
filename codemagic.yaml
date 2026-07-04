@@ -1,0 +1,44 @@
+# codemagic.yaml
+workflows:
+  ios-testflight:
+    name: iOS TestFlight Release
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    
+    environment:
+      flutter: stable
+      xcode: latest
+      
+      # Connect your App Store Connect API key
+      # (Add these in Codemagic UI under Environment Variables)
+      groups:
+        - app_store_credentials
+    
+    scripts:
+      - name: Set up code signing
+        script: |
+          app-store-connect fetch-signing-files "com.junkobodieroulette.app" \
+            --type IOS_APP_STORE \
+            --create
+          keychain initialize
+          app-store-connect certificates list --type IOS_DISTRIBUTION --save
+          keychain add-certificates
+          xcode-project use-profiles
+      
+      - name: Get Flutter packages
+        script: flutter pub get
+      
+      - name: Build IPA
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+    
+    publishing:
+      app_store_connect:
+        # API key info is pulled from environment variables
+        auth: integration
+        submit_to_testflight: true
+        
+        # Auto-handle export compliance (set to true if you ONLY use HTTPS)
+        submit_to_app_store: false
