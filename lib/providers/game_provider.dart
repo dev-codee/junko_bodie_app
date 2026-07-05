@@ -9,6 +9,7 @@ import 'package:junko_bodie/logic/game_phases.dart';
 import 'package:junko_bodie/services/user_service.dart';
 import 'package:junko_bodie/services/session_history_service.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
+import 'package:junko_bodie/models/strategy.dart';
 
 /// GameProvider — State management for the roulette game.
 /// Ported from React useGameState.ts hook using the Provider (ChangeNotifier) pattern.
@@ -44,6 +45,11 @@ class GameProvider extends ChangeNotifier {
     'sessionWin': 0.0,
   };
 
+  // Staged Betting (Strategy) state — mirrors the web's useGameState.
+  bool _stagedBettingEnabled = false;
+  BettingStrategy? _activeStrategy;
+  int _currentStageIndex = 0;
+
   // Getters
   double get balance => _balance;
   Map<String, PlacedBet> get bets => _bets;
@@ -60,6 +66,11 @@ class GameProvider extends ChangeNotifier {
   bool get loading => _loading;
   bool get isTimerEnabled => _isTimerEnabled;
   Map<String, double> get sessionStats => _sessionStats;
+
+  // Staged betting getters
+  bool get stagedBettingEnabled => _stagedBettingEnabled;
+  BettingStrategy? get activeStrategy => _activeStrategy;
+  int get currentStageIndex => _currentStageIndex;
 
   double get totalBet => _bets.values.fold(0.0, (sum, b) => sum + b.amount);
 
@@ -175,6 +186,9 @@ class GameProvider extends ChangeNotifier {
         chips: [_selectedChip],
       );
     }
+
+    // Chip-placement tick, matching the web's BettingLayout playChipSound().
+    soundEngine.playChipSound();
 
     _betPlacementHistory.add({'betId': betId, 'amount': _selectedChip});
     notifyListeners();
@@ -496,6 +510,55 @@ class GameProvider extends ChangeNotifier {
     _sessionStats['lastBet'] = 0.0;
     _sessionStats['lastWin'] = 0.0;
     _sessionStats['sessionWin'] = 0.0;
+    notifyListeners();
+  }
+
+  // ── Staged Betting (Strategy) ───────────────────────────────────────────
+
+  void setStagedBettingEnabled(bool enabled) {
+    _stagedBettingEnabled = enabled;
+    notifyListeners();
+  }
+
+  void setActiveStrategy(BettingStrategy? strategy) {
+    _activeStrategy = strategy;
+    notifyListeners();
+  }
+
+  void setCurrentStageIndex(int index) {
+    _currentStageIndex = index;
+    notifyListeners();
+  }
+
+  /// Apply the predefined bets for a strategy stage, replacing current bets.
+  /// Mirrors the web's useGameState.applyStageBets.
+  void applyStageBets(List<StageBet> stageBets) {
+    if (_phase != GamePhase.betting) return;
+
+    final double stageTotal = stageBets.fold(
+      0.0,
+      (sum, b) => sum + b.amount.toDouble(),
+    );
+    if (_balance < stageTotal) {
+      triggerFundError('Insufficient funds for this stage');
+      return;
+    }
+
+    final next = <String, PlacedBet>{};
+    _betPlacementHistory.clear();
+    for (final b in stageBets) {
+      final amount = b.amount.toDouble();
+      next[b.position] = PlacedBet(
+        betId: b.position,
+        amount: amount,
+        chips: [amount],
+        playerInitial: 'S',
+      );
+      _betPlacementHistory.add({'betId': b.position, 'amount': amount});
+    }
+    _bets = next;
+
+    soundEngine.playSwoosh();
     notifyListeners();
   }
 

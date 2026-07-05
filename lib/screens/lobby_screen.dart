@@ -74,12 +74,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
       );
     }
 
-    final userName = user.userMetadata?['full_name'] ??
+    final userName =
+        user.userMetadata?['full_name'] ??
         user.userMetadata?['name'] ??
         user.email?.split('@')[0] ??
         'Player';
-    final avatarUrl = user.userMetadata?['avatar_url'] ??
-        user.userMetadata?['picture'];
+    final avatarUrl =
+        user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'];
 
     return Scaffold(
       body: Container(
@@ -132,12 +133,30 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: BackdropFilter(
-                    filter: ColorFilter.matrix([
-                      1, 0, 0, 0, 0,
-                      0, 1, 0, 0, 0,
-                      0, 0, 1, 0, 0,
-                      0, 0, 0, 1, 0,
-                    ]), // Simplified backdrop filter to avoid heavy performance hit, relying on container color
+                    filter: ColorFilter.matrix(
+                      [
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
+                      ],
+                    ), // Simplified backdrop filter to avoid heavy performance hit, relying on container color
                     child: SafeArea(
                       child: LayoutBuilder(
                         builder: (context, c) {
@@ -152,7 +171,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                             child: Column(
                               children: [
                                 // ── Header ─────────────────────────────────────
-                                _buildHeader(context, auth, userName, avatarUrl),
+                                _buildHeader(
+                                  context,
+                                  auth,
+                                  userName,
+                                  avatarUrl,
+                                ),
                                 SizedBox(height: gap),
 
                                 // ── Main Content (Cards) — fills all leftover
@@ -160,42 +184,61 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 Expanded(
                                   flex: 5,
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       Expanded(
-                                        child: _PlayCard(
-                                          icon: Icons.play_arrow_rounded,
-                                          iconColor: const Color(0xFFD4BC81),
-                                          label: 'SOLO PLAY',
-                                          description:
-                                              'Classic American and European Roulette.\nTest Your Skill Against The House.',
-                                          onTap: () => context.push('/game'),
-                                        ).animate().fadeIn(duration: 600.ms).slideY(
-                                              begin: 0.1,
-                                              end: 0,
-                                              duration: 600.ms,
-                                              curve: Curves.easeOutCubic,
-                                            ),
+                                        child:
+                                            _PlayCard(
+                                                  icon:
+                                                      Icons.play_arrow_rounded,
+                                                  iconColor: const Color(
+                                                    0xFFD4BC81,
+                                                  ),
+                                                  label: 'SOLO PLAY',
+                                                  description:
+                                                      'Classic American and European Roulette.\nTest Your Skill Against The House.',
+                                                  onTap: () =>
+                                                      context.push('/game'),
+                                                )
+                                                .animate()
+                                                .fadeIn(duration: 600.ms)
+                                                .slideY(
+                                                  begin: 0.1,
+                                                  end: 0,
+                                                  duration: 600.ms,
+                                                  curve: Curves.easeOutCubic,
+                                                ),
                                       ),
                                       const SizedBox(width: 24),
                                       Expanded(
-                                        child: _PlayCard(
-                                          icon: Icons.emoji_events_rounded,
-                                          iconColor: const Color(0xFF8B5CF6),
-                                          label: 'TOURNAMENT',
-                                          description:
-                                              'Test Yourself Against Other Top Players\nIn A Live Tournament Experience.',
-                                          onTap: () => _comingSoon(context, 'Tournament'),
-                                        )
-                                            .animate()
-                                            .fadeIn(duration: 600.ms, delay: 200.ms)
-                                            .slideY(
-                                              begin: 0.1,
-                                              end: 0,
-                                              duration: 600.ms,
-                                              delay: 200.ms,
-                                              curve: Curves.easeOutCubic,
-                                            ),
+                                        child:
+                                            _PlayCard(
+                                                  icon: Icons
+                                                      .emoji_events_rounded,
+                                                  iconColor: const Color(
+                                                    0xFF8B5CF6,
+                                                  ),
+                                                  label: 'TOURNAMENT',
+                                                  description:
+                                                      'Test Yourself Against Other Top Players\nIn A Live Tournament Experience.',
+                                                  onTap: () => _comingSoon(
+                                                    context,
+                                                    'Tournament',
+                                                  ),
+                                                )
+                                                .animate()
+                                                .fadeIn(
+                                                  duration: 600.ms,
+                                                  delay: 200.ms,
+                                                )
+                                                .slideY(
+                                                  begin: 0.1,
+                                                  end: 0,
+                                                  duration: 600.ms,
+                                                  delay: 200.ms,
+                                                  curve: Curves.easeOutCubic,
+                                                ),
                                       ),
                                     ],
                                   ),
@@ -205,27 +248,31 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
                                 // ── Quick Actions ─────────────────────────────
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    _QuickAction(
-                                      icon: Icons.history_rounded,
-                                      label: 'HISTORY',
-                                      onTap: () => context.push('/session-history'),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    _QuickAction(
-                                      icon: Icons.track_changes_rounded,
-                                      label: 'STRATEGIES',
-                                      onTap: () => context.push('/strategies'),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    _QuickAction(
-                                      icon: Icons.bar_chart_rounded,
-                                      label: 'RANKINGS',
-                                      onTap: () => context.push('/rankings'),
-                                    ),
-                                  ],
-                                )
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _QuickAction(
+                                          icon: Icons.history_rounded,
+                                          label: 'HISTORY',
+                                          onTap: () =>
+                                              context.push('/session-history'),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        _QuickAction(
+                                          icon: Icons.track_changes_rounded,
+                                          label: 'STRATEGIES',
+                                          onTap: () =>
+                                              context.push('/strategies'),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        _QuickAction(
+                                          icon: Icons.bar_chart_rounded,
+                                          label: 'RANKINGS',
+                                          onTap: () =>
+                                              context.push('/rankings'),
+                                        ),
+                                      ],
+                                    )
                                     .animate()
                                     .fadeIn(duration: 500.ms, delay: 400.ms)
                                     .slideY(
@@ -244,12 +291,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 6),
+                                      horizontal: 14,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF0F2E21),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                          color: const Color(0xFF0F2E21)),
+                                        color: const Color(0xFF0F2E21),
+                                      ),
                                       boxShadow: const [
                                         BoxShadow(
                                           color: Color(0x1A000000),
@@ -310,8 +360,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, AuthProvider auth, String userName,
-      String? avatarUrl) {
+  Widget _buildHeader(
+    BuildContext context,
+    AuthProvider auth,
+    String userName,
+    String? avatarUrl,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -324,9 +378,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.4),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x05000000),
@@ -344,10 +396,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.gold,
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: AppColors.gold, width: 1.5),
                   ),
                   child: ClipOval(
                     child: avatarUrl != null
@@ -439,17 +488,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.4),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
           ),
           child: IconButton(
             onPressed: () => auth.signOut(),
-            icon: const Icon(
-              Icons.logout,
-              color: Color(0xFF8B6B22),
-              size: 24,
-            ),
+            icon: const Icon(Icons.logout, color: Color(0xFF8B6B22), size: 24),
             tooltip: 'Sign Out',
           ),
         ),
@@ -512,7 +555,9 @@ class _PlayCardState extends State<_PlayCard> {
           constraints: const BoxConstraints(maxWidth: 360),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: _isHovered ? const Color(0xFF113626) : const Color(0xFF0F2E21),
+            color: _isHovered
+                ? const Color(0xFF113626)
+                : const Color(0xFF0F2E21),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               if (_isHovered)
@@ -543,70 +588,67 @@ class _PlayCardState extends State<_PlayCard> {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: SizedBox(
-            width: 240,
-            child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon Circle
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isHovered
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: widget.iconColor,
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    if (_isHovered)
-                      BoxShadow(
-                        color: widget.iconColor.withValues(alpha: 0.4),
-                        blurRadius: 20,
+              width: 240,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon Circle
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isHovered
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.transparent,
+                      border: Border.all(color: widget.iconColor, width: 1.5),
+                      boxShadow: [
+                        if (_isHovered)
+                          BoxShadow(
+                            color: widget.iconColor.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                          ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        widget.icon,
+                        color: widget.iconColor,
+                        size: 18,
                       ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    widget.icon,
-                    color: widget.iconColor,
-                    size: 18,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-              // Label
-              Text(
-                widget.label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
+                  // Label
+                  Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
 
-              // Description
-              Text(
-                widget.description.replaceAll('\n', ' '),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.6),
-                  height: 1.3,
-                ),
+                  // Description
+                  Text(
+                    widget.description.replaceAll('\n', ' '),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          ),
+            ),
           ),
         ),
       ),
@@ -655,9 +697,7 @@ class _QuickActionState extends State<_QuickAction> {
                 ? Colors.white.withValues(alpha: 0.65)
                 : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
             boxShadow: [
               if (_isHovered)
                 const BoxShadow(
@@ -678,11 +718,7 @@ class _QuickActionState extends State<_QuickAction> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                widget.icon,
-                color: const Color(0xFF113626),
-                size: 18,
-              ),
+              Icon(widget.icon, color: const Color(0xFF113626), size: 18),
               const SizedBox(height: 3),
               Text(
                 widget.label,

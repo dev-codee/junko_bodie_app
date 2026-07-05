@@ -33,6 +33,54 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
     super.dispose();
   }
 
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0x20C9A44C), width: 1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.rss_feed, color: Color(0xFFC9A44C), size: 14),
+              SizedBox(width: 6),
+              Text(
+                'LIVE FEED',
+                style: TextStyle(
+                  color: Color(0xFFC9A44C),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2ECC71),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                'LIVE',
+                style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final int now = DateTime.now().millisecondsSinceEpoch;
@@ -44,78 +92,43 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
 
     if (visibleEvents.isEmpty) {
       return Container(
-        width: 200,
+        width: double.infinity,
         decoration: const BoxDecoration(
           color: Color(0x7F07140E),
           border: Border(
             left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
+            top: BorderSide(color: Color(0x30C9A44C), width: 1.5),
           ),
         ),
-        child: const Center(
-          child: Text(
-            'Waiting for bets...',
-            style: TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
-          ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'Waiting for bets...',
+                  style: TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Container(
-      width: 200,
+      width: double.infinity,
       decoration: const BoxDecoration(
         color: Color(0x7F07140E),
         border: Border(
           left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
+          top: BorderSide(color: Color(0x30C9A44C), width: 1.5),
         ),
       ),
       child: Column(
         children: [
           // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0x20C9A44C), width: 1),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.rss_feed, color: Color(0xFFC9A44C), size: 14),
-                    SizedBox(width: 6),
-                    Text(
-                      'LIVE FEED',
-                      style: TextStyle(
-                        color: Color(0xFFC9A44C),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2ECC71),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'LIVE',
-                      style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildHeader(),
 
           // Events scrolling list
           Expanded(

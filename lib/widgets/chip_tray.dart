@@ -24,27 +24,10 @@ class ChipTray extends StatelessWidget {
   Widget build(BuildContext context) {
     final double availableFunds = balance - totalBet;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(0, 8, 12, 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [
-            const Color(0xFF05191E).withOpacity(0.95),
-            const Color(0xFF082A2F).withOpacity(0.85),
-          ],
-        ),
-        border: Border(
-          top: BorderSide(
-            color: AppColors.gold.withOpacity(0.25),
-            width: 1.0,
-          ),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Row(
           // Left-align so the chips hug the left edge and don't run under the
           // centered floating player card.
           mainAxisAlignment: MainAxisAlignment.start,
@@ -74,7 +57,6 @@ class ChipTray extends StatelessWidget {
               ),
             );
           }).toList(),
-        ),
       ),
     );
   }

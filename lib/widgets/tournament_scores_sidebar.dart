@@ -13,11 +13,11 @@ class TournamentScoresSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 220,
+      width: double.infinity,
       decoration: const BoxDecoration(
         color: Color(0x7F07140E),
         border: Border(
-          right: BorderSide(color: Color(0x30C9A44C), width: 1.5),
+          left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
         ),
       ),
       child: Column(

@@ -183,30 +183,51 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   // 1. Top Header
                   _buildHeader(provider),
                   
-                  // 2. Middle area (Scores, Roulette, Events)
+                  // 2. Middle area — web layout: big felt table on the left,
+                  //    Leaderboard + Live Feed stacked in a single right column.
                   Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Standings Leaderboard Sidebar (Left)
-                        TournamentScoresSidebar(
-                          scores: provider.scores,
-                          myPlayerId: mePlayer?.playerId,
-                        ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Right column ~28% of the width (clamped), like the web
+                        // sidebar. The felt table takes the rest.
+                        final double sidebarWidth =
+                            (constraints.maxWidth * 0.28).clamp(220.0, 340.0);
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Roulette Felt Table (Left, dominant)
+                            const Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 6.0, vertical: 6.0),
+                                child: TournamentRouletteTable(),
+                              ),
+                            ),
 
-                        // Roulette Felt Table (Center)
-                        const Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                            child: TournamentRouletteTable(),
-                          ),
-                        ),
-
-                        // Events Feed Sidebar (Right)
-                        TournamentEventsFeed(
-                          events: provider.events,
-                        ),
-                      ],
+                            // Right sidebar: Leaderboard (top) + Live Feed (bottom)
+                            SizedBox(
+                              width: sidebarWidth,
+                              child: Column(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: TournamentScoresSidebar(
+                                      scores: provider.scores,
+                                      myPlayerId: mePlayer?.playerId,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: TournamentEventsFeed(
+                                      events: provider.events,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
 
@@ -327,7 +348,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 ],
               ),
             ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
 
           // Settings Button
           IconButton(
@@ -341,6 +362,33 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             icon: const Icon(Icons.settings, color: Color(0xFFF5EDD5), size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 12),
+
+          // Round / Spin indicator (matches the web header, far right)
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'ROUND ${provider.currentRound} OF 5',
+                style: const TextStyle(
+                  color: Color(0xFFC9A44C),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              Text(
+                'SPIN ${provider.currentSpin}/5',
+                style: TextStyle(
+                  color: const Color(0xFFF5EDD5).withOpacity(0.6),
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
         ],
       ),

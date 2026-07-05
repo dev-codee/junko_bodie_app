@@ -73,8 +73,10 @@ class TournamentRouletteTable extends StatelessWidget {
             final double height = constraints.maxHeight;
             final double width = constraints.maxWidth;
 
-            // Enforce landscape proportions
-            final double wheelSize = (height * 0.72).clamp(180.0, 300.0);
+            // Keep the wheel compact so the betting layout stays dominant
+            // (matches the web felt, where the number grid is wider than the
+            // wheel). Otherwise a large wheel crushes the grid on phones.
+            final double wheelSize = (height * 0.82).clamp(150.0, 240.0);
 
             // Wheel Type mapping
             final wheelTypeEnum = provider.wheelType == 'american'
@@ -147,7 +149,7 @@ class TournamentRouletteTable extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
                         child: Row(
                           children: [
                             // 1. Wheel Section (Left)
@@ -167,7 +169,7 @@ class TournamentRouletteTable extends StatelessWidget {
                                 tournamentMode: true,
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
 
                             // 2. Felt Betting Section (Right)
                             Expanded(

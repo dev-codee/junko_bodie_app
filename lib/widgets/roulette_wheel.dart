@@ -262,11 +262,12 @@ class _RouletteWheelState extends State<RouletteWheel> with SingleTickerProvider
           _ballZ = 0.0;
         });
 
+        // stopSpinSound() already unducks the background music. Restarting the
+        // track here (as the old code did for solo) caused the loop to jump
+        // back to the start after every spin, so we just let it resume.
         soundEngine.stopSpinSound();
         if (widget.tournamentMode) {
           soundEngine.resumeTourneyBackgroundMusic();
-        } else {
-          soundEngine.playBackgroundMusic();
         }
         widget.onSpinComplete();
       } else {

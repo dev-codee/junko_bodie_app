@@ -15,6 +15,8 @@ import 'package:junko_bodie/widgets/result_display.dart';
 import 'package:junko_bodie/widgets/win_celebration.dart';
 import 'package:junko_bodie/widgets/chip_tray.dart';
 import 'package:junko_bodie/widgets/settings_modal.dart';
+import 'package:junko_bodie/widgets/staged_betting_selector.dart';
+import 'package:junko_bodie/widgets/strategy_prompt_modal.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
 import 'package:junko_bodie/logic/game_phases.dart';
 
@@ -32,6 +34,10 @@ class _GameScreenState extends State<GameScreen> {
 
   bool _showResult = false;
   bool _showWinCelebration = false;
+
+  // Staged-betting (strategy) flow state.
+  bool _awaitingStrategyChoice = false;
+  bool _stagePopulated = false;
 
   GameProvider? _gameProvider; // captured for safe use in dispose()
 
@@ -105,11 +111,100 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _handleDismissResult(GameProvider provider) {
+    // In strategy mode, pause on the result then prompt the player for the
+    // next staged-betting action instead of immediately starting a new round.
+    if (provider.stagedBettingEnabled && provider.activeStrategy != null) {
+      setState(() {
+        _showResult = false;
+        _showWinCelebration = false;
+        _awaitingStrategyChoice = true;
+      });
+      _showStrategyPrompt(provider);
+      return;
+    }
+
     setState(() {
       _showResult = false;
       _showWinCelebration = false;
     });
     provider.startNewRound();
+  }
+
+  void _showStrategyPrompt(GameProvider provider) {
+    final strategy = provider.activeStrategy;
+    if (strategy == null || strategy.stages.isEmpty) {
+      _awaitingStrategyChoice = false;
+      provider.startNewRound();
+      return;
+    }
+
+    final int stageNumber = provider.currentStageIndex + 1;
+    final bool isLast =
+        provider.currentStageIndex >= strategy.stages.length - 1;
+
+    void finish() {
+      Navigator.of(context).pop();
+      setState(() => _awaitingStrategyChoice = false);
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (_) => StrategyPromptModal(
+        stageNumber: stageNumber,
+        isLastStage: isLast,
+        onReplayStage: () {
+          soundEngine.playClick();
+          finish();
+          // Keep the same stage index to replay it.
+          provider.startNewRound();
+        },
+        onResetToStageOne: () {
+          soundEngine.playClick();
+          finish();
+          provider.setCurrentStageIndex(0);
+          provider.startNewRound();
+        },
+        onNextStage: () {
+          soundEngine.playClick();
+          finish();
+          final nextIdx = provider.currentStageIndex + 1;
+          provider.setCurrentStageIndex(
+            nextIdx >= strategy.stages.length ? 0 : nextIdx,
+          );
+          provider.startNewRound();
+        },
+        onExit: () {
+          soundEngine.playClick();
+          finish();
+          provider.setStagedBettingEnabled(false);
+          provider.setActiveStrategy(null);
+          provider.setCurrentStageIndex(0);
+          provider.startNewRound();
+        },
+      ),
+    );
+  }
+
+  /// Auto-populate the current stage's bets each time we (re)enter the betting
+  /// phase with an active strategy. Mirrors the web's auto-populate effect.
+  void _maybeAutoPopulateStage(GameProvider provider) {
+    if (provider.phase != GamePhase.betting) {
+      _stagePopulated = false;
+      return;
+    }
+    if (!provider.stagedBettingEnabled ||
+        provider.activeStrategy == null ||
+        _stagePopulated) {
+      return;
+    }
+    _stagePopulated = true;
+    final strategy = provider.activeStrategy!;
+    if (provider.currentStageIndex < strategy.stages.length) {
+      final stage = strategy.stages[provider.currentStageIndex];
+      provider.applyStageBets(stage.bets);
+    }
   }
 
   void _showResultPopup(GameProvider provider) {
@@ -129,13 +224,23 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Consumer<GameProvider>(
       builder: (context, provider, child) {
-        // Automatically trigger results display when wheel stops spinning
+        // Automatically trigger results display when wheel stops spinning.
+        // Suppressed while awaiting a strategy choice so the result popup does
+        // not re-appear behind the strategy prompt.
         final isResultPhase = provider.phase == GamePhase.result;
-        if (isResultPhase && !_showResult && provider.currentResult != null) {
+        if (isResultPhase &&
+            !_showResult &&
+            !_awaitingStrategyChoice &&
+            provider.currentResult != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _showResultPopup(provider);
           });
         }
+
+        // Auto-populate staged bets when entering the betting phase.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _maybeAutoPopulateStage(provider);
+        });
 
         // Show loading screen if fetching profile initially
         if (provider.loading && provider.balance == 0.0) {
@@ -259,6 +364,9 @@ class _GameScreenState extends State<GameScreen> {
           Expanded(
             child: SpinHistoryWidget(history: provider.history),
           ),
+          // Strategy (staged betting) Selector
+          const StagedBettingSelector(),
+          const SizedBox(width: 8),
           // Settings Modal Trigger Button
           IconButton(
             onPressed: () {

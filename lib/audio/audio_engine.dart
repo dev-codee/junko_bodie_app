@@ -42,6 +42,9 @@ class AudioEngine {
 
   // Spin sound effect player
   final AudioPlayer _spinPlayer = AudioPlayer();
+  bool _spinActive = false;
+  double _lastSpinEffectAt = 0;
+  double _lastSpinRate = 1.0;
 
   // Text-To-Speech (TTS)
   final FlutterTts flutterTts = FlutterTts();
@@ -108,6 +111,31 @@ class AudioEngine {
       _musicEnabled = prefs.getBool('is_music_enabled') ?? true;
     } catch (e) {
       debugPrint('AudioEngine: Error loading preferences: $e');
+    }
+
+    // Configure a global audio context that lets every player (background
+    // music, SFX pool, spin loop, TTS) mix together instead of fighting over
+    // exclusive audio focus. Without this, Android grants focus to a single
+    // player so the spin loop can't play over the music (and ducking is
+    // fought by the OS). This mirrors the web's Howler.js free-mixing model.
+    try {
+      await AudioPlayer.global.setAudioContext(
+        AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: false,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.none,
+          ),
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const {AVAudioSessionOptions.mixWithOthers},
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('AudioEngine: Error configuring audio context: $e');
     }
 
     // Add App Lifecycle Observer
@@ -285,19 +313,41 @@ class AudioEngine {
     try {
       await _spinPlayer.stop();
       await _spinPlayer.setReleaseMode(ReleaseMode.loop);
-      await _spinPlayer.setVolume(_volumes['spin'] ?? 0.25);
-      await _spinPlayer.setPlaybackRate(1.0);
-      await _spinPlayer.play(AssetSource(_paths['spin']!));
+      // Play first, THEN adjust rate. On Android setPlaybackRate throws if no
+      // source is loaded yet, which would swallow the play() call. Rate
+      // defaults to 1.0, so we don't need to set it up front.
+      await _spinPlayer.play(
+        AssetSource(_paths['spin']!),
+        volume: _volumes['spin'] ?? 0.25,
+      );
+      _spinActive = true;
+      _lastSpinEffectAt = 0;
+      _lastSpinRate = 1.0;
     } catch (e) {
       debugPrint('AudioEngine: Error starting spin sound: $e');
     }
   }
 
+  /// Follow the wheel deceleration in real time. Called every animation frame
+  /// by the wheel, so we throttle the platform-channel calls: pushing a new
+  /// volume/rate 60×/second floods the channel and makes the spin audio lag
+  /// out of sync with the wheel. We only send an update when enough time has
+  /// passed or the rate changed meaningfully.
   Future<void> setSpinEffect(double volume, double rate) async {
-    if (!_enabled || _blocked) return;
+    if (!_enabled || _blocked || !_spinActive) return;
+
+    final double targetVol = volume.clamp(0.0, 1.0);
+    final double targetRate = rate.clamp(0.1, 2.0);
+    final double now = DateTime.now().millisecondsSinceEpoch.toDouble();
+
+    if (now - _lastSpinEffectAt < 60 &&
+        (targetRate - _lastSpinRate).abs() < 0.03) {
+      return;
+    }
+    _lastSpinEffectAt = now;
+    _lastSpinRate = targetRate;
+
     try {
-      final double targetVol = volume.clamp(0.0, 1.0);
-      final double targetRate = rate.clamp(0.1, 2.0);
       await _spinPlayer.setVolume(targetVol);
       await _spinPlayer.setPlaybackRate(targetRate);
     } catch (e) {
@@ -306,6 +356,7 @@ class AudioEngine {
   }
 
   Future<void> stopSpinSound() async {
+    _spinActive = false;
     try {
       await _spinPlayer.stop();
     } catch (e) {
@@ -593,15 +644,15 @@ class AudioEngine {
       _nextSfxIndex++;
 
       await player.stop();
-      await player.setVolume(volume);
+      // Play first (with the volume), THEN adjust the rate. Calling
+      // setPlaybackRate before a source is loaded throws on Android, which
+      // would swallow the play() call and leave the effect silent.
+      await player.play(AssetSource(path), volume: volume);
       if (randomizeRate) {
         // Randomize rate slightly between 0.8 and 1.2
         final double randomRate = 0.8 + (math.Random().nextDouble() * 0.4);
         await player.setPlaybackRate(randomRate);
-      } else {
-        await player.setPlaybackRate(1.0);
       }
-      await player.play(AssetSource(path));
     } catch (e) {
       debugPrint('AudioEngine: Error playing SFX $id: $e');
     }
