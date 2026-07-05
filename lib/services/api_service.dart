@@ -76,6 +76,22 @@ class ApiService {
     }
   }
 
+  /// Perform a PUT request.
+  Future<dynamic> put(String path, {dynamic body}) async {
+    try {
+      final uri = Uri.parse('$baseUrl$path');
+      final response = await http.put(
+        uri,
+        headers: _getHeaders(),
+        body: body != null ? jsonEncode(body) : null,
+      );
+      return _processResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(message: e.toString());
+    }
+  }
+
   /// Perform a PATCH request.
   Future<dynamic> patch(String path, {dynamic body}) async {
     try {

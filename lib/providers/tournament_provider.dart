@@ -25,12 +25,12 @@ class TournamentProvider extends ChangeNotifier {
 
   Player? currentUserProfile;
   TournamentDetails? _details;
-  
+
   int currentRound = 1;
   int currentSpin = 1;
   final int totalSpins = 5;
   String phase = 'waiting';
-  
+
   List<dynamic> scores = [];
   int timeRemaining = 45;
   List<dynamic> botBets = [];
@@ -40,7 +40,7 @@ class TournamentProvider extends ChangeNotifier {
   dynamic lastPlayerPayout;
   TournamentPlayer? eliminatedPlayer;
   int lobbyTimeRemaining = 30;
-  
+
   Map<String, PlacedBet> bets = {};
   Map<String, PlacedBet> lastSpinBets = {};
   List<dynamic> history = [];
@@ -77,7 +77,7 @@ class TournamentProvider extends ChangeNotifier {
   final List<String> _announcedBettingSpins = [];
 
   double get totalBet => bets.values.fold(0.0, (sum, b) => sum + b.amount);
-  
+
   Tournament? get tournament => _details?.tournament;
   Round? get activeRound => _details?.activeRound;
   Spin? get latestSpin => _details?.latestSpin;
@@ -92,11 +92,12 @@ class TournamentProvider extends ChangeNotifier {
     if (tournament == null || currentUserProfile == null) return null;
     final String myId = currentUserProfile!.id ?? '';
     final String myUsername = currentUserProfile!.username;
-    
+
     // Find the player entry that matches user ID or username
     for (var p in tournament!.players) {
       if (!p.isBot) {
-        if ((myId.isNotEmpty && p.playerId == myId) || p.username == myUsername) {
+        if ((myId.isNotEmpty && p.playerId == myId) ||
+            p.username == myUsername) {
           return p;
         }
       }
@@ -133,13 +134,13 @@ class TournamentProvider extends ChangeNotifier {
 
   void placeBet(String betId) {
     if (phase != 'betting' && phase != 'waiting') return;
-    
+
     final mePlayer = me;
     if (mePlayer == null) return;
-    
+
     final double myBalance = mePlayer.currentChips;
     final double projectedTotalBet = totalBet + selectedChip;
-    
+
     if (projectedTotalBet > myBalance) {
       fundError = 'Insufficient chips for this bet';
       soundEngine.playDeniedSound();
@@ -172,7 +173,7 @@ class TournamentProvider extends ChangeNotifier {
 
   void removeBet(String betId) {
     if (phase != 'betting' && phase != 'waiting') return;
-    
+
     final existing = bets[betId];
     if (existing == null || existing.chips.isEmpty) return;
 
@@ -183,11 +184,7 @@ class TournamentProvider extends ChangeNotifier {
     if (chips.isEmpty) {
       bets.remove(betId);
     } else {
-      bets[betId] = PlacedBet(
-        betId: betId,
-        amount: newAmount,
-        chips: chips,
-      );
+      bets[betId] = PlacedBet(betId: betId, amount: newAmount, chips: chips);
     }
 
     notifyListeners();
@@ -233,13 +230,13 @@ class TournamentProvider extends ChangeNotifier {
 
   void doubleAllBets() {
     if (phase != 'betting' && phase != 'waiting') return;
-    
+
     final mePlayer = me;
     if (mePlayer == null) return;
-    
+
     final double myBalance = mePlayer.currentChips;
     final double projectedTotalBet = totalBet * 2;
-    
+
     if (projectedTotalBet > myBalance) {
       fundError = 'Insufficient chips to double bets';
       soundEngine.playDeniedSound();
@@ -264,13 +261,16 @@ class TournamentProvider extends ChangeNotifier {
   void rebet() {
     if (phase != 'betting' && phase != 'waiting') return;
     if (lastSpinBets.isEmpty) return;
-    
+
     final mePlayer = me;
     if (mePlayer == null) return;
-    
+
     final double myBalance = mePlayer.currentChips;
-    final double lastTotal = lastSpinBets.values.fold(0.0, (sum, b) => sum + b.amount);
-    
+    final double lastTotal = lastSpinBets.values.fold(
+      0.0,
+      (sum, b) => sum + b.amount,
+    );
+
     if (lastTotal > myBalance) {
       fundError = 'Insufficient chips to rebet';
       soundEngine.playDeniedSound();
@@ -292,12 +292,16 @@ class TournamentProvider extends ChangeNotifier {
       final tournamentId = tournament?.id;
       final mePlayer = me;
       if (tournamentId != null && mePlayer != null) {
-        final formattedBets = bets.values.map((b) => {
-          'betId': b.betId,
-          'amount': b.amount,
-          'chips': b.chips,
-        }).toList();
-        _tournamentService.syncBets(tournamentId, mePlayer.playerId, formattedBets);
+        final formattedBets = bets.values
+            .map(
+              (b) => {'betId': b.betId, 'amount': b.amount, 'chips': b.chips},
+            )
+            .toList();
+        _tournamentService.syncBets(
+          tournamentId,
+          mePlayer.playerId,
+          formattedBets,
+        );
       }
     });
   }
@@ -326,7 +330,8 @@ class TournamentProvider extends ChangeNotifier {
     try {
       await fetchUserProfile();
 
-      final Tournament tourney = await _tournamentService.createOrJoinTournament(type);
+      final Tournament tourney = await _tournamentService
+          .createOrJoinTournament(type);
       wheelType = tourney.wheelType ?? 'american';
 
       // Clear local state
@@ -343,7 +348,7 @@ class TournamentProvider extends ChangeNotifier {
       _announcedLeaderId = null;
       _announcedElimId = null;
       _announcedBettingSpins.clear();
-      
+
       await loadTournament(tourneyId: tourney.id);
       _startPolling(tourney.id!);
       _startLobbyTimer();
@@ -413,9 +418,10 @@ class TournamentProvider extends ChangeNotifier {
   Future<void> loadTournament({String? tourneyId}) async {
     final tId = tourneyId ?? tournament?.id;
     if (tId == null || _isFetching) return;
-    
+
     _isFetching = true;
-    final wasOffline = connectionStatus == 'offline' || connectionStatus == 'reconnecting';
+    final wasOffline =
+        connectionStatus == 'offline' || connectionStatus == 'reconnecting';
     if (wasOffline) {
       connectionStatus = 'reconnecting';
       notifyListeners();
@@ -442,8 +448,9 @@ class TournamentProvider extends ChangeNotifier {
       currentRound = data.tournament.currentRound;
       wheelType = data.tournament.wheelType ?? 'american';
       history = data.history;
-      _serverTimeOffset = data.serverTime - DateTime.now().millisecondsSinceEpoch;
-      
+      _serverTimeOffset =
+          data.serverTime - DateTime.now().millisecondsSinceEpoch;
+
       // Reconnect recovery
       if (wasOffline) {
         phase = serverPhase;
@@ -467,7 +474,10 @@ class TournamentProvider extends ChangeNotifier {
 
       // Restore local bets once on load
       final mePlayer = me;
-      if (!_hasRestoredBets && bets.isEmpty && mePlayer != null && phase == 'betting') {
+      if (!_hasRestoredBets &&
+          bets.isEmpty &&
+          mePlayer != null &&
+          phase == 'betting') {
         final List<dynamic>? serverPendingBets = mePlayer.pendingBets;
         if (serverPendingBets != null && serverPendingBets.isNotEmpty) {
           _hasRestoredBets = true;
@@ -475,8 +485,12 @@ class TournamentProvider extends ChangeNotifier {
           for (var b in serverPendingBets) {
             final String betId = b['betId'] ?? '';
             final double amount = (b['amount'] ?? 0.0).toDouble();
-            final List<double> chips = (b['chips'] as List<dynamic>?)?.map((c) => (c as num).toDouble()).toList() ?? [amount];
-            
+            final List<double> chips =
+                (b['chips'] as List<dynamic>?)
+                    ?.map((c) => (c as num).toDouble())
+                    .toList() ??
+                [amount];
+
             final existing = bets[betId];
             if (existing != null) {
               bets[betId] = PlacedBet(
@@ -498,7 +512,8 @@ class TournamentProvider extends ChangeNotifier {
       // Lobby countdown
       if (data.tournament.status == 'waiting') {
         final createdTime = data.tournament.createdAt.millisecondsSinceEpoch;
-        final serverTimeNow = DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+        final serverTimeNow =
+            DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
         final int elapsed = ((serverTimeNow - createdTime) / 1000).floor();
         lobbyTimeRemaining = math.max(0, 30 - elapsed);
       }
@@ -506,9 +521,14 @@ class TournamentProvider extends ChangeNotifier {
       // Sync spins completed
       int spinsDone = data.activeRound?.spinsCompleted ?? 0;
       int actualSpin = spinsDone + 1;
-      
-      if ((phase == 'spinning' || phase == 'result' || serverPhase == 'spinning' || serverPhase == 'result') && data.latestSpin != null) {
-        if (data.latestSpin!.roundId.toString() == data.activeRound?.id.toString()) {
+
+      if ((phase == 'spinning' ||
+              phase == 'result' ||
+              serverPhase == 'spinning' ||
+              serverPhase == 'result') &&
+          data.latestSpin != null) {
+        if (data.latestSpin!.roundId.toString() ==
+            data.activeRound?.id.toString()) {
           actualSpin = data.latestSpin!.spinNumber;
         }
       }
@@ -533,13 +553,21 @@ class TournamentProvider extends ChangeNotifier {
           data.activeRound == null &&
           !_requestingFirstRound) {
         _requestingFirstRound = true;
-        unawaited(_tournamentService.startRound(tId).then((_) {
-          debugPrint('[TournamentProvider] First round /round/start succeeded');
-        }).catchError((e) {
-          debugPrint('[TournamentProvider] /round/start failed: $e');
-        }).whenComplete(() {
-          _requestingFirstRound = false;
-        }));
+        unawaited(
+          _tournamentService
+              .startRound(tId)
+              .then((_) {
+                debugPrint(
+                  '[TournamentProvider] First round /round/start succeeded',
+                );
+              })
+              .catchError((e) {
+                debugPrint('[TournamentProvider] /round/start failed: $e');
+              })
+              .whenComplete(() {
+                _requestingFirstRound = false;
+              }),
+        );
       }
 
       // Phase changes & priority logic
@@ -554,7 +582,9 @@ class TournamentProvider extends ChangeNotifier {
     } catch (e, st) {
       _consecutiveErrors++;
       error = e.toString();
-      debugPrint('[TournamentProvider] loadTournament error #$_consecutiveErrors: $e');
+      debugPrint(
+        '[TournamentProvider] loadTournament error #$_consecutiveErrors: $e',
+      );
       assert(() {
         debugPrint('$st');
         return true;
@@ -585,7 +615,8 @@ class TournamentProvider extends ChangeNotifier {
     final double serverPriority = phasePriority[serverPhase] ?? 0;
 
     // Transitioning from betting/locked -> spinning: Save bets for rebet, clear current wagers
-    if ((serverPhase == 'spinning' || serverPhase == 'result') && (phase == 'betting' || phase == 'locked')) {
+    if ((serverPhase == 'spinning' || serverPhase == 'result') &&
+        (phase == 'betting' || phase == 'locked')) {
       if (bets.isNotEmpty) {
         lastSpinBets = Map<String, PlacedBet>.from(bets);
         bets.clear();
@@ -593,11 +624,13 @@ class TournamentProvider extends ChangeNotifier {
       }
     }
 
-    if (serverPhase == 'betting' && (phase == 'spinning' || phase == 'result')) {
+    if (serverPhase == 'betting' &&
+        (phase == 'spinning' || phase == 'result')) {
       // Keep wheel animating/result active until manual dismissal
       if (activeRound?.bettingEndsAt != null) {
         final deadlineTime = activeRound!.bettingEndsAt.millisecondsSinceEpoch;
-        final serverTimeNow = DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+        final serverTimeNow =
+            DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
         if (deadlineTime - serverTimeNow < 40000) {
           phase = 'betting';
         }
@@ -607,12 +640,16 @@ class TournamentProvider extends ChangeNotifier {
     } else if (serverPhase == 'result' && phase == 'spinning') {
       // Local spin plays until completeSpin is called
     } else if (serverPriority > currentPriority || serverPhase == 'betting') {
-      final spinId = data.latestSpin?.id ?? '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
+      final spinId =
+          data.latestSpin?.id ??
+          '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
       if (serverPhase == 'result' && _dismissedSpinId == spinId) {
         phase = currentSpin == 5 ? 'result' : 'betting';
       } else {
         phase = serverPhase;
-        if (serverPhase == 'result' && data.latestSpin != null && data.latestSpin!.roundId == data.activeRound?.id) {
+        if (serverPhase == 'result' &&
+            data.latestSpin != null &&
+            data.latestSpin!.roundId == data.activeRound?.id) {
           // Sync spin result
           _captureSpinResult(data.latestSpin!);
         }
@@ -622,18 +659,24 @@ class TournamentProvider extends ChangeNotifier {
     // Result popup visibility
     if (serverPhase == 'spinning') {
       if (phase != 'result') showResult = false;
-      if (data.latestSpin != null && data.latestSpin!.roundId == data.activeRound?.id) {
+      if (data.latestSpin != null &&
+          data.latestSpin!.roundId == data.activeRound?.id) {
         _captureSpinResult(data.latestSpin!);
       }
     } else if (serverPhase == 'result') {
-      final spinId = data.latestSpin?.id ?? '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
+      final spinId =
+          data.latestSpin?.id ??
+          '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
       if (spinId != _dismissedSpinId && phase != 'spinning') {
         showResult = true;
       }
     }
 
     // Capture spin results for late joiners or refreshes
-    if ((serverPhase == 'spinning' || serverPhase == 'result') && data.latestSpin != null && phase != 'result' && phase != 'spinning') {
+    if ((serverPhase == 'spinning' || serverPhase == 'result') &&
+        data.latestSpin != null &&
+        phase != 'result' &&
+        phase != 'spinning') {
       if (data.latestSpin!.roundId == data.activeRound?.id) {
         _captureSpinResult(data.latestSpin!);
       }
@@ -666,7 +709,10 @@ class TournamentProvider extends ChangeNotifier {
         final myResult = _findMyPlayerResult(spin.playerResults);
         if (myResult != null) {
           final double netChange = myResult.netChange;
-          final double totalWagered = myResult.betsPlaced.fold<double>(0.0, (sum, b) => sum + ((b is Map ? b['amount'] : b) ?? 0.0).toDouble());
+          final double totalWagered = myResult.betsPlaced.fold<double>(
+            0.0,
+            (sum, b) => sum + ((b is Map ? b['amount'] : b) ?? 0.0).toDouble(),
+          );
           lastPlayerPayout = {
             'netResult': netChange,
             'totalWagered': totalWagered,
@@ -687,11 +733,19 @@ class TournamentProvider extends ChangeNotifier {
       if (myId.isNotEmpty && pid == myId) {
         return pr;
       }
-      
+
       // Lookup in tournament players as fallback
       final tp = tournament?.players.firstWhere(
         (p) => p.playerId == pid,
-        orElse: () => TournamentPlayer(playerId: '', username: '', avatarUrl: '', isBot: false, startingChips: 0, currentChips: 0, status: ''),
+        orElse: () => TournamentPlayer(
+          playerId: '',
+          username: '',
+          avatarUrl: '',
+          isBot: false,
+          startingChips: 0,
+          currentChips: 0,
+          status: '',
+        ),
       );
       if (tp != null && !tp.isBot && tp.username == myUsername) {
         return pr;
@@ -702,7 +756,7 @@ class TournamentProvider extends ChangeNotifier {
 
   void _triggerSoundAnnouncements() {
     final spinKey = '$currentRound-$currentSpin';
-    
+
     // Clear and trigger place bets audio
     if (phase == 'betting') {
       if (_lastResetKey != spinKey) {
@@ -718,7 +772,8 @@ class TournamentProvider extends ChangeNotifier {
 
       if (!_announcedBettingSpins.contains(spinKey)) {
         _announcedBettingSpins.add(spinKey);
-        if (_announcedBettingSpins.length > 10) _announcedBettingSpins.removeAt(0);
+        if (_announcedBettingSpins.length > 10)
+          _announcedBettingSpins.removeAt(0);
 
         final bool isVeryStart = currentRound == 1 && currentSpin == 1;
         final bool isNewRound = currentRound > 1 && currentSpin == 1;
@@ -726,7 +781,9 @@ class TournamentProvider extends ChangeNotifier {
 
         Future.delayed(Duration(milliseconds: delay), () {
           final mePlayer = me;
-          if (phase == 'betting' && (mePlayer == null || mePlayer.status == 'active') && !isVeryStart) {
+          if (phase == 'betting' &&
+              (mePlayer == null || mePlayer.status == 'active') &&
+              !isVeryStart) {
             soundEngine.playPlaceBetsSound();
           }
         });
@@ -737,7 +794,8 @@ class TournamentProvider extends ChangeNotifier {
     final isEndOfRound = currentSpin == 5;
     if (phase == 'betting' || (phase == 'result' && !isEndOfRound)) {
       final leader = _findLeader(scores);
-      if (leader != null && leader['player_id'].toString() != _announcedLeaderId) {
+      if (leader != null &&
+          leader['player_id'].toString() != _announcedLeaderId) {
         if (_announcedLeaderId != null) {
           if (phase == 'betting') {
             Future.delayed(const Duration(milliseconds: 1800), () {
@@ -755,18 +813,25 @@ class TournamentProvider extends ChangeNotifier {
 
     // Elimination announcements
     if (eliminatedPlayer != null && phase == 'elimination') {
-      final expectedElimRound = currentRound == 5 ? (tournament?.status == 'completed' ? 5 : 4) : (currentRound - 1);
+      final expectedElimRound = currentRound == 5
+          ? (tournament?.status == 'completed' ? 5 : 4)
+          : (currentRound - 1);
       if (eliminatedPlayer!.eliminatedRound == expectedElimRound) {
         final elimId = eliminatedPlayer!.playerId;
         if (_announcedElimId != elimId) {
-          final int roundNumber = eliminatedPlayer!.eliminatedRound ?? (currentRound - 1);
-          final bool isMe = currentUserProfile != null &&
-              ((currentUserProfile!.id != null && elimId == currentUserProfile!.id) ||
-               (eliminatedPlayer!.username == currentUserProfile!.username && !eliminatedPlayer!.isBot));
+          final int roundNumber =
+              eliminatedPlayer!.eliminatedRound ?? (currentRound - 1);
+          final bool isMe =
+              currentUserProfile != null &&
+              ((currentUserProfile!.id != null &&
+                      elimId == currentUserProfile!.id) ||
+                  (eliminatedPlayer!.username == currentUserProfile!.username &&
+                      !eliminatedPlayer!.isBot));
 
           final leader = _findLeader(scores);
           String? newLeaderName;
-          if (leader != null && leader['player_id'].toString() != _announcedLeaderId) {
+          if (leader != null &&
+              leader['player_id'].toString() != _announcedLeaderId) {
             if (_announcedLeaderId != null) {
               newLeaderName = leader['username'];
             }
@@ -790,12 +855,14 @@ class TournamentProvider extends ChangeNotifier {
 
   void _updateScores(TournamentDetails data) {
     final players = List<TournamentPlayer>.from(data.tournament.players);
-    
+
     // Sort active players by chips desc, eliminated by rank position asc
     final active = players.where((p) => p.status == 'active').toList()
       ..sort((a, b) => b.currentChips.compareTo(a.currentChips));
     final eliminated = players.where((p) => p.status == 'eliminated').toList()
-      ..sort((a, b) => (a.finalPosition ?? 10).compareTo(b.finalPosition ?? 10));
+      ..sort(
+        (a, b) => (a.finalPosition ?? 10).compareTo(b.finalPosition ?? 10),
+      );
 
     final sortedList = [...active, ...eliminated];
 
@@ -804,23 +871,38 @@ class TournamentProvider extends ChangeNotifier {
       final p = entry.value;
 
       // Color based on original index in server players list
-      final originalIndex = data.tournament.players.indexWhere((tp) => tp.playerId == p.playerId);
-      final String color = playerColors[originalIndex >= 0 ? originalIndex % playerColors.length : index % playerColors.length];
+      final originalIndex = data.tournament.players.indexWhere(
+        (tp) => tp.playerId == p.playerId,
+      );
+      final String color =
+          playerColors[originalIndex >= 0
+              ? originalIndex % playerColors.length
+              : index % playerColors.length];
 
       // Current wagers
       double currentWager = 0.0;
-      final bool isMe = currentUserProfile != null &&
-          ((currentUserProfile!.id != null && p.playerId == currentUserProfile!.id) ||
-           (p.username == currentUserProfile!.username && !p.isBot));
+      final bool isMe =
+          currentUserProfile != null &&
+          ((currentUserProfile!.id != null &&
+                  p.playerId == currentUserProfile!.id) ||
+              (p.username == currentUserProfile!.username && !p.isBot));
 
       if (p.isBot) {
         currentWager = botBets
             .where((bb) => bb['player_id'] == p.playerId)
-            .fold<double>(0.0, (sum, bb) => sum + (bb['amount'] ?? 0.0).toDouble());
+            .fold<double>(
+              0.0,
+              (sum, bb) => sum + (bb['amount'] ?? 0.0).toDouble(),
+            );
       } else if (isMe) {
         currentWager = totalBet;
       } else {
-        currentWager = p.pendingBets?.fold<double>(0.0, (sum, b) => sum + ((b as Map)['amount'] ?? 0.0).toDouble()) ?? 0.0;
+        currentWager =
+            p.pendingBets?.fold<double>(
+              0.0,
+              (sum, b) => sum + ((b as Map)['amount'] ?? 0.0).toDouble(),
+            ) ??
+            0.0;
       }
 
       return {
@@ -842,7 +924,9 @@ class TournamentProvider extends ChangeNotifier {
 
     // Eliminated player tracker
     final elims = players.where((p) => p.status == 'eliminated').toList()
-      ..sort((a, b) => (b.eliminatedRound ?? 0).compareTo(a.eliminatedRound ?? 0));
+      ..sort(
+        (a, b) => (b.eliminatedRound ?? 0).compareTo(a.eliminatedRound ?? 0),
+      );
     if (elims.isNotEmpty) {
       eliminatedPlayer = elims.first;
     }
@@ -856,10 +940,12 @@ class TournamentProvider extends ChangeNotifier {
 
     for (var p in data.tournament.players) {
       if (p.isBot) continue;
-      
-      final bool isMe = currentUserProfile != null &&
-          ((currentUserProfile!.id != null && p.playerId == currentUserProfile!.id) ||
-           (p.username == currentUserProfile!.username && !p.isBot));
+
+      final bool isMe =
+          currentUserProfile != null &&
+          ((currentUserProfile!.id != null &&
+                  p.playerId == currentUserProfile!.id) ||
+              (p.username == currentUserProfile!.username && !p.isBot));
       if (isMe) continue;
 
       final serverBets = p.pendingBets;
@@ -881,7 +967,8 @@ class TournamentProvider extends ChangeNotifier {
       final newBets = currentKeys.where((k) => !seenSet.contains(k)).toList();
       final originalPlayers = data.tournament.players;
       final pIdx = originalPlayers.indexWhere((tp) => tp.playerId == pid);
-      final String playerColor = playerColors[pIdx >= 0 ? pIdx % playerColors.length : 0];
+      final String playerColor =
+          playerColors[pIdx >= 0 ? pIdx % playerColors.length : 0];
 
       for (var key in newBets) {
         seenSet.add(key);
@@ -901,7 +988,7 @@ class TournamentProvider extends ChangeNotifier {
 
   void _scheduleBotReveals(TournamentDetails data) {
     if (phase != 'betting' || data.activeRound?.botBets == null) return;
-    
+
     final spinKey = '$currentRound-$currentSpin';
     if (_generatedKey == spinKey) return;
     _generatedKey = spinKey;
@@ -915,7 +1002,15 @@ class TournamentProvider extends ChangeNotifier {
       if (spinNum != currentSpin) return false;
       final botPlayer = data.tournament.players.firstWhere(
         (p) => p.playerId.toString() == b['player_id'].toString(),
-        orElse: () => TournamentPlayer(playerId: '', username: '', avatarUrl: '', isBot: true, startingChips: 0, currentChips: 0, status: 'eliminated'),
+        orElse: () => TournamentPlayer(
+          playerId: '',
+          username: '',
+          avatarUrl: '',
+          isBot: true,
+          startingChips: 0,
+          currentChips: 0,
+          status: 'eliminated',
+        ),
       );
       return botPlayer.status == 'active' && botPlayer.currentChips > 0;
     }).toList();
@@ -948,7 +1043,10 @@ class TournamentProvider extends ChangeNotifier {
     playerBetMap.forEach((pid, map) {
       final List<dynamic> betsList = map['bets'];
       final double balance = map['balance'];
-      final double totalWager = betsList.fold(0.0, (sum, b) => sum + (b['amount'] ?? 0.0));
+      final double totalWager = betsList.fold(
+        0.0,
+        (sum, b) => sum + (b['amount'] ?? 0.0),
+      );
 
       if (totalWager <= balance) {
         spinBotBets.addAll(betsList.map((e) => Map<String, dynamic>.from(e)));
@@ -961,26 +1059,32 @@ class TournamentProvider extends ChangeNotifier {
           spinBotBets.add({
             ...Map<String, dynamic>.from(b),
             'amount': clamped,
-            'chips': [clamped]
+            'chips': [clamped],
           });
           remaining -= clamped;
         }
       }
     });
 
-    final int serverNow = DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+    final int serverNow =
+        DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
     final int startTime = _bettingDeadline - 45000;
     final int elapsed = math.max(0, serverNow - startTime);
 
     for (var bet in spinBotBets) {
       final int intendedDelay = bet['reveal_at_ms'] ?? 0;
       final int remainingDelay = math.max(0, intendedDelay - elapsed);
-      final int finalDelay = remainingDelay > 0 ? remainingDelay : (math.Random().nextDouble() * 1000).floor();
+      final int finalDelay = remainingDelay > 0
+          ? remainingDelay
+          : (math.Random().nextDouble() * 1000).floor();
 
       final timer = Timer(Duration(milliseconds: finalDelay), () {
         final String pid = bet['player_id'].toString();
-        final pIdx = data.tournament.players.indexWhere((tp) => tp.playerId.toString() == pid);
-        final String playerColor = playerColors[pIdx >= 0 ? pIdx % playerColors.length : 0];
+        final pIdx = data.tournament.players.indexWhere(
+          (tp) => tp.playerId.toString() == pid,
+        );
+        final String playerColor =
+            playerColors[pIdx >= 0 ? pIdx % playerColors.length : 0];
 
         // Add to botBets layout
         if (!botBets.any((b) => b['betId'] == bet['betId'])) {
@@ -991,7 +1095,7 @@ class TournamentProvider extends ChangeNotifier {
             'amount': bet['amount'],
             'chips': bet['chips'],
           });
-          
+
           _addEvent({
             'username': bet['username'],
             'amount': (bet['amount'] ?? 0.0).toDouble(),
@@ -1009,7 +1113,8 @@ class TournamentProvider extends ChangeNotifier {
   void _addEvent(Map<String, dynamic> event) {
     final newEvent = {
       ...event,
-      'id': '${event['betId']}-${DateTime.now().millisecondsSinceEpoch}-${math.Random().nextInt(100000)}',
+      'id':
+          '${event['betId']}-${DateTime.now().millisecondsSinceEpoch}-${math.Random().nextInt(100000)}',
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
     events.insert(0, newEvent);
@@ -1022,14 +1127,20 @@ class TournamentProvider extends ChangeNotifier {
     _countdownTimer?.cancel();
     if (_bettingDeadline <= 0) return;
 
-    _countdownTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      final int serverNow = DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
-      final int remaining = math.max(0, ((_bettingDeadline - serverNow) / 1000).ceil());
-      
+    _countdownTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
+      final int serverNow =
+          DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+      final int remaining = math.max(
+        0,
+        ((_bettingDeadline - serverNow) / 1000).ceil(),
+      );
+
       if (remaining != timeRemaining) {
         timeRemaining = remaining;
         notifyListeners();
-        
+
         // Auto lock at zero
         if (remaining == 0 && phase == 'betting') {
           final spinKey = '$currentRound-$currentSpin';
@@ -1059,7 +1170,8 @@ class TournamentProvider extends ChangeNotifier {
       final int referenceStart = tournament?.createdAt != null
           ? tournament!.createdAt.millisecondsSinceEpoch
           : fallbackStart;
-      final int nowMs = DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+      final int nowMs =
+          DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
       final int elapsed = ((nowMs - referenceStart) / 1000).floor();
       final int remaining = math.max(0, 30 - elapsed);
 
@@ -1084,13 +1196,16 @@ class TournamentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final formattedBets = currentBets.values.map((b) => {
-        'betId': b.betId,
-        'amount': b.amount,
-        'chips': b.chips,
-      }).toList();
+      final formattedBets = currentBets.values
+          .map((b) => {'betId': b.betId, 'amount': b.amount, 'chips': b.chips})
+          .toList();
 
-      final success = await _tournamentService.lockBets(tourneyId, me!.playerId, formattedBets, rId);
+      final success = await _tournamentService.lockBets(
+        tourneyId,
+        me!.playerId,
+        formattedBets,
+        rId,
+      );
       if (!success) {
         // Fallback
         phase = 'betting';
@@ -1109,11 +1224,16 @@ class TournamentProvider extends ChangeNotifier {
     showResult = true;
     _bettingDeadline = 0;
 
-    final myResult = _findMyPlayerResult(lastSpinResult?['player_results'] as List<PlayerResult>?);
+    final myResult = _findMyPlayerResult(
+      lastSpinResult?['player_results'] as List<PlayerResult>?,
+    );
     if (myResult != null) {
       final double netChange = myResult.netChange;
-      final double totalWagered = myResult.betsPlaced.fold<double>(0.0, (sum, b) => sum + ((b is Map ? b['amount'] : b) ?? 0.0).toDouble());
-      
+      final double totalWagered = myResult.betsPlaced.fold<double>(
+        0.0,
+        (sum, b) => sum + ((b is Map ? b['amount'] : b) ?? 0.0).toDouble(),
+      );
+
       lastPlayerPayout = {
         'netResult': netChange,
         'totalWagered': totalWagered,
@@ -1149,7 +1269,7 @@ class TournamentProvider extends ChangeNotifier {
   Future<void> declareWinner() async {
     final tourneyId = tournament?.id;
     if (tourneyId == null) return;
-    
+
     try {
       phase = 'completed';
       notifyListeners();

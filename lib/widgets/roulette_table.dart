@@ -49,10 +49,14 @@ class _RouletteTableState extends State<RouletteTable> {
             // Enforce landscape layout proportions. Leave vertical room below
             // the wheel for the AMERICAN/EUROPEAN toggle (~52px) so the wheel
             // column never overflows the felt.
-            final double wheelSize = (height * 0.82).clamp(200.0, 360.0);
-            // Large size for the centered spin overlay — sized to fit within the
-            // felt height so it stays centered without cutting at the bottom.
-            final double spinWheelSize = (height * 0.94).clamp(240.0, 520.0);
+            // Request nearly the full felt height; the FittedBox below caps it
+            // so it never overflows. The toggle is overlaid on the wheel's rim
+            // (not stacked below) so the wheel gets the whole height.
+            final double wheelSize = (height * 1.02).clamp(240.0, 480.0);
+            // Large size for the centered spin overlay. While spinning the table
+            // fills the whole screen (header/footer are hidden), so this sizes the
+            // wheel to the full screen height for a dramatic, centered spin.
+            final double spinWheelSize = (height * 1.05).clamp(300.0, 680.0);
 
             // The wheel widget — built once with a stable key so it can move
             // between the inline slot and the spin overlay without restarting.
@@ -71,8 +75,12 @@ class _RouletteTableState extends State<RouletteTable> {
             return Container(
               width: width,
               height: height,
-              padding: const EdgeInsets.all(3.0),
-              decoration: BoxDecoration(
+              // Edge-to-edge solid green with no frame while spinning, so the
+              // wheel fills the whole screen on a clean green backdrop.
+              padding: isSpinning ? EdgeInsets.zero : const EdgeInsets.all(3.0),
+              decoration: isSpinning
+                  ? const BoxDecoration(color: Color(0xFF0A2318))
+                  : BoxDecoration(
                 color: const Color(0xFF0A0A0A),
                 border: Border.all(color: const Color(0xFF050505), width: 3),
                 borderRadius: BorderRadius.circular(18),
@@ -138,8 +146,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                   : FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           SizedBox(
@@ -147,9 +154,10 @@ class _RouletteTableState extends State<RouletteTable> {
                                             height: wheelSize,
                                             child: wheelWidget,
                                           ),
-                                          // Wheel-variant toggle (solo, betting)
+                                          // Variant toggle sits below the wheel
+                                          // (compact) so it never overlaps it.
                                           if (!tournamentMode && canBet) ...[
-                                            const SizedBox(height: 10),
+                                            const SizedBox(height: 2),
                                             WheelTypeToggle(
                                               wheelType: provider.wheelType,
                                               onChanged: (t) {
@@ -352,14 +360,16 @@ class _RouletteTableState extends State<RouletteTable> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  // Control Buttons Row — kept tight against the
-                                  // felt's bottom edge to give the grid more room.
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 0,
-                                      bottom: 0,
-                                    ),
-                                    child: Row(
+                                  // Control Buttons Row — FittedBox(scaleDown) keeps
+                                  // the (variable) button set within the row width so
+                                  // the SPIN button never overflows on the right.
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerRight,
+                                      child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         // 2X Double and Delete Toggle (visible when bets are present)
@@ -429,6 +439,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                         ),
                                       ],
                                     ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -447,9 +458,8 @@ class _RouletteTableState extends State<RouletteTable> {
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Container(
-                          // Near-opaque green felt backdrop so the betting grid,
-                          // title and controls don't bleed through during the spin.
-                          color: const Color(0xFF06140E).withOpacity(0.94),
+                          // Solid green backdrop — nothing bleeds through.
+                          color: const Color(0xFF0A2318),
                           alignment: Alignment.center,
                           child: TweenAnimationBuilder<double>(
                             tween: Tween(begin: 0.65, end: 1.0),
@@ -906,13 +916,13 @@ class WheelTypeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.35),
         borderRadius: BorderRadius.circular(100),
         border: Border.all(
           color: const Color(0xFFC9A44C).withOpacity(0.4),
-          width: 1.2,
+          width: 1.0,
         ),
       ),
       child: Row(
@@ -931,7 +941,7 @@ class WheelTypeToggle extends StatelessWidget {
       onTap: () => onChanged(type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           gradient: active
               ? const LinearGradient(
@@ -957,9 +967,9 @@ class WheelTypeToggle extends StatelessWidget {
             color: active
                 ? const Color(0xFF06140E)
                 : const Color(0xFFC9A44C).withOpacity(0.7),
-            fontSize: 11,
+            fontSize: 9.5,
             fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
+            letterSpacing: 1.0,
           ),
         ),
       ),

@@ -16,6 +16,8 @@ import 'package:junko_bodie/screens/season_screen.dart';
 import 'package:junko_bodie/screens/tournament_list_screen.dart';
 import 'package:junko_bodie/screens/tournament_game_screen.dart';
 import 'package:junko_bodie/screens/session_history_screen.dart';
+import 'package:junko_bodie/screens/strategies_screen.dart';
+import 'package:junko_bodie/screens/strategy_builder_screen.dart';
 
 /// Creates the app router.
 ///
@@ -110,6 +112,19 @@ GoRouter buildRouter({
         path: '/session-history',
         name: 'session_history',
         builder: (context, state) => const SessionHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/strategies',
+        name: 'strategies',
+        builder: (context, state) => const StrategiesScreen(),
+      ),
+      GoRoute(
+        path: '/strategies/build',
+        name: 'strategies_build',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['id'];
+          return StrategyBuilderScreen(strategyId: id);
+        },
       ),
       GoRoute(
         path: '/season',

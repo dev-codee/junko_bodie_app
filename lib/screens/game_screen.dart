@@ -161,38 +161,41 @@ class _GameScreenState extends State<GameScreen> {
           backgroundColor: const Color(0xFF06140E),
           body: Stack(
             children: [
-              // Main Layout Structure
+              // Main Layout Structure. While spinning we hide the header, footer
+              // and player card and drop the felt padding, so the table (and its
+              // centered wheel) fills the entire screen.
               Column(
                 children: [
-                  // 1. Top Header Bar
-                  _buildHeader(provider),
+                  // 1. Top Header Bar (hidden during spin for the full-screen wheel)
+                  if (!isSpinning) _buildHeader(provider),
                   // 2. Main Gameplay Felt Table
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
-                      child: RouletteTable(
+                      padding: isSpinning
+                          ? EdgeInsets.zero
+                          : const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0.0),
+                      child: const RouletteTable(
+                        key: ValueKey('solo_roulette_table'),
                         tournamentMode: false,
                       ),
                     ),
                   ),
-                  // 3. Footer Bar
-                  _buildFooter(provider, isSpinning),
+                  // 3. Footer Bar (hidden during spin)
+                  if (!isSpinning) _buildFooter(provider, isSpinning),
                 ],
               ),
 
-              // 4. Floating Player Card (aligned bottom center, bridging footer & felt).
-              // Render unconditionally with a fallback identity so the card is always
-              // visible — mirrors the web app, which shows the card on lg+ screens
-              // regardless of profile-load state.
-              Positioned(
-                bottom: 2.0,
-                left: 0,
-                right: 0,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: _buildFloatingPlayerCard(),
+              // 4. Floating Player Card — hidden while spinning.
+              if (!isSpinning)
+                Positioned(
+                  bottom: 2.0,
+                  left: 0,
+                  right: 0,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _buildFloatingPlayerCard(),
+                  ),
                 ),
-              ),
 
               // 5. Result Display Blur Overlay
               ResultDisplay(

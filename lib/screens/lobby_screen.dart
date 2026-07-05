@@ -185,7 +185,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                           label: 'TOURNAMENT',
                                           description:
                                               'Test Yourself Against Other Top Players\nIn A Live Tournament Experience.',
-                                          onTap: () => context.push('/tournament'),
+                                          onTap: () => _comingSoon(context, 'Tournament'),
                                         )
                                             .animate()
                                             .fadeIn(duration: 600.ms, delay: 200.ms)
@@ -216,7 +216,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                     _QuickAction(
                                       icon: Icons.track_changes_rounded,
                                       label: 'STRATEGIES',
-                                      onTap: () => _comingSoon(context, 'Strategies'),
+                                      onTap: () => context.push('/strategies'),
                                     ),
                                     const SizedBox(width: 16),
                                     _QuickAction(

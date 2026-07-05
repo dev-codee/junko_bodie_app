@@ -12,7 +12,8 @@ class AppAudioLifecycleObserver extends WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _audioEngine.handleAppBackground();
     } else if (state == AppLifecycleState.resumed) {
       _audioEngine.handleAppForeground();
@@ -31,9 +32,11 @@ class AudioEngine {
 
   // Sound effects player pool
   static const int _sfxPoolSize = 6;
-  final List<AudioPlayer> _sfxPlayers = List.generate(_sfxPoolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _sfxPlayers = List.generate(
+    _sfxPoolSize,
+    (_) => AudioPlayer(),
+  );
   int _nextSfxIndex = 0;
-
   // Background music player
   final AudioPlayer _bgMusicPlayer = AudioPlayer();
 
@@ -61,11 +64,14 @@ class AudioEngine {
     'win': 'sounds/win.mp3',
     'loss': 'sounds/lose.mp3',
     'click': 'sounds/click.mp3',
-    'swoosh': 'sounds/dheerajakam4jor-swoosh-sound-effect-for-fight-scenes-or-transitions-1-149889.mp3',
-    'btnSpin': 'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
+    'swoosh':
+        'sounds/dheerajakam4jor-swoosh-sound-effect-for-fight-scenes-or-transitions-1-149889.mp3',
+    'btnSpin':
+        'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
     'btn2X': 'sounds/universfield-new-notification-026-380249.mp3',
     'lock': 'sounds/lock.mp3',
-    'thump': 'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
+    'thump':
+        'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
     'denied': 'sounds/denied.mp3',
     'placeBets': 'sounds/placeBets.mp3',
     'background': 'sounds/background.mp3',
@@ -122,7 +128,8 @@ class AudioEngine {
             final String name = (v['name'] ?? '').toString().toLowerCase();
             final String locale = (v['locale'] ?? '').toString().toLowerCase();
             final bool isEnglish = locale.startsWith('en');
-            final bool isFeminine = name.contains('female') ||
+            final bool isFeminine =
+                name.contains('female') ||
                 name.contains('samantha') ||
                 name.contains('victoria') ||
                 name.contains('hazel') ||
@@ -139,7 +146,7 @@ class AudioEngine {
         if (selectedVoice != null) {
           await flutterTts.setVoice({
             "name": selectedVoice["name"],
-            "locale": selectedVoice["locale"]
+            "locale": selectedVoice["locale"],
           });
         }
       }
@@ -155,8 +162,9 @@ class AudioEngine {
   }
 
   void playWheelTick() {
-    // Wheel tick is played with a slight speed randomization (pitch/rate)
-    _playSFX('chip', randomizeRate: true);
+    // Match the web exactly: the web's `tick` sound is never defined, so
+    // playWheelTick() is a no-op there. We keep it silent for parity (the
+    // spin loop from startSpinSound already provides the spinning audio).
   }
 
   // ── Advanced Betting Sounds ────────────────────────────────────────────────
@@ -362,7 +370,10 @@ class AudioEngine {
         await _playSFX('placeBets');
         delayMs = 1200;
       }
-      Future.delayed(Duration(milliseconds: delayMs), () => _processSpeechQueue());
+      Future.delayed(
+        Duration(milliseconds: delayMs),
+        () => _processSpeechQueue(),
+      );
     } else if (type == 'speak') {
       if (!_enabled || _blocked) {
         _isProcessingQueue = false;
@@ -403,7 +414,10 @@ class AudioEngine {
       }
 
       // 100ms breathing room before next queue item
-      Future.delayed(const Duration(milliseconds: 100), () => _processSpeechQueue());
+      Future.delayed(
+        const Duration(milliseconds: 100),
+        () => _processSpeechQueue(),
+      );
     }
   }
 
@@ -432,8 +446,13 @@ class AudioEngine {
     }
 
     final List<Map<String, String>> sequence = [];
-    final String elimText = isMe ? 'You have been eliminated.' : '$eliminatedName has been eliminated.';
-    sequence.add({'type': 'speak', 'value': 'End of Round $roundNumber. $elimText'});
+    final String elimText = isMe
+        ? 'You have been eliminated.'
+        : '$eliminatedName has been eliminated.';
+    sequence.add({
+      'type': 'speak',
+      'value': 'End of Round $roundNumber. $elimText',
+    });
 
     if (newLeaderName != null && newLeaderName.isNotEmpty) {
       sequence.add({'type': 'sound', 'value': 'chime'});
@@ -441,7 +460,10 @@ class AudioEngine {
     }
 
     if (!isMe) {
-      sequence.add({'type': 'speak', 'value': 'Starting Round $nextRoundNumber.'});
+      sequence.add({
+        'type': 'speak',
+        'value': 'Starting Round $nextRoundNumber.',
+      });
     }
 
     playTournamentCommentary(sequence);

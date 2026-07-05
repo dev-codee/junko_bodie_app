@@ -117,13 +117,22 @@ class GameProvider extends ChangeNotifier {
     }
   }
 
-  void _logSpinToSession(double betTotal, double netResult, double bankrollAfter) {
+  void _logSpinToSession(
+    double betTotal,
+    double netResult,
+    double bankrollAfter,
+  ) {
     final id = _sessionId;
     if (id == null) return;
     _sessionSpinCount++;
     unawaited(
       _sessionService
-          .logSpin(id, betTotal: betTotal, netResult: netResult, bankrollAfter: bankrollAfter)
+          .logSpin(
+            id,
+            betTotal: betTotal,
+            netResult: netResult,
+            bankrollAfter: bankrollAfter,
+          )
           .catchError((e) => debugPrint('GameProvider: logSpin failed: $e')),
     );
   }
@@ -185,11 +194,7 @@ class GameProvider extends ChangeNotifier {
     if (chips.isEmpty) {
       _bets.remove(betId);
     } else {
-      _bets[betId] = PlacedBet(
-        betId: betId,
-        amount: newAmount,
-        chips: chips,
-      );
+      _bets[betId] = PlacedBet(betId: betId, amount: newAmount, chips: chips);
     }
 
     if (_deleteMode && _bets.isEmpty) {
@@ -219,11 +224,7 @@ class GameProvider extends ChangeNotifier {
     if (chips.isEmpty) {
       _bets.remove(betId);
     } else {
-      _bets[betId] = PlacedBet(
-        betId: betId,
-        amount: newAmount,
-        chips: chips,
-      );
+      _bets[betId] = PlacedBet(betId: betId, amount: newAmount, chips: chips);
     }
 
     if (_deleteMode && _bets.isEmpty) {
@@ -300,11 +301,7 @@ class GameProvider extends ChangeNotifier {
     if (chips.isEmpty) {
       _bets.remove(betId);
     } else {
-      _bets[betId] = PlacedBet(
-        betId: betId,
-        amount: newAmount,
-        chips: chips,
-      );
+      _bets[betId] = PlacedBet(betId: betId, amount: newAmount, chips: chips);
     }
 
     soundEngine.playSwoosh();
@@ -331,20 +328,25 @@ class GameProvider extends ChangeNotifier {
   void rebet() {
     if (_phase != GamePhase.betting || _lastSpinBets.isEmpty) return;
 
-    final double lastTotal = _lastSpinBets.values.fold(0.0, (sum, b) => sum + b.amount);
+    final double lastTotal = _lastSpinBets.values.fold(
+      0.0,
+      (sum, b) => sum + b.amount,
+    );
     if (_balance < lastTotal) {
       triggerFundError('Insufficient funds to re-bet');
       return;
     }
 
-    _bets = Map.from(_lastSpinBets).map((key, value) => MapEntry(
-      key,
-      PlacedBet(
-        betId: value.betId,
-        amount: value.amount,
-        chips: List.from(value.chips),
+    _bets = Map.from(_lastSpinBets).map(
+      (key, value) => MapEntry(
+        key,
+        PlacedBet(
+          betId: value.betId,
+          amount: value.amount,
+          chips: List.from(value.chips),
+        ),
       ),
-    ));
+    );
 
     _betPlacementHistory.clear();
     _lastSpinBets.forEach((id, bet) {
@@ -386,14 +388,16 @@ class GameProvider extends ChangeNotifier {
   /// matching the web app — an empty-bet spin just yields a $0 payout).
   Future<SpinResult?> executeSpin() async {
     // Archive current bets for Rebet
-    _lastSpinBets = Map.from(_bets).map((key, value) => MapEntry(
-      key,
-      PlacedBet(
-        betId: value.betId,
-        amount: value.amount,
-        chips: List.from(value.chips),
+    _lastSpinBets = Map.from(_bets).map(
+      (key, value) => MapEntry(
+        key,
+        PlacedBet(
+          betId: value.betId,
+          amount: value.amount,
+          chips: List.from(value.chips),
+        ),
       ),
-    ));
+    );
 
     final double betTotal = totalBet;
     _balance -= betTotal;
@@ -412,9 +416,11 @@ class GameProvider extends ChangeNotifier {
       _userService
           .updateBalance(amount: betTotal, action: 'decrement')
           .catchError((e) {
-        debugPrint('GameProvider: Error decrementing balance on server: $e');
-        return _balance;
-      }),
+            debugPrint(
+              'GameProvider: Error decrementing balance on server: $e',
+            );
+            return _balance;
+          }),
     );
 
     return result;
@@ -439,9 +445,11 @@ class GameProvider extends ChangeNotifier {
         _userService
             .updateBalance(amount: payout.totalReturned, action: 'increment')
             .catchError((e) {
-          debugPrint('GameProvider: Error incrementing balance on server: $e');
-          return _balance;
-        }),
+              debugPrint(
+                'GameProvider: Error incrementing balance on server: $e',
+              );
+              return _balance;
+            }),
       );
     }
 
@@ -461,7 +469,8 @@ class GameProvider extends ChangeNotifier {
 
     _sessionStats['lastBet'] = spinBetTotal;
     _sessionStats['lastWin'] = winAmount;
-    _sessionStats['sessionWin'] = (_sessionStats['sessionWin'] ?? 0.0) + winAmount;
+    _sessionStats['sessionWin'] =
+        (_sessionStats['sessionWin'] ?? 0.0) + winAmount;
 
     // Add to history
     _history.insert(0, _currentResult!);
@@ -497,16 +506,20 @@ class GameProvider extends ChangeNotifier {
       final saved = prefs.getString('roulette_history');
       if (saved != null) {
         final List<dynamic> decoded = jsonDecode(saved);
-        _history = decoded.map((item) => SpinResult(
-          id: item['id'] ?? '',
-          number: item['number'] ?? 0,
-          displayNumber: item['displayNumber'] ?? '',
-          color: item['color'] ?? '',
-          parity: item['parity'] ?? '',
-          dozen: item['dozen'] ?? '',
-          column: item['column'] ?? '',
-          half: item['half'] ?? '',
-        )).toList();
+        _history = decoded
+            .map(
+              (item) => SpinResult(
+                id: item['id'] ?? '',
+                number: item['number'] ?? 0,
+                displayNumber: item['displayNumber'] ?? '',
+                color: item['color'] ?? '',
+                parity: item['parity'] ?? '',
+                dozen: item['dozen'] ?? '',
+                column: item['column'] ?? '',
+                half: item['half'] ?? '',
+              ),
+            )
+            .toList();
       }
     } catch (e) {
       debugPrint('GameProvider: Error loading history: $e');
@@ -516,16 +529,22 @@ class GameProvider extends ChangeNotifier {
   Future<void> _saveHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final encoded = jsonEncode(_history.map((item) => {
-        'id': item.id,
-        'number': item.number,
-        'displayNumber': item.displayNumber,
-        'color': item.color,
-        'parity': item.parity,
-        'dozen': item.dozen,
-        'column': item.column,
-        'half': item.half,
-      }).toList());
+      final encoded = jsonEncode(
+        _history
+            .map(
+              (item) => {
+                'id': item.id,
+                'number': item.number,
+                'displayNumber': item.displayNumber,
+                'color': item.color,
+                'parity': item.parity,
+                'dozen': item.dozen,
+                'column': item.column,
+                'half': item.half,
+              },
+            )
+            .toList(),
+      );
       await prefs.setString('roulette_history', encoded);
     } catch (e) {
       debugPrint('GameProvider: Error saving history: $e');

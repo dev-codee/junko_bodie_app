@@ -60,11 +60,24 @@ class _RouletteWheelState extends State<RouletteWheel> with SingleTickerProvider
     super.initState();
     _stopwatch = Stopwatch()..start();
 
-    // Initialize ball position if a spin result is already present
-    _initializeBallPosition();
-
     _ticker = createTicker(_onTick);
     _ticker.start();
+
+    // If this wheel is created already in the spinning state (e.g. the widget
+    // tree was rebuilt when we switched to the full-screen spin layout), kick
+    // off the spin here — otherwise only didUpdateWidget would trigger it and
+    // the wheel would sit stuck at the result.
+    if (widget.isSpinning && widget.spinResult != null) {
+      _ballRadius = BALL_ORBIT_START;
+      _ballSettled = false;
+      _lastTriggeredResultId = widget.spinResult!.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _triggerSpin(widget.spinResult!.number);
+      });
+    } else {
+      // Otherwise place the ball at the result (settled) or in idle orbit.
+      _initializeBallPosition();
+    }
   }
 
   void _initializeBallPosition() {
