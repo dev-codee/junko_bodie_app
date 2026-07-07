@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:junko_bodie/providers/tournament_provider.dart';
+import 'package:junko_bodie/models/tournament.dart';
 import 'package:junko_bodie/widgets/tournament_roulette_table.dart';
 import 'package:junko_bodie/widgets/tournament_scores_sidebar.dart';
 import 'package:junko_bodie/widgets/tournament_events_feed.dart';
@@ -33,6 +35,16 @@ class TournamentGameScreen extends StatefulWidget {
 class _TournamentGameScreenState extends State<TournamentGameScreen> {
   bool _showResult = false;
   bool _showWinCelebration = false;
+
+  // Round-transition overlays (mirror the web's "Match Found" + "Round N
+  // Starting" full-screen moments shown at each round boundary).
+  int _lastRound = 1;
+  bool _matchStartShown = false;
+  bool _showMatchStart = false;
+  bool _showRoundStart = false;
+  int _roundStartNumber = 1;
+  Timer? _matchStartTimer;
+  Timer? _roundStartTimer;
 
   @override
   void initState() {
@@ -68,6 +80,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     // Restore default system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
     
+    _matchStartTimer?.cancel();
+    _roundStartTimer?.cancel();
+
     // Stop polling
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<TournamentProvider>(context, listen: false);
@@ -111,6 +126,12 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             _showResultPopup(provider);
           });
         }
+
+        // Detect round boundaries to show the match-found / round-starting
+        // transition overlays (mirrors the web tournament flow).
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _maybeTriggerRoundOverlays(provider);
+        });
 
         // Handle loading
         if (provider.isLoading && provider.tournament == null) {
@@ -168,7 +189,12 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
         // Identify if me is eliminated
         final isMeEliminated = mePlayer != null && mePlayer.status == 'eliminated';
-        final showElimOverlay = isMeEliminated && (provider.phase == 'elimination' || provider.tournament?.status == 'completed');
+        // Show the elimination screen persistently once I'm out (not just during
+        // the transient 'elimination' phase) so a mid-tournament elimination
+        // doesn't flash and drop me back onto the board — matching the web,
+        // where an eliminated player stays on their result screen until they
+        // return to the lobby.
+        final showElimOverlay = isMeEliminated;
 
         // Identify if tournament completed
         final isCompleted = provider.phase == 'completed' || provider.tournament?.status == 'completed';
@@ -188,10 +214,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        // Right column ~28% of the width (clamped), like the web
-                        // sidebar. The felt table takes the rest.
+                        // Right column ~20% of the width (clamped), like the web
+                        // sidebar. Kept slim so the felt table (and its number
+                        // grid) gets the dominant share of the width.
                         final double sidebarWidth =
-                            (constraints.maxWidth * 0.28).clamp(220.0, 340.0);
+                            (constraints.maxWidth * 0.20).clamp(180.0, 250.0);
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -199,7 +226,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                             const Expanded(
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
-                                    horizontal: 6.0, vertical: 6.0),
+                                    horizontal: 2.0, vertical: 6.0),
                                 child: TournamentRouletteTable(),
                               ),
                             ),
@@ -217,7 +244,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                                     ),
                                   ),
                                   Expanded(
-                                    flex: 2,
+                                    flex: 3,
                                     child: TournamentEventsFeed(
                                       events: provider.events,
                                     ),
@@ -231,14 +258,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                     ),
                   ),
 
-                  // 3. Bottom ChipTray
-                  ChipTray(
-                    selectedChip: provider.selectedChip,
-                    onSelectChip: provider.selectChip,
-                    balance: balance,
-                    totalBet: totalBet,
-                    disabled: !canBet,
-                  ),
+                  // 3. Bottom footer — chip tray (left), player card (center),
+                  //    betting controls (right). Mirrors the web tournament bar.
+                  _buildFooter(provider, canBet, balance, totalBet, mePlayer),
                 ],
               ),
 
@@ -279,6 +301,12 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
               // 8. Funds Error Toast display
               if (provider.fundError != null)
                 _buildToast(provider),
+
+              // 9. Round-transition overlays (top-most)
+              if (_showMatchStart)
+                _buildMatchFoundOverlay(provider),
+              if (_showRoundStart)
+                _buildRoundStartOverlay(provider),
             ],
           ),
         );
@@ -291,7 +319,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
       height: 48,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF0F3220), Color(0xFF07140E)],
+          colors: [Color(0xFF4A2F1F), Color(0xFF26170F)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -391,6 +419,467 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Footer bar ─────────────────────────────────────────────────────────
+  // Web-style layout: chip tray on the left, player card centered, betting
+  // controls + total-bet / balance pills on the right.
+  Widget _buildFooter(
+    TournamentProvider provider,
+    bool canBet,
+    double balance,
+    double totalBet,
+    TournamentPlayer? mePlayer,
+  ) {
+    final bool hasBets = provider.bets.isNotEmpty;
+    final bool canRebet = canBet && provider.lastSpinBets.isNotEmpty;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A2F1F), Color(0xFF26170F)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: Border(
+          top: BorderSide(color: Color(0xFFC9A44C), width: 1.5),
+        ),
+        boxShadow: [
+          BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, -3)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 3, 12, 3),
+      child: Row(
+        children: [
+          // Left: chip tray
+          Expanded(
+            child: ChipTray(
+              selectedChip: provider.selectedChip,
+              onSelectChip: provider.selectChip,
+              balance: balance,
+              totalBet: totalBet,
+              disabled: !canBet,
+              chipSize: 30,
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Center: player card
+          _buildPlayerCard(mePlayer, balance),
+          const SizedBox(width: 8),
+
+          // Right: total bet, controls, balance
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _footerPill('TOTAL BET', '\$${totalBet.toStringAsFixed(0)}'),
+                    const SizedBox(width: 8),
+                    _footerButton('REBET', canRebet, provider.rebet),
+                    const SizedBox(width: 6),
+                    _footerButton('UNDO', canBet && hasBets, provider.undo),
+                    const SizedBox(width: 6),
+                    _footerButton('CLEAR', canBet && hasBets, provider.clearBets),
+                    const SizedBox(width: 6),
+                    _footerButton('2X', canBet && hasBets, provider.doubleAllBets),
+                    const SizedBox(width: 6),
+                    _footerDeleteButton(canBet, provider.deleteMode, provider.toggleDeleteMode),
+                    const SizedBox(width: 8),
+                    _footerPill('BALANCE', '\$${balance.toStringAsFixed(0)}'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _footerPill(String label, String value) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC9A44C).withOpacity(0.1),
+        border: Border.all(color: const Color(0xFFC9A44C).withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 7.5,
+              letterSpacing: 0.6,
+              color: Color(0xFFC9A44C),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _footerButton(String label, bool enabled, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        height: 38,
+        constraints: const BoxConstraints(minWidth: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          gradient: enabled
+              ? const LinearGradient(
+                  colors: [Color(0xFF3A4A3E), Color(0xFF2A3A2E)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : null,
+          color: enabled ? null : const Color(0x33141414),
+          border: Border.all(
+            color: enabled ? const Color(0xFFC9A44C) : Colors.white10,
+            width: 1.6,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: enabled ? Colors.white : Colors.white24,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Delete-mode toggle (✕). Turns red while active; tapping a placed bet on the
+  // felt then removes that zone's chips.
+  Widget _footerDeleteButton(bool enabled, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        height: 38,
+        width: 38,
+        decoration: BoxDecoration(
+          gradient: !enabled
+              ? null
+              : active
+                  ? const LinearGradient(
+                      colors: [Color(0xFF3A1515), Color(0xFF2A0808)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFF2A3A2E), Color(0xFF1A2A1E)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+          color: enabled ? null : const Color(0x33141414),
+          border: Border.all(
+            color: !enabled
+                ? Colors.white10
+                : active
+                    ? const Color(0xFFF87171)
+                    : const Color(0xFFC9A44C),
+            width: 1.6,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.close,
+          size: 16,
+          color: !enabled
+              ? Colors.white24
+              : active
+                  ? const Color(0xFFF87171)
+                  : const Color(0xFFE4E0D4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerCard(TournamentPlayer? mePlayer, double balance) {
+    final String name = mePlayer?.username ?? 'Player';
+    final String avatar = mePlayer?.avatarUrl ?? '';
+    final bool isNetwork = avatar.startsWith('http') || avatar.startsWith('/');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5C3B27), Color(0xFF3D271A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFFC9A44C).withOpacity(0.5), width: 1.5),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.08),
+              border: Border.all(color: const Color(0xFFC9A44C), width: 1.5),
+            ),
+            child: ClipOval(
+              child: isNetwork
+                  ? Image.network(
+                      avatar,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.person, color: Color(0xFFC9A44C), size: 18),
+                    )
+                  : const Icon(Icons.person, color: Color(0xFFC9A44C), size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                'TOURNAMENT PRO',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFC9A44C),
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Round-transition overlays ─────────────────────────────────────────────
+  int _activePlayerCount(TournamentProvider provider) {
+    final players = provider.tournament?.players;
+    if (players == null) return 0;
+    return players.where((p) => p.status == 'active').length;
+  }
+
+  void _maybeTriggerRoundOverlays(TournamentProvider provider) {
+    if (provider.tournament?.status != 'active') return;
+
+    // Match Found — shown once at the very start (round 1, spin 1).
+    if (!_matchStartShown &&
+        provider.currentRound == 1 &&
+        provider.currentSpin == 1) {
+      _matchStartShown = true;
+      _lastRound = 1;
+      soundEngine.announceMatchFound();
+      setState(() => _showMatchStart = true);
+      _matchStartTimer?.cancel();
+      _matchStartTimer = Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) setState(() => _showMatchStart = false);
+      });
+      return;
+    }
+
+    // Round Starting — shown when a new round begins (rounds 2..5).
+    if (provider.phase == 'betting' &&
+        provider.currentRound > 1 &&
+        provider.currentSpin == 1 &&
+        _lastRound != provider.currentRound) {
+      _lastRound = provider.currentRound;
+      setState(() {
+        _showRoundStart = true;
+        _roundStartNumber = provider.currentRound;
+      });
+      _roundStartTimer?.cancel();
+      _roundStartTimer = Timer(const Duration(milliseconds: 3000), () {
+        if (mounted) setState(() => _showRoundStart = false);
+      });
+    }
+  }
+
+  Widget _buildMatchFoundOverlay(TournamentProvider provider) {
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.9,
+            colors: [Color(0xFF247A5E), Color(0xFF0A1E14)],
+          ),
+        ),
+        alignment: Alignment.center,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.6, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'MATCHMAKING COMPLETE',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFC9A44C),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'MATCH FOUND!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 52,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: -1,
+                  shadows: [
+                    Shadow(color: Color(0x99C9A44C), blurRadius: 40),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                height: 2,
+                width: 220,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Color(0xFFC9A44C), Colors.transparent],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'ROUND 1 STARTING',
+                style: GoogleFonts.inter(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoundStartOverlay(TournamentProvider provider) {
+    final int remaining = _activePlayerCount(provider);
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.9,
+            colors: [Color(0xF20D2A20), Color(0xFA050D0A)],
+          ),
+        ),
+        alignment: Alignment.center,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.7, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'TOURNAMENT PROGRESS',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFC9A44C),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'ROUND $_roundStartNumber',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 60,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: -1,
+                  shadows: [
+                    Shadow(color: Color(0x99C9A44C), blurRadius: 40),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 3,
+                width: 240,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Color(0xFFC9A44C), Colors.transparent],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'ACTIVE & PREPARED',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF4ADE80),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$remaining Players Remaining',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

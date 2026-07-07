@@ -10,6 +10,7 @@ class ChipTray extends StatelessWidget {
   final double balance;
   final double totalBet;
   final bool disabled;
+  final double chipSize;
 
   const ChipTray({
     super.key,
@@ -18,6 +19,7 @@ class ChipTray extends StatelessWidget {
     required this.balance,
     required this.totalBet,
     this.disabled = false,
+    this.chipSize = 38,
   });
 
   @override
@@ -46,7 +48,7 @@ class ChipTray extends StatelessWidget {
                   textColor: denom.textColor,
                   label: denom.label, // Show "$1", "$2", … like the web app
                   isSelected: isSelected,
-                  size: 38, // a little larger; the tray scrolls if they overflow
+                  size: chipSize,
                   onClick: () {
                     if (!disabled) {
                       soundEngine.playThump();

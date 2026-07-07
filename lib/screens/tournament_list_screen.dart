@@ -298,29 +298,84 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   }
 
   Widget _buildLobbyContent() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 40),
-          _topLabelRow(),
-          const SizedBox(height: 6),
-          _title(),
-          const SizedBox(height: 8),
-          _diamondSeparator(),
-          const SizedBox(height: 10),
-          _subtitle(),
-          const SizedBox(height: 22),
-          _wheelToggle(),
-          const SizedBox(height: 22),
-          _enterButton(),
-          const SizedBox(height: 28),
-          _statsRow(),
-          const SizedBox(height: 16),
-          _champCard(),
-        ],
-      ),
+    // On wide/short (landscape) screens use a two-column layout — hero on the
+    // left, championship info on the right — so the content fills the card
+    // instead of shrinking into a small centered block. Tall/narrow screens get
+    // the single column. Either way a FittedBox guards against overflow.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxW =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 600;
+        // Two-column (landscape) whenever the card is comfortably wide. Based on
+        // width only — the available height can be reported loosely here, and a
+        // height check was wrongly falling back to the small single column.
+        final bool wide = maxW > 720;
+
+        final Widget body = wide
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left: hero + wheel select + enter button
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _topLabelRow(),
+                            const SizedBox(height: 10),
+                            _title(),
+                            const SizedBox(height: 12),
+                            _diamondSeparator(),
+                            const SizedBox(height: 14),
+                            _subtitle(),
+                            const SizedBox(height: 26),
+                            _wheelToggle(),
+                            const SizedBox(height: 22),
+                            _enterButton(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      // Right: championship points card
+                      Expanded(child: _champCard()),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _statsRow(),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  _topLabelRow(),
+                  const SizedBox(height: 6),
+                  _title(),
+                  const SizedBox(height: 8),
+                  _diamondSeparator(),
+                  const SizedBox(height: 10),
+                  _subtitle(),
+                  const SizedBox(height: 18),
+                  _wheelToggle(),
+                  const SizedBox(height: 18),
+                  _enterButton(),
+                  const SizedBox(height: 22),
+                  _statsRow(),
+                  const SizedBox(height: 14),
+                  _champCard(),
+                  const SizedBox(height: 6),
+                ],
+              );
+
+        return Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(width: maxW, child: body),
+          ),
+        );
+      },
     );
   }
 
@@ -798,97 +853,111 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     int count,
     List<TournamentPlayer> players,
   ) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Top eyebrow
-          Text(
-            'TOURNAMENT MATCHMAKING',
-            style: TextStyle(
-              color: _kGoldDark,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 5.6,
-              fontFamily: 'Arial',
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Big title
-          const Text(
-            'Searching for Players...',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Georgia',
-              color: Color(0xFF051410),
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              height: 1.1,
-              fontFeatures: [FontFeature.enable('smcp')],
-              shadows: [Shadow(color: Color(0x1A000000), blurRadius: 2, offset: Offset(0, 1))],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Subtitle with live countdown
-          Text.rich(
-            TextSpan(
-              style: const TextStyle(
-                fontFamily: 'Georgia',
-                color: Color(0xFF3A3028),
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-              children: [
-                const TextSpan(text: 'Match begins automatically in '),
-                TextSpan(
-                  text: '${provider.lobbyTimeRemaining}s',
-                  style: const TextStyle(
-                    color: _kGold,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-          // 3x2 player slots grid
-          LayoutBuilder(
-            builder: (context, c) {
-              const double gap = 16;
-              final double cellW = (c.maxWidth - gap * 2) / 3;
-              return Column(
+    // Scale the whole briefing block down to fit the card height so all six
+    // player slots + the matched pill are visible at once (no scrolling) on
+    // short landscape screens, while staying full-size on taller layouts.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 700;
+        return Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: w,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (int row = 0; row < 2; row++) ...[
-                    Row(
+                  // Top eyebrow
+                  Text(
+                    'TOURNAMENT MATCHMAKING',
+                    style: TextStyle(
+                      color: _kGoldDark,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 5.6,
+                      fontFamily: 'Arial',
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Big title
+                  const Text(
+                    'Searching for Players...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Georgia',
+                      color: Color(0xFF051410),
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                      fontFeatures: [FontFeature.enable('smcp')],
+                      shadows: [Shadow(color: Color(0x1A000000), blurRadius: 2, offset: Offset(0, 1))],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Subtitle with live countdown
+                  Text.rich(
+                    TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        color: Color(0xFF3A3028),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
                       children: [
-                        for (int col = 0; col < 3; col++) ...[
-                          SizedBox(
-                            width: cellW,
-                            child: () {
-                              final int i = row * 3 + col;
-                              if (i < count) {
-                                return _briefingSlotFilled(players[i]);
-                              }
-                              return _briefingSlotEmpty();
-                            }(),
+                        const TextSpan(text: 'Match begins automatically in '),
+                        TextSpan(
+                          text: '${provider.lobbyTimeRemaining}s',
+                          style: const TextStyle(
+                            color: _kGold,
+                            fontWeight: FontWeight.w800,
                           ),
-                          if (col < 2) const SizedBox(width: gap),
-                        ],
+                        ),
                       ],
                     ),
-                    if (row == 0) const SizedBox(height: gap),
-                  ],
+                  ),
+                  const SizedBox(height: 22),
+                  // 3x2 player slots grid
+                  Builder(
+                    builder: (context) {
+                      const double gap = 16;
+                      final double cellW = (w - gap * 2) / 3;
+                      return Column(
+                        children: [
+                          for (int row = 0; row < 2; row++) ...[
+                            Row(
+                              children: [
+                                for (int col = 0; col < 3; col++) ...[
+                                  SizedBox(
+                                    width: cellW,
+                                    child: () {
+                                      final int i = row * 3 + col;
+                                      if (i < count) {
+                                        return _briefingSlotFilled(players[i]);
+                                      }
+                                      return _briefingSlotEmpty();
+                                    }(),
+                                  ),
+                                  if (col < 2) const SizedBox(width: gap),
+                                ],
+                              ],
+                            ),
+                            if (row == 0) const SizedBox(height: gap),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 22),
+                  // Matched pill
+                  _matchedPill(count),
                 ],
-              );
-            },
+              ),
+            ),
           ),
-          const SizedBox(height: 28),
-          // Matched pill
-          _matchedPill(count),
-        ],
-      ),
+        );
+      },
     );
   }
 

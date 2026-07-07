@@ -165,10 +165,38 @@ class TournamentProvider extends ChangeNotifier {
 
     _betPlacementHistory.add({'betId': betId, 'amount': selectedChip});
     fundError = null;
+
+    // Surface my own bet in the live feed (mirrors the web's handlePlaceBet,
+    // which pushes an event so the player sees their own bets in the feed too).
+    _addEvent({
+      'username': mePlayer.username,
+      'amount': selectedChip,
+      'betId': betId,
+      'betZone': betId,
+      'color': _myColor(),
+    });
+
     notifyListeners();
 
     // Sync intermediate bets with the server
     _syncBetsDebounced();
+  }
+
+  /// The current player's assigned feed/marker color, looked up from the live
+  /// scores (falls back to gold). Mirrors the web's `myColor`.
+  String _myColor() {
+    final String? myId = me?.playerId;
+    final String? myUsername = me?.username;
+    for (final s in scores) {
+      if (s is! Map) continue;
+      final bool isMe =
+          (myId != null && s['player_id']?.toString() == myId) ||
+          (myUsername != null &&
+              s['username'] == myUsername &&
+              s['is_bot'] != true);
+      if (isMe) return (s['color'] ?? '#c9a44c').toString();
+    }
+    return '#c9a44c';
   }
 
   void removeBet(String betId) {
@@ -195,6 +223,27 @@ class TournamentProvider extends ChangeNotifier {
     if (phase != 'betting' && phase != 'waiting') return;
     bets.clear();
     _betPlacementHistory.clear();
+    deleteMode = false;
+    notifyListeners();
+    _syncBetsDebounced();
+  }
+
+  /// Toggle delete mode — while active, tapping a bet zone removes its bet.
+  void toggleDeleteMode() {
+    if (phase != 'betting' && phase != 'waiting') return;
+    deleteMode = !deleteMode;
+    soundEngine.playSwoosh();
+    notifyListeners();
+  }
+
+  /// Remove all chips from a single bet zone (used by delete mode).
+  void clearZone(String betId) {
+    if (phase != 'betting' && phase != 'waiting') return;
+    if (!bets.containsKey(betId)) return;
+    bets.remove(betId);
+    _betPlacementHistory.removeWhere((e) => e['betId'] == betId);
+    if (bets.isEmpty) deleteMode = false;
+    soundEngine.playSwoosh();
     notifyListeners();
     _syncBetsDebounced();
   }
@@ -244,6 +293,7 @@ class TournamentProvider extends ChangeNotifier {
       return;
     }
 
+    final String myColor = _myColor();
     final newBets = <String, PlacedBet>{};
     bets.forEach((betId, existing) {
       newBets[betId] = PlacedBet(
@@ -251,6 +301,14 @@ class TournamentProvider extends ChangeNotifier {
         amount: existing.amount * 2,
         chips: [...existing.chips, ...existing.chips],
       );
+      // Broadcast the added amount to the live feed (mirrors the web).
+      _addEvent({
+        'username': mePlayer.username,
+        'amount': existing.amount,
+        'betId': betId,
+        'betZone': betId,
+        'color': myColor,
+      });
     });
     bets = newBets;
     fundError = null;
@@ -281,6 +339,19 @@ class TournamentProvider extends ChangeNotifier {
     bets = Map<String, PlacedBet>.from(lastSpinBets);
     fundError = null;
     soundEngine.playRebetSound();
+
+    // Broadcast each rebet zone to the live feed (mirrors the web).
+    final String myColor = _myColor();
+    bets.forEach((betId, bet) {
+      _addEvent({
+        'username': mePlayer.username,
+        'amount': bet.amount,
+        'betId': betId,
+        'betZone': betId,
+        'color': myColor,
+      });
+    });
+
     notifyListeners();
     _syncBetsDebounced();
   }
@@ -692,7 +763,10 @@ class TournamentProvider extends ChangeNotifier {
     if (lastSpinResult == null || lastSpinResult['id'] != newSpinId) {
       lastSpinResult = {
         'id': newSpinId,
-        'number': spin.result,
+        // spin.result is a SpinResult object; consumers read ['number'] as an
+        // int (e.g. RNG.getDisplayNumber). Store the winning number, not the
+        // whole object, or the int cast throws at build time.
+        'number': spin.result.number,
         'spin_number': spin.spinNumber,
         'round_id': spin.roundId,
         'player_results': spin.playerResults,

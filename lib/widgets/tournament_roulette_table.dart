@@ -20,8 +20,6 @@ class TournamentRouletteTable extends StatelessWidget {
         final bool isSpinning = provider.phase == 'spinning';
         final bool isResult = provider.phase == 'result';
 
-        final bool hasBets = provider.bets.isNotEmpty;
-
         // Build combined bets map for visual display (my bets + bot bets)
         final mergedBets = <String, PlacedBet>{};
         
@@ -73,10 +71,17 @@ class TournamentRouletteTable extends StatelessWidget {
             final double height = constraints.maxHeight;
             final double width = constraints.maxWidth;
 
-            // Keep the wheel compact so the betting layout stays dominant
-            // (matches the web felt, where the number grid is wider than the
-            // wheel). Otherwise a large wheel crushes the grid on phones.
+            // Size the wheel off the felt height like the web reference, but cap
+            // it so the number grid keeps the dominant share of the width (the
+            // sidebar already claims part of the screen). A smaller wheel cap
+            // lets the betting grid breathe instead of getting compressed.
             final double wheelSize = (height * 0.82).clamp(150.0, 240.0);
+            // Compact the betting grid (smaller ovals + spacers) whenever the
+            // space left for it beside the wheel is tight, so cells shrink to
+            // fit instead of overlapping and overflowing — the exact purpose of
+            // BettingLayout.isCompact. Full-size ovals are ~44px fixed, so the
+            // grid needs a wide felt to avoid overlap; below that, go compact.
+            final bool useCompact = (width - wheelSize) < 700.0;
 
             // Wheel Type mapping
             final wheelTypeEnum = provider.wheelType == 'american'
@@ -102,11 +107,11 @@ class TournamentRouletteTable extends StatelessWidget {
             return Container(
               width: width,
               height: height,
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(3.0),
               decoration: BoxDecoration(
                 color: const Color(0xFF0A0A0A),
-                border: Border.all(color: const Color(0xFF050505), width: 6),
-                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFF050505), width: 3),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.white.withOpacity(0.04),
@@ -139,7 +144,7 @@ class TournamentRouletteTable extends StatelessWidget {
                   // Green Felt Area
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.all(4.0),
+                      padding: const EdgeInsets.all(2.0),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: const RadialGradient(
@@ -149,7 +154,7 @@ class TournamentRouletteTable extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+                        padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 4.0),
                         child: Row(
                           children: [
                             // 1. Wheel Section (Left)
@@ -169,7 +174,7 @@ class TournamentRouletteTable extends StatelessWidget {
                                 tournamentMode: true,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
 
                             // 2. Felt Betting Section (Right)
                             Expanded(
@@ -187,7 +192,7 @@ class TournamentRouletteTable extends StatelessWidget {
                                               colors: [Color(0xFFF5EDD5), Color(0xFFC9A44C)],
                                             ).createShader(bounds),
                                             child: const Text(
-                                              'ROULETTE TOURNAMENT',
+                                              'JUNKO BODIE ROULETTE',
                                               style: TextStyle(
                                                 fontFamily: 'Georgia',
                                                 fontSize: 14,
@@ -233,8 +238,10 @@ class TournamentRouletteTable extends StatelessWidget {
                                                 showWinHighlight: isResult,
                                                 phase: provider.phase,
                                                 deleteMode: provider.deleteMode,
+                                                onClearZone: provider.clearZone,
                                                 wheelType: wheelTypeEnum,
                                                 myBets: provider.bets,
+                                                isCompact: useCompact,
                                               ),
                                             ),
                                           ),
@@ -296,75 +303,11 @@ class TournamentRouletteTable extends StatelessWidget {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-
-                                  // Action Controls
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      if (canBet && hasBets) ...[
-                                        _CasinoButton(
-                                          label: '2X',
-                                          onTap: provider.doubleAllBets,
-                                          enabled: canBet,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _CasinoButton(
-                                          label: 'UNDO',
-                                          onTap: provider.undo,
-                                          enabled: canBet,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _CasinoButton(
-                                          label: 'CLEAR',
-                                          onTap: provider.clearBets,
-                                          enabled: canBet,
-                                        ),
-                                        const SizedBox(width: 12),
-                                      ],
-                                      if (canBet && !hasBets && provider.lastSpinBets.isNotEmpty) ...[
-                                        _CasinoButton(
-                                          label: 'REBET',
-                                          onTap: provider.rebet,
-                                          enabled: canBet,
-                                        ),
-                                        const SizedBox(width: 12),
-                                      ],
-
-                                      // Submit/Lock Button
-                                      GestureDetector(
-                                        onTap: () {
-                                          if (canBet && hasBets) {
-                                            provider.submitBets(provider.bets);
-                                          }
-                                        },
-                                        child: Container(
-                                          height: 30,
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                                          decoration: BoxDecoration(
-                                            gradient: canBet && hasBets
-                                                ? const LinearGradient(colors: [Color(0xFFE5C060), Color(0xFFC9A44C)])
-                                                : const LinearGradient(colors: [Color(0xFF1E3A2F), Color(0xFF10261E)]),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: canBet && hasBets ? const Color(0xFFC9A44C) : Colors.white10,
-                                              width: 1,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            'LOCK BETS',
-                                            style: TextStyle(
-                                              color: canBet && hasBets ? const Color(0xFF07140E) : Colors.white24,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 1.0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  // Betting controls (Rebet/Undo/Clear/2X) now
+                                  // live in the tournament footer bar, matching
+                                  // the web layout. The felt no longer carries a
+                                  // LOCK BETS button — bets auto-submit when the
+                                  // betting timer reaches zero.
                                 ],
                               ),
                             ),
@@ -379,47 +322,6 @@ class TournamentRouletteTable extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _CasinoButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  const _CasinoButton({
-    required this.label,
-    required this.onTap,
-    required this.enabled,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: enabled ? const Color(0xFF163C30) : const Color(0xFF0F2B22),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: enabled ? const Color(0x60C9A44C) : Colors.white10,
-            width: 1,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            color: enabled ? const Color(0xFFC9A44C) : Colors.white10,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
     );
   }
 }

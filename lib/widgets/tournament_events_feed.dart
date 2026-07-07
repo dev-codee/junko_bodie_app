@@ -35,7 +35,7 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Color(0x20C9A44C), width: 1),
@@ -94,7 +94,11 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
       return Container(
         width: double.infinity,
         decoration: const BoxDecoration(
-          color: Color(0x7F07140E),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xCC163C30), Color(0xE60C2319)],
+          ),
           border: Border(
             left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
             top: BorderSide(color: Color(0x30C9A44C), width: 1.5),
@@ -119,7 +123,11 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0x7F07140E),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xCC163C30), Color(0xE60C2319)],
+        ),
         border: Border(
           left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
           top: BorderSide(color: Color(0x30C9A44C), width: 1.5),
@@ -157,7 +165,7 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
                   decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.white10, width: 0.5)),
                   ),
@@ -165,8 +173,8 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
                     children: [
                       // User color circle indicator
                       Container(
-                        width: 6,
-                        height: 6,
+                        width: 5,
+                        height: 5,
                         decoration: BoxDecoration(
                           color: pColor,
                           shape: BoxShape.circle,
@@ -177,8 +185,10 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
                       // Text info
                       Expanded(
                         child: RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           text: TextSpan(
-                            style: const TextStyle(fontSize: 10, color: Colors.white),
+                            style: const TextStyle(fontSize: 9, color: Colors.white, height: 1.1),
                             children: [
                               TextSpan(
                                 text: username,
@@ -193,6 +203,7 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 4),
 
                       // Bet Amount
                       Text(
@@ -200,7 +211,7 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ],

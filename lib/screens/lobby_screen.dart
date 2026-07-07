@@ -222,9 +222,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                                   label: 'TOURNAMENT',
                                                   description:
                                                       'Test Yourself Against Other Top Players\nIn A Live Tournament Experience.',
-                                                  onTap: () => _comingSoon(
-                                                    context,
-                                                    'Tournament',
+                                                  onTap: () => context.push(
+                                                    '/tournament',
                                                   ),
                                                 )
                                                 .animate()

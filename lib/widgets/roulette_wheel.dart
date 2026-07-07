@@ -120,6 +120,11 @@ class _RouletteWheelState extends State<RouletteWheel> with SingleTickerProvider
   @override
   void dispose() {
     _ticker.dispose();
+    // If the widget is torn down mid-spin (e.g. leaving the screen), make sure
+    // the looping spin sound doesn't keep playing after the wheel is gone.
+    if (_spinning) {
+      soundEngine.stopSpinSound();
+    }
     super.dispose();
   }
 

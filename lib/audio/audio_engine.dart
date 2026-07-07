@@ -28,7 +28,14 @@ class AudioEngine {
   bool _musicEnabled = true;
   bool _blocked = false;
   String? _activeBackground;
-  bool _isDucked = false;
+  // Reference count of active "duckers" (spin loop, place-bets clip, TTS
+  // commentary). A plain bool couldn't track overlapping duckers and left the
+  // music stuck at 15% volume when they got out of balance. Music plays at full
+  // volume only when this is zero.
+  int _duckCount = 0;
+  // Whether the spin loop currently holds a duck, so start/stop can pair their
+  // duck/unduck exactly regardless of whether sound was enabled at start time.
+  bool _spinDucked = false;
 
   // Sound effects player pool
   static const int _sfxPoolSize = 6;
@@ -45,6 +52,14 @@ class AudioEngine {
   bool _spinActive = false;
   double _lastSpinEffectAt = 0;
   double _lastSpinRate = 1.0;
+  // Monotonic token bumped on every start/stop. A queued start op with a stale
+  // token is skipped so a superseded spin can never resurrect the loop.
+  int _spinToken = 0;
+  // Serializes all _spinPlayer control I/O. Rapidly cycling spins used to let a
+  // start's and the previous stop's awaits interleave on the same player, so
+  // the looping play() could land last and bleed the spin sound into the
+  // betting phase. Chaining every op through this future forces strict order.
+  Future<void> _spinOps = Future.value();
 
   // Text-To-Speech (TTS)
   final FlutterTts flutterTts = FlutterTts();
@@ -204,11 +219,17 @@ class AudioEngine {
       for (var player in _sfxPlayers) {
         await player.stop();
       }
+      // Invalidate any in-flight/queued spin op before stopping the loop.
+      ++_spinToken;
+      _spinActive = false;
       await _spinPlayer.stop();
       await flutterTts.stop();
       _speechQueue.clear();
       _isProcessingQueue = false;
-      unduckBackgroundMusic();
+      // All SFX are stopped — clear every ducker and restore full music volume.
+      _spinDucked = false;
+      _duckCount = 0;
+      _applyBackgroundVolume();
     }
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -303,29 +324,47 @@ class AudioEngine {
   Future<void> startSpinSound() async {
     if (!_enabled || _blocked) return;
 
+    // Claim a token and mark active synchronously so effect updates are gated
+    // correctly and any older spin's queued ops become no-ops immediately.
+    final int token = ++_spinToken;
+    _spinActive = true;
+    _lastSpinEffectAt = 0;
+    _lastSpinRate = 1.0;
+
     // Interrupt TTS commentary
-    await flutterTts.stop();
+    flutterTts.stop();
     _speechQueue.clear();
     _isProcessingQueue = false;
 
-    duckBackgroundMusic();
-
-    try {
-      await _spinPlayer.stop();
-      await _spinPlayer.setReleaseMode(ReleaseMode.loop);
-      // Play first, THEN adjust rate. On Android setPlaybackRate throws if no
-      // source is loaded yet, which would swallow the play() call. Rate
-      // defaults to 1.0, so we don't need to set it up front.
-      await _spinPlayer.play(
-        AssetSource(_paths['spin']!),
-        volume: _volumes['spin'] ?? 0.25,
-      );
-      _spinActive = true;
-      _lastSpinEffectAt = 0;
-      _lastSpinRate = 1.0;
-    } catch (e) {
-      debugPrint('AudioEngine: Error starting spin sound: $e');
+    // Duck exactly once per spin (paired with stopSpinSound). Guard against a
+    // double-duck if startSpinSound is somehow called twice without a stop.
+    if (!_spinDucked) {
+      _spinDucked = true;
+      duckBackgroundMusic();
     }
+
+    // Serialize the player I/O so this start fully completes before the
+    // matching stop (or the next spin's start) runs.
+    _spinOps = _spinOps.then((_) async {
+      // A newer start or a stop superseded us before this op ran — don't start.
+      if (token != _spinToken) return;
+      try {
+        await _spinPlayer.stop();
+        await _spinPlayer.setReleaseMode(ReleaseMode.loop);
+        // Play first, THEN adjust rate. On Android setPlaybackRate throws if no
+        // source is loaded yet, which would swallow the play() call. Rate
+        // defaults to 1.0, so we don't need to set it up front.
+        await _spinPlayer.play(
+          AssetSource(_paths['spin']!),
+          volume: _volumes['spin'] ?? 0.25,
+        );
+        // A stop may have superseded us while play() was in flight — enforce it.
+        if (token != _spinToken) await _spinPlayer.stop();
+      } catch (e) {
+        debugPrint('AudioEngine: Error starting spin sound: $e');
+      }
+    });
+    await _spinOps;
   }
 
   /// Follow the wheel deceleration in real time. Called every animation frame
@@ -356,13 +395,26 @@ class AudioEngine {
   }
 
   Future<void> stopSpinSound() async {
+    // Bump the token synchronously so any not-yet-run start op is skipped and
+    // effect updates stop immediately, then enqueue the actual stop so it lands
+    // after any pending start — guaranteeing the loop ends stopped.
+    ++_spinToken;
     _spinActive = false;
-    try {
-      await _spinPlayer.stop();
-    } catch (e) {
-      debugPrint('AudioEngine: Error stopping spin sound: $e');
+    // Restore the music volume immediately when the spin ends — don't wait on
+    // the serialized player queue, which may be backed up during rapid spins
+    // and would otherwise leave the music quiet into the betting phase.
+    if (_spinDucked) {
+      _spinDucked = false;
+      unduckBackgroundMusic();
     }
-    unduckBackgroundMusic();
+    _spinOps = _spinOps.then((_) async {
+      try {
+        await _spinPlayer.stop();
+      } catch (e) {
+        debugPrint('AudioEngine: Error stopping spin sound: $e');
+      }
+    });
+    await _spinOps;
   }
 
   void resumeTourneyBackgroundMusic() {
@@ -576,21 +628,23 @@ class AudioEngine {
   // ── Background Music Ducking ──────────────────────────────────────────────
 
   void duckBackgroundMusic() {
-    if (_isDucked) return;
-    _isDucked = true;
-    if (_activeBackground != null && _musicEnabled) {
-      final baseVol = _volumes[_activeBackground!] ?? 0.5;
-      _bgMusicPlayer.setVolume(baseVol * 0.15);
-    }
+    _duckCount++;
+    if (_duckCount == 1) _applyBackgroundVolume();
   }
 
   void unduckBackgroundMusic() {
-    if (!_isDucked) return;
-    _isDucked = false;
-    if (_activeBackground != null && _musicEnabled) {
-      final baseVol = _volumes[_activeBackground!] ?? 0.5;
-      _bgMusicPlayer.setVolume(baseVol);
-    }
+    if (_duckCount == 0) return;
+    _duckCount--;
+    if (_duckCount == 0) _applyBackgroundVolume();
+  }
+
+  /// Set the background player's volume to the active track's base level,
+  /// scaled down while anything is ducking. Single source of truth so duck,
+  /// unduck and (re)starting a track never disagree about the target volume.
+  void _applyBackgroundVolume() {
+    if (_activeBackground == null || !_musicEnabled) return;
+    final baseVol = _volumes[_activeBackground!] ?? 0.5;
+    _bgMusicPlayer.setVolume(_duckCount > 0 ? baseVol * 0.15 : baseVol);
   }
 
   Future<void> stopAll() async {
@@ -598,11 +652,15 @@ class AudioEngine {
       await player.stop();
     }
     await _bgMusicPlayer.stop();
+    // Invalidate any in-flight/queued spin op before stopping the loop.
+    ++_spinToken;
+    _spinActive = false;
     await _spinPlayer.stop();
     await flutterTts.stop();
     _speechQueue.clear();
     _isProcessingQueue = false;
-    _isDucked = false;
+    _spinDucked = false;
+    _duckCount = 0;
   }
 
   Future<bool> toggleSound() async {
@@ -619,9 +677,13 @@ class AudioEngine {
       player.stop();
     }
     _bgMusicPlayer.stop();
+    // Invalidate any in-flight/queued spin op before stopping the loop.
+    ++_spinToken;
+    _spinActive = false;
     _spinPlayer.stop();
     flutterTts.stop();
-    _isDucked = false;
+    _spinDucked = false;
+    _duckCount = 0;
   }
 
   void handleAppForeground() {
@@ -666,7 +728,7 @@ class AudioEngine {
 
     final path = _paths[track];
     var volume = _volumes[track] ?? 0.5;
-    if (_isDucked) {
+    if (_duckCount > 0) {
       volume *= 0.15;
     }
     if (path == null) return;

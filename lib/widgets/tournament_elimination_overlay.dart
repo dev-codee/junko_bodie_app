@@ -38,10 +38,22 @@ class TournamentEliminationOverlay extends StatelessWidget {
               _PulsingRedGlow(),
 
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                // Scale the content down to fit short landscape screens so the
+                // whole elimination screen is visible without overflow.
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double w = constraints.maxWidth.isFinite
+                        ? constraints.maxWidth
+                        : 600;
+                    return Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: SizedBox(
+                          width: w,
+                          child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Grayscale Avatar with Skull Badge
                       Stack(
@@ -225,6 +237,11 @@ class TournamentEliminationOverlay extends StatelessWidget {
                       ),
                     ],
                   ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
