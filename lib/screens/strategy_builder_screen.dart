@@ -195,6 +195,31 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     });
   }
 
+  /// Merge the prior stage's bets into the current stage so the player can keep
+  /// building on top of them. Only available from Stage 2 onwards. Mirrors the
+  /// web's handleRepeatBet.
+  void _repeatBet() {
+    if (_activeIndex == 0) return;
+    final prev = _stages[_activeIndex - 1];
+    if (prev.bets.isEmpty) return;
+    setState(() {
+      _pushHistory();
+      prev.bets.forEach((pos, amount) {
+        _active.bets[pos] = (_active.bets[pos] ?? 0) + amount;
+      });
+    });
+  }
+
+  /// Double every bet on the current stage. Mirrors the web's handleDoubleBet
+  /// (and the solo game's 2X button).
+  void _doubleBet() {
+    if (_active.bets.isEmpty) return;
+    setState(() {
+      _pushHistory();
+      _active.bets.updateAll((_, amount) => amount * 2);
+    });
+  }
+
   void _undo() {
     if (_history.isEmpty) return;
     setState(() {
@@ -704,6 +729,21 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                 ),
               ),
               const Spacer(),
+              _tableBtn(
+                'REPEAT',
+                Icons.refresh,
+                (_activeIndex == 0 || _stages[_activeIndex - 1].bets.isEmpty)
+                    ? null
+                    : _repeatBet,
+              ),
+              const SizedBox(width: 6),
+              _tableBtn(
+                'DOUBLE',
+                null,
+                _active.bets.isEmpty ? null : _doubleBet,
+                leadingText: '2X',
+              ),
+              const SizedBox(width: 6),
               _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
               const SizedBox(width: 6),
               _tableBtn('CLEAR', Icons.delete_outline, _active.bets.isEmpty ? null : _clearBoard),
@@ -737,7 +777,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
-  Widget _tableBtn(String label, IconData icon, VoidCallback? onTap) {
+  Widget _tableBtn(String label, IconData? icon, VoidCallback? onTap,
+      {String? leadingText}) {
     final bool enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,
@@ -753,7 +794,18 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: _kInkText),
+              if (leadingText != null)
+                Text(
+                  leadingText,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: _kInkText,
+                    height: 1,
+                  ),
+                )
+              else if (icon != null)
+                Icon(icon, size: 14, color: _kInkText),
               const SizedBox(width: 5),
               Text(
                 label,

@@ -160,10 +160,12 @@ class _GameScreenState extends State<GameScreen> {
           // Keep the same stage index to replay it.
           provider.startNewRound();
         },
-        onResetToStageOne: () {
+        onGoToStage: (int stageIndex) {
           soundEngine.playClick();
           finish();
-          provider.setCurrentStageIndex(0);
+          provider.setCurrentStageIndex(
+            stageIndex.clamp(0, strategy.stages.length - 1),
+          );
           provider.startNewRound();
         },
         onNextStage: () {
