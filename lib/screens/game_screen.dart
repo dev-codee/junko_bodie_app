@@ -375,11 +375,14 @@ class _GameScreenState extends State<GameScreen> {
               soundEngine.playClick();
               showDialog(
                 context: context,
-                builder: (context) => SettingsModal(
-                  onResetSession: () {
-                    provider.resetSessionStats();
-                  },
-                  tournamentMode: false,
+                builder: (_) => ChangeNotifierProvider<GameProvider>.value(
+                  value: provider,
+                  child: SettingsModal(
+                    onResetSession: () {
+                      provider.resetSessionStats();
+                    },
+                    tournamentMode: false,
+                  ),
                 ),
               );
             },
@@ -736,12 +739,10 @@ class SpinHistoryWidget extends StatelessWidget {
             height: 24,
             child: Builder(
               builder: (context) {
-                // history[0] is the newest; reverse so it reads oldest → newest
-                // (most recent on the right).
+                // history[0] is the newest. Keep natural order so the most
+                // recent spin sits on the far left (matches the web app).
                 final displayed = history
-                    .take(math.min(history.length, 8))
-                    .toList()
-                    .reversed
+                    .take(math.min(history.length, 15))
                     .toList();
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,

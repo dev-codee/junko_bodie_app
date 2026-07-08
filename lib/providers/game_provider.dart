@@ -36,6 +36,7 @@ class GameProvider extends ChangeNotifier {
   bool _deleteMode = false;
   String? _deleteModeTarget;
   String? _fundError;
+  Timer? _fundErrorTimer;
   bool _loading = false;
   bool _isTimerEnabled = true;
 
@@ -148,16 +149,33 @@ class GameProvider extends ChangeNotifier {
     );
   }
 
-  /// Helper to trigger a temporary funds error
+  /// Helper to trigger a temporary funds error.
+  /// Auto-hides after 3 seconds, mirroring the web app's Toast component.
   void triggerFundError([String message = 'Insufficient funds for this bet']) {
     _fundError = message;
     soundEngine.playDeniedSound();
     notifyListeners();
+
+    // Auto-clear the toast after a short delay so it doesn't linger on screen.
+    _fundErrorTimer?.cancel();
+    _fundErrorTimer = Timer(const Duration(seconds: 3), () {
+      _fundError = null;
+      notifyListeners();
+    });
   }
 
   void setFundError(String? error) {
+    // Cancel any pending auto-clear so it doesn't wipe a newer message (or fire
+    // after a manual dismissal).
+    _fundErrorTimer?.cancel();
     _fundError = error;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _fundErrorTimer?.cancel();
+    super.dispose();
   }
 
   /// Place a chip on a bet zone.
@@ -511,6 +529,25 @@ class GameProvider extends ChangeNotifier {
     _sessionStats['lastWin'] = 0.0;
     _sessionStats['sessionWin'] = 0.0;
     notifyListeners();
+  }
+
+  /// Set the live game balance directly and sync it to the server.
+  /// Mirrors the web app's `setBalance` — used by the settings modal's
+  /// "Reset Account Balance" action so the player's chips update immediately.
+  void setBalance(double amount) {
+    _balance = amount;
+    notifyListeners();
+
+    // Sync the new balance with the server in the background. Using the 'set'
+    // action so the server matches the live balance exactly.
+    unawaited(
+      _userService
+          .updateBalance(amount: amount, action: 'set')
+          .catchError((e) {
+            debugPrint('GameProvider: Error setting balance on server: $e');
+            return _balance;
+          }),
+    );
   }
 
   // ── Staged Betting (Strategy) ───────────────────────────────────────────

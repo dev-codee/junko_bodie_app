@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:junko_bodie/config/theme.dart';
@@ -118,18 +119,20 @@ class _SettingsModalState extends State<SettingsModal> {
     }
   }
 
-  Future<void> _changeStartingBalance(double amount) async {
+  void _changeStartingBalance(double amount) {
     soundEngine.playClick();
-    final oldAmount = _startingBalance;
+    // Update the selection locally and keep it — mirrors the web app, where
+    // startingBalance is pure client state. Persist to the server in the
+    // background; a failed sync must NOT revert the selection (otherwise the
+    // control snaps back to the default whenever the profile call fails).
     setState(() => _startingBalance = amount);
 
-    try {
-      await _userService.updateProfile(startingBalance: amount);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _startingBalance = oldAmount);
-      }
-    }
+    unawaited(
+      _userService.updateProfile(startingBalance: amount).catchError((e) {
+        debugPrint('SettingsModal: Error persisting starting balance: $e');
+        return false;
+      }),
+    );
   }
 
   Future<void> _handleResetBalance() async {
@@ -140,11 +143,19 @@ class _SettingsModalState extends State<SettingsModal> {
     });
 
     try {
-      // Set balance back to starting balance on server
-      await _userService.updateBalance(
-        amount: _startingBalance,
-        action: 'set',
-      );
+      // Brief "thinking" delay to match the web app's premium feel.
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      // Update the live game balance directly so the player's chips change
+      // immediately (this also syncs the new balance to the server). This
+      // mirrors the web app's `setBalance(startingBalance)` behaviour — the
+      // previous implementation only hit the server, so the in-game chips
+      // never actually updated.
+      if (mounted) {
+        Provider.of<GameProvider>(context, listen: false)
+            .setBalance(_startingBalance);
+      }
+
       if (mounted) {
         setState(() {
           _isResettingBalance = false;
