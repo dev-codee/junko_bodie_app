@@ -113,7 +113,7 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
     if (widget.disabled) return;
     if (widget.deleteMode && widget.bet != null) {
       widget.onClearZone?.call('straight-${RNG.getDisplayNumber(widget.num)}');
-    } else {
+    } else if (!widget.deleteMode) {
       soundEngine.playChipSound();
       widget.onPlace();
     }
@@ -135,6 +135,9 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
         onEnter: (_) => widget.onNumberHover?.call(widget.num),
         onExit: (_) => widget.onNumberHoverEnd?.call(),
         child: GestureDetector(
+          onTapDown: (_) => widget.onNumberHover?.call(widget.num),
+          onTapUp: (_) => widget.onNumberHoverEnd?.call(),
+          onTapCancel: () => widget.onNumberHoverEnd?.call(),
           onTap: _handleTap,
           onLongPress: _handleLongPress,
           onSecondaryTap: _handleLongPress,
@@ -316,7 +319,7 @@ class _DropZoneState extends State<DropZone> {
     if (widget.disabled) return;
     if (widget.deleteMode && widget.bets.containsKey(widget.betId)) {
       widget.onClearZone?.call(widget.betId);
-    } else {
+    } else if (!widget.deleteMode) {
       soundEngine.playChipSound();
       widget.onPlace(widget.betId);
       // Touch feedback — flash the covered numbers gold briefly.
@@ -360,6 +363,24 @@ class _DropZoneState extends State<DropZone> {
             }
           },
           child: GestureDetector(
+            onTapDown: (_) {
+              if (!widget.disabled) {
+                widget.onHover?.call(widget.numbers, widget.betId);
+                setState(() => _localHovered = true);
+              }
+            },
+            onTapUp: (_) {
+              if (!widget.disabled) {
+                widget.onHoverEnd?.call();
+                setState(() => _localHovered = false);
+              }
+            },
+            onTapCancel: () {
+              if (!widget.disabled) {
+                widget.onHoverEnd?.call();
+                setState(() => _localHovered = false);
+              }
+            },
             onTap: _handleTap,
             onLongPress: _handleLongPress,
             onSecondaryTap: _handleLongPress,
@@ -491,7 +512,7 @@ class _OutsideBetCellState extends State<OutsideBetCell> {
     if (widget.disabled) return;
     if (widget.deleteMode && widget.bet != null) {
       widget.onClearZone?.call(widget.betId);
-    } else {
+    } else if (!widget.deleteMode) {
       soundEngine.playChipSound();
       widget.onPlace();
       // Touch feedback — flash the covered numbers gold briefly.
@@ -528,6 +549,24 @@ class _OutsideBetCellState extends State<OutsideBetCell> {
           }
         },
         child: GestureDetector(
+          onTapDown: (_) {
+            if (!widget.disabled) {
+              widget.onHover?.call(widget.numbers, widget.betId);
+              setState(() => _isHovered = true);
+            }
+          },
+          onTapUp: (_) {
+            if (!widget.disabled) {
+              widget.onHoverEnd?.call();
+              setState(() => _isHovered = false);
+            }
+          },
+          onTapCancel: () {
+            if (!widget.disabled) {
+              widget.onHoverEnd?.call();
+              setState(() => _isHovered = false);
+            }
+          },
           onTap: _handleTap,
           onLongPress: _handleLongPress,
           onSecondaryTap: _handleLongPress,
@@ -687,7 +726,7 @@ class _BettingLayoutState extends State<BettingLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final double spacerWidth = widget.isCompact ? 32 : 46;
+    final double spacerWidth = widget.isCompact ? 40 : 64;
     final double colWidth = widget.isCompact ? 32 : 40;
 
     return Container(
@@ -709,45 +748,73 @@ class _BettingLayoutState extends State<BettingLayout> {
                   color: Colors.transparent,
                 ),
                 child: widget.wheelType == WheelType.american
-                    ? Column(
-                        children: [
-                          NumberCell(
-                            num: 37, // "00"
-                            bet: widget.bets['straight-00'],
-                            onPlace: () => widget.onPlaceBet('straight-00'),
-                            onRemove: () => widget.onRemoveBet('straight-00'),
-                            disabled: widget.disabled,
-                            isWinner: _isWinningNumber(37) || _isBetWinner('straight-00'),
-                            phase: widget.phase,
-                            border: const Border(bottom: BorderSide(color: Color(0xFF5EA896), width: 0.5)),
-                            isHovered: _hoveredNumbers.contains(37) || _selfHoveredNumber == 37,
-                            onNumberHover: _handleNumberHover,
-                            onNumberHoverEnd: _handleNumberHoverEnd,
-                            deleteMode: widget.deleteMode,
-                            onPopLastChip: widget.onPopLastChip,
-                            onClearZone: widget.onClearZone,
-                            isMine: widget.myBets?.containsKey('straight-00') ?? true,
-                            isCompact: widget.isCompact,
-                          ),
-                          NumberCell(
-                            num: 0,
-                            bet: widget.bets['straight-0'],
-                            onPlace: () => widget.onPlaceBet('straight-0'),
-                            onRemove: () => widget.onRemoveBet('straight-0'),
-                            disabled: widget.disabled,
-                            isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
-                            phase: widget.phase,
-                            border: const Border(),
-                            isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
-                            onNumberHover: _handleNumberHover,
-                            onNumberHoverEnd: _handleNumberHoverEnd,
-                            deleteMode: widget.deleteMode,
-                            onPopLastChip: widget.onPopLastChip,
-                            onClearZone: widget.onClearZone,
-                            isMine: widget.myBets?.containsKey('straight-0') ?? true,
-                            isCompact: widget.isCompact,
-                          ),
-                        ],
+                    ? LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Stack(
+                            children: [
+                              Column(
+                                children: [
+                                  NumberCell(
+                                    num: 37, // "00"
+                                    bet: widget.bets['straight-00'],
+                                    onPlace: () => widget.onPlaceBet('straight-00'),
+                                    onRemove: () => widget.onRemoveBet('straight-00'),
+                                    disabled: widget.disabled,
+                                    isWinner: _isWinningNumber(37) || _isBetWinner('straight-00'),
+                                    phase: widget.phase,
+                                    border: const Border(bottom: BorderSide(color: Color(0xFF5EA896), width: 0.5)),
+                                    isHovered: _hoveredNumbers.contains(37) || _selfHoveredNumber == 37,
+                                    onNumberHover: _handleNumberHover,
+                                    onNumberHoverEnd: _handleNumberHoverEnd,
+                                    deleteMode: widget.deleteMode,
+                                    onPopLastChip: widget.onPopLastChip,
+                                    onClearZone: widget.onClearZone,
+                                    isMine: widget.myBets?.containsKey('straight-00') ?? true,
+                                    isCompact: widget.isCompact,
+                                  ),
+                                  NumberCell(
+                                    num: 0,
+                                    bet: widget.bets['straight-0'],
+                                    onPlace: () => widget.onPlaceBet('straight-0'),
+                                    onRemove: () => widget.onRemoveBet('straight-0'),
+                                    disabled: widget.disabled,
+                                    isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
+                                    phase: widget.phase,
+                                    border: const Border(),
+                                    isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
+                                    onNumberHover: _handleNumberHover,
+                                    onNumberHoverEnd: _handleNumberHoverEnd,
+                                    deleteMode: widget.deleteMode,
+                                    onPopLastChip: widget.onPopLastChip,
+                                    onClearZone: widget.onClearZone,
+                                    isMine: widget.myBets?.containsKey('straight-0') ?? true,
+                                    isCompact: widget.isCompact,
+                                  ),
+                                ],
+                              ),
+                              DropZone(
+                                betId: 'split-0-00',
+                                left: constraints.maxWidth / 2,
+                                top: constraints.maxHeight / 2,
+                                width: 24,
+                                height: 12,
+                                bets: widget.bets,
+                                onPlace: widget.onPlaceBet,
+                                onRemove: widget.onRemoveBet,
+                                disabled: widget.disabled,
+                                isWinner: _isBetWinner('split-0-00'),
+                                phase: widget.phase,
+                                numbers: const [0, 37],
+                                onHover: _handleHover,
+                                onHoverEnd: _handleHoverEnd,
+                                deleteMode: widget.deleteMode,
+                                onPopLastChip: widget.onPopLastChip,
+                                onClearZone: widget.onClearZone,
+                                isMine: widget.myBets?.containsKey('split-0-00') ?? true,
+                              ),
+                            ],
+                          );
+                        },
                       )
                     : Column(
                         children: [

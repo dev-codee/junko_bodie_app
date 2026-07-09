@@ -52,7 +52,7 @@ class _RouletteTableState extends State<RouletteTable> {
             // Request nearly the full felt height; the FittedBox below caps it
             // so it never overflows. The toggle is overlaid on the wheel's rim
             // (not stacked below) so the wheel gets the whole height.
-            final double wheelSize = (height * 1.02).clamp(240.0, 480.0);
+            final double wheelSize = (height * 1.15).clamp(280.0, 540.0);
             // Large size for the centered spin overlay. While spinning the table
             // fills the whole screen (header/footer are hidden), so this sizes the
             // wheel to the full screen height for a dramatic, centered spin.
@@ -81,23 +81,26 @@ class _RouletteTableState extends State<RouletteTable> {
               decoration: isSpinning
                   ? const BoxDecoration(color: Color(0xFF0A2318))
                   : BoxDecoration(
-                color: const Color(0xFF0A0A0A),
-                border: Border.all(color: const Color(0xFF050505), width: 3),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.04),
-                    blurRadius: 1,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 1),
-                  ),
-                  const BoxShadow(
-                    color: Colors.black,
-                    blurRadius: 30,
-                    offset: Offset(0, 15),
-                  ),
-                ],
-              ),
+                      color: const Color(0xFF0A0A0A),
+                      border: Border.all(
+                        color: const Color(0xFF050505),
+                        width: 3,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.04),
+                          blurRadius: 1,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 1),
+                        ),
+                        const BoxShadow(
+                          color: Colors.black,
+                          blurRadius: 30,
+                          offset: Offset(0, 15),
+                        ),
+                      ],
+                    ),
               child: Stack(
                 children: [
                   // Brushed Gold Inner Frame Border
@@ -131,7 +134,12 @@ class _RouletteTableState extends State<RouletteTable> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 4.0),
+                        padding: const EdgeInsets.fromLTRB(
+                          12.0,
+                          0.0,
+                          12.0,
+                          4.0,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -141,99 +149,108 @@ class _RouletteTableState extends State<RouletteTable> {
                             // a placeholder to keep the layout stable.
                             SizedBox(
                               width: wheelSize,
-                              child: isSpinning
-                                  ? const SizedBox.shrink()
-                                  : FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            width: wheelSize,
-                                            height: wheelSize,
-                                            child: wheelWidget,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Centered brand title
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      ShaderMask(
+                                        shaderCallback: (bounds) =>
+                                            const LinearGradient(
+                                              colors: [
+                                                Color(0xFFF5EDD5),
+                                                Color(0xFFC9A44C),
+                                              ],
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                            ).createShader(bounds),
+                                        child: const Text(
+                                          'JUNKO BODIE',
+                                          style: TextStyle(
+                                            fontFamily: 'Georgia',
+                                            fontSize: 15,
+                                            fontStyle: FontStyle.italic,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
+                                            color: Colors.white,
                                           ),
-                                          // Variant toggle sits below the wheel
-                                          // (compact) so it never overlaps it.
-                                          if (!tournamentMode && canBet) ...[
-                                            const SizedBox(height: 2),
-                                            WheelTypeToggle(
-                                              wheelType: provider.wheelType,
-                                              onChanged: (t) {
-                                                soundEngine.playClick();
-                                                provider.setWheelType(t);
-                                              },
-                                            ),
-                                          ],
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                      Text(
+                                        'R O U L E T T E',
+                                        style: TextStyle(
+                                          fontFamily: 'Georgia',
+                                          color: const Color(
+                                            0xFFC9A84C,
+                                          ).withOpacity(0.6),
+                                          fontSize: 6,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  isSpinning
+                                      ? const SizedBox.shrink()
+                                      : Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SizedBox(
+                                                  width: wheelSize,
+                                                  height: wheelSize,
+                                                  child: Stack(
+                                                    clipBehavior: Clip.none,
+                                                    children: [
+                                                      Positioned.fill(child: wheelWidget),
+                                                      if (provider.isTimerEnabled && canBet)
+                                                        Positioned(
+                                                          bottom: 0,
+                                                          right: -24,
+                                                          child: BetTimer(
+                                                            duration: 45,
+                                                            isActive: canBet,
+                                                            onTimeout: () => _handleTimeout(provider),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                // Variant toggle sits below the wheel
+                                                // (compact) so it never overlaps it.
+                                                if (!tournamentMode &&
+                                                    canBet) ...[
+                                                  const SizedBox(height: 2),
+                                                  WheelTypeToggle(
+                                                    wheelType:
+                                                        provider.wheelType,
+                                                    onChanged: (t) {
+                                                      soundEngine.playClick();
+                                                      provider.setWheelType(t);
+                                                    },
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 4),
                             // 2. Betting Table Section (Right)
                             Expanded(
                               child: Column(
                                 children: [
-                                  // Top row: centered title with the timer
-                                  // floated to the right (matches web layout).
-                                  Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Centered brand title
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          ShaderMask(
-                                            shaderCallback: (bounds) =>
-                                                const LinearGradient(
-                                                  colors: [
-                                                    Color(0xFFF5EDD5),
-                                                    Color(0xFFC9A44C),
-                                                  ],
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                ).createShader(bounds),
-                                            child: const Text(
-                                              'JUNKO BODIE',
-                                              style: TextStyle(
-                                                fontFamily: 'Georgia',
-                                                fontSize: 15,
-                                                fontStyle: FontStyle.italic,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 2,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            'R O U L E T T E',
-                                            style: TextStyle(
-                                              fontFamily: 'Georgia',
-                                              color: const Color(
-                                                0xFFC9A84C,
-                                              ).withOpacity(0.6),
-                                              fontSize: 6,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 3,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      // Betting timer pinned to the right
-                                      if (provider.isTimerEnabled && canBet)
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: BetTimer(
-                                            duration: 45,
-                                            isActive: canBet,
-                                            onTimeout: () => _handleTimeout(provider),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
                                   // Betting layout felt grid with status overlays
                                   Expanded(
                                     child: Stack(
@@ -369,76 +386,77 @@ class _RouletteTableState extends State<RouletteTable> {
                                       fit: BoxFit.scaleDown,
                                       alignment: Alignment.centerRight,
                                       child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        // 2X Double and Delete Toggle (visible when bets are present)
-                                        if (canBet && hasBets) ...[
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          // 2X Double and Delete Toggle (visible when bets are present)
+                                          if (canBet && hasBets) ...[
+                                            CasinoButton(
+                                              label: '2X',
+                                              onTap: () {
+                                                provider.doubleAllBets();
+                                              },
+                                              enabled: canBet,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            CasinoButton(
+                                              label: provider.deleteMode
+                                                  ? 'Normal'
+                                                  : 'X',
+                                              onTap: () {
+                                                provider.toggleDeleteMode();
+                                              },
+                                              enabled: canBet,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            // Vertical Separator
+                                            Container(
+                                              width: 1.5,
+                                              height: 24,
+                                              color: const Color(
+                                                0xFF5EA896,
+                                              ).withOpacity(0.3),
+                                            ),
+                                            const SizedBox(width: 12),
+                                          ],
+                                          // Rebet, Clear, Undo
                                           CasinoButton(
-                                            label: '2X',
+                                            label: 'Rebet',
                                             onTap: () {
-                                              provider.doubleAllBets();
+                                              soundEngine.playRebetSound();
+                                              provider.rebet();
                                             },
-                                            enabled: canBet,
+                                            enabled:
+                                                canBet && provider.hasLastSpin,
                                           ),
                                           const SizedBox(width: 8),
                                           CasinoButton(
-                                            label: provider.deleteMode
-                                                ? 'Normal'
-                                                : 'X',
+                                            label: 'Clear',
                                             onTap: () {
-                                              provider.toggleDeleteMode();
+                                              soundEngine.playSwoosh();
+                                              provider.clearBets();
                                             },
-                                            enabled: canBet,
+                                            enabled: canBet && hasBets,
                                           ),
-                                          const SizedBox(width: 12),
-                                          // Vertical Separator
-                                          Container(
-                                            width: 1.5,
-                                            height: 24,
-                                            color: const Color(
-                                              0xFF5EA896,
-                                            ).withOpacity(0.3),
+                                          const SizedBox(width: 8),
+                                          CasinoButton(
+                                            label: 'Undo',
+                                            onTap: () {
+                                              soundEngine.playSwoosh();
+                                              provider.clearLastBet();
+                                            },
+                                            enabled: canBet && hasBets,
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 16),
+                                          // Spin button
+                                          SpinButton(
+                                            onTap: () => _handleSpin(provider),
+                                            isSpinning: isSpinning,
+                                            enabled: spinEnabled,
+                                          ),
                                         ],
-                                        // Rebet, Clear, Undo
-                                        CasinoButton(
-                                          label: 'Rebet',
-                                          onTap: () {
-                                            soundEngine.playRebetSound();
-                                            provider.rebet();
-                                          },
-                                          enabled:
-                                              canBet && provider.hasLastSpin,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        CasinoButton(
-                                          label: 'Clear',
-                                          onTap: () {
-                                            soundEngine.playSwoosh();
-                                            provider.clearBets();
-                                          },
-                                          enabled: canBet && hasBets,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        CasinoButton(
-                                          label: 'Undo',
-                                          onTap: () {
-                                            soundEngine.playSwoosh();
-                                            provider.clearLastBet();
-                                          },
-                                          enabled: canBet && hasBets,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // Spin button
-                                        SpinButton(
-                                          onTap: () => _handleSpin(provider),
-                                          isSpinning: isSpinning,
-                                          enabled: spinEnabled,
-                                        ),
-                                      ],
-                                    ),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -580,9 +598,8 @@ class _BetTimerState extends State<BetTimer> {
 
   @override
   Widget build(BuildContext context) {
-    const double size = 42.0;
-    const double radius = 17.0;
-    const double strokeWidth = 3.0;
+    const double size = 76.0;
+    const double strokeWidth = 5.0;
     final double value = _timeLeft / widget.duration;
 
     final isDanger = _timeLeft <= 5;
@@ -622,7 +639,7 @@ class _BetTimerState extends State<BetTimer> {
                     '$_timeLeft',
                     style: GoogleFonts.inter(
                       color: displayColor,
-                      fontSize: 14,
+                      fontSize: 22,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
