@@ -81,7 +81,10 @@ class _GameScreenState extends State<GameScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     // Restore default system UI overlay bars
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
 
     // Finalize the session-history record (fire-and-forget).
     _gameProvider?.endGameSession();
@@ -280,7 +283,10 @@ class _GameScreenState extends State<GameScreen> {
                     child: Padding(
                       padding: isSpinning
                           ? EdgeInsets.zero
-                          : const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0.0),
+                          : const EdgeInsets.only(
+                              left: 0.0,
+                              right: 5.0,
+                            ),
                       child: const RouletteTable(
                         key: ValueKey('solo_roulette_table'),
                         tournamentMode: false,
@@ -300,7 +306,10 @@ class _GameScreenState extends State<GameScreen> {
                   right: 0,
                   child: Align(
                     alignment: Alignment.bottomCenter,
-                    child: _buildFloatingPlayerCard(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 48.0),
+                      child: _buildFloatingPlayerCard(),
+                    ),
                   ),
                 ),
 
@@ -313,13 +322,10 @@ class _GameScreenState extends State<GameScreen> {
               ),
 
               // 6. Confetti Win Celebration
-              WinCelebration(
-                show: _showWinCelebration,
-              ),
+              WinCelebration(show: _showWinCelebration),
 
               // 7. Toast Funds Error Display
-              if (provider.fundError != null)
-                _buildToast(provider),
+              if (provider.fundError != null) _buildToast(provider),
             ],
           ),
         );
@@ -356,16 +362,18 @@ class _GameScreenState extends State<GameScreen> {
               soundEngine.playClick();
               context.go('/lobby');
             },
-            icon: const Icon(Icons.arrow_back, color: Color(0xFFF5EDD5), size: 20),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Color(0xFFF5EDD5),
+              size: 20,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             tooltip: 'Lobby',
           ),
           const SizedBox(width: 16),
           // Spin History List
-          Expanded(
-            child: SpinHistoryWidget(history: provider.history),
-          ),
+          Expanded(child: SpinHistoryWidget(history: provider.history)),
           // Strategy (staged betting) Selector
           const StagedBettingSelector(),
           const SizedBox(width: 8),
@@ -386,7 +394,11 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               );
             },
-            icon: const Icon(Icons.settings, color: Color(0xFFF5EDD5), size: 22),
+            icon: const Icon(
+              Icons.settings,
+              color: Color(0xFFF5EDD5),
+              size: 22,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             tooltip: 'Settings',
@@ -405,9 +417,7 @@ class _GameScreenState extends State<GameScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        border: Border(
-          top: BorderSide(color: Color(0xFFC9A44C), width: 1.5),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFC9A44C), width: 1.5)),
         boxShadow: [
           BoxShadow(
             color: Colors.black54,
@@ -416,22 +426,28 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(0, 4, 16, 4),
+      padding: const EdgeInsets.fromLTRB(24, 4, 16, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left: Interactive Chips tray (flush to the left edge)
           Expanded(
-            flex: 8,
-            child: ChipTray(
-              selectedChip: provider.selectedChip,
-              onSelectChip: provider.setSelectedChip,
-              balance: provider.balance,
-              totalBet: provider.totalBet,
-              disabled: isSpinning,
+            flex: 9,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: ChipTray(
+                selectedChip: provider.selectedChip,
+                onSelectChip: provider.setSelectedChip,
+                balance: provider.balance,
+                totalBet: provider.totalBet,
+                disabled: isSpinning,
+              ),
             ),
           ),
-          const SizedBox(width: 188), // Reserve center area for the floating player card
+          const SizedBox(
+            width: 176,
+          ), // Reserve center area for the floating player card
           // Right: Player Balance / Stats / Total Bet — FittedBox scales the
           // group down so it never overflows the footer width.
           Expanded(
@@ -444,76 +460,88 @@ class _GameScreenState extends State<GameScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                // Balance Sheet Card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7A553A), Color(0xFF2D1E12)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                    // Balance Sheet Card
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7A553A), Color(0xFF2D1E12)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFFC9A84C).withOpacity(0.6),
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'BALANCE',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '\$${provider.balance.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
+                            style: GoogleFonts.playfairDisplay(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    border: Border.all(color: const Color(0xFFC9A84C).withOpacity(0.6), width: 1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'BALANCE',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    const SizedBox(width: 6),
+                    // Session Stats Widget
+                    SessionStatsWidget(stats: provider.sessionStats),
+                    const SizedBox(width: 6),
+                    // Total Bet Sized Box Card
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      Text(
-                        '\$${provider.balance.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
-                        style: GoogleFonts.playfairDisplay(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        border: Border.all(
+                          color: const Color(0xFFC9A84C).withOpacity(0.5),
+                          width: 1,
                         ),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                    ],
-                  ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'TOTAL BET',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFFF5D68D),
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '\$${provider.totalBet.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
+                            style: GoogleFonts.playfairDisplay(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                // Session Stats Widget
-                SessionStatsWidget(stats: provider.sessionStats),
-                const SizedBox(width: 6),
-                // Total Bet Sized Box Card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    border: Border.all(color: const Color(0xFFC9A84C).withOpacity(0.5), width: 1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'TOTAL BET',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFF5D68D),
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '\$${provider.totalBet.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
-                        style: GoogleFonts.playfairDisplay(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
               ),
             ),
           ),
@@ -523,7 +551,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildFloatingPlayerCard() {
-    final avatarType = _userProfile?.avatarUrl.isNotEmpty == true ? _userProfile!.avatarUrl : 'default';
+    final avatarType = _userProfile?.avatarUrl.isNotEmpty == true
+        ? _userProfile!.avatarUrl
+        : 'default';
     final displayName = _userProfile?.username ?? 'Player';
 
     return GestureDetector(
@@ -571,10 +601,7 @@ class _GameScreenState extends State<GameScreen> {
             Stack(
               alignment: Alignment.center,
               children: [
-                AvatarWidget(
-                  type: avatarType,
-                  size: 32,
-                ),
+                AvatarWidget(type: avatarType, size: 32),
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -752,32 +779,35 @@ class SpinHistoryWidget extends StatelessWidget {
                     final spin = displayed[index];
                     final displayColor = _getColor(spin.color);
 
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: displayColor,
-                    border: Border.all(color: const Color(0xFFC9A84C).withOpacity(0.5), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: displayColor,
+                        border: Border.all(
+                          color: const Color(0xFFC9A84C).withOpacity(0.5),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    spin.displayNumber,
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                );
+                      alignment: Alignment.center,
+                      child: Text(
+                        spin.displayNumber,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    );
                   },
                 );
               },
@@ -813,8 +843,8 @@ class SessionStatsWidget extends StatelessWidget {
           lastWin > 0
               ? const Color(0xFF4ADE80)
               : lastWin < 0
-                  ? const Color(0xFFEF4444)
-                  : Colors.white.withOpacity(0.8),
+              ? const Color(0xFFEF4444)
+              : Colors.white.withOpacity(0.8),
         ),
         const SizedBox(width: 4),
         _buildStatCard(
@@ -823,8 +853,8 @@ class SessionStatsWidget extends StatelessWidget {
           sessionWin > 0
               ? const Color(0xFF4ADE80)
               : sessionWin < 0
-                  ? const Color(0xFFEF4444)
-                  : Colors.white.withOpacity(0.8),
+              ? const Color(0xFFEF4444)
+              : Colors.white.withOpacity(0.8),
         ),
       ],
     );
@@ -832,10 +862,13 @@ class SessionStatsWidget extends StatelessWidget {
 
   Widget _buildStatCard(String label, double val, Color valColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
-        border: Border.all(color: const Color(0xFFC9A84C).withOpacity(0.15), width: 1),
+        border: Border.all(
+          color: const Color(0xFFC9A84C).withOpacity(0.15),
+          width: 1,
+        ),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -891,7 +924,8 @@ class AvatarWidget extends StatelessWidget {
       child = Image.network(
         type,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const Icon(Icons.person, color: Color(0xFFC9A84C)),
+        errorBuilder: (_, _, _) =>
+            const Icon(Icons.person, color: Color(0xFFC9A84C)),
       );
     } else {
       switch (type) {
@@ -899,7 +933,11 @@ class AvatarWidget extends StatelessWidget {
           child = Icon(Icons.person_outline, size: size * 0.7, color: c);
           break;
         case 'crown':
-          child = Icon(Icons.workspace_premium_outlined, size: size * 0.7, color: c);
+          child = Icon(
+            Icons.workspace_premium_outlined,
+            size: size * 0.7,
+            color: c,
+          );
           break;
         case 'diamond':
           child = Icon(Icons.diamond_outlined, size: size * 0.7, color: c);
@@ -908,13 +946,43 @@ class AvatarWidget extends StatelessWidget {
           child = Icon(Icons.star_outline, size: size * 0.7, color: c);
           break;
         case 'spade':
-          child = Center(child: Text('♠', style: TextStyle(color: c, fontSize: size * 0.8, fontWeight: FontWeight.w900, height: 1.0)));
+          child = Center(
+            child: Text(
+              '♠',
+              style: TextStyle(
+                color: c,
+                fontSize: size * 0.8,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+              ),
+            ),
+          );
           break;
         case 'heart':
-          child = Center(child: Text('♥', style: TextStyle(color: c, fontSize: size * 0.8, fontWeight: FontWeight.w900, height: 1.0)));
+          child = Center(
+            child: Text(
+              '♥',
+              style: TextStyle(
+                color: c,
+                fontSize: size * 0.8,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+              ),
+            ),
+          );
           break;
         case 'club':
-          child = Center(child: Text('♣', style: TextStyle(color: c, fontSize: size * 0.8, fontWeight: FontWeight.w900, height: 1.0)));
+          child = Center(
+            child: Text(
+              '♣',
+              style: TextStyle(
+                color: c,
+                fontSize: size * 0.8,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+              ),
+            ),
+          );
           break;
         case 'dice':
           child = Icon(Icons.casino_outlined, size: size * 0.7, color: c);
@@ -939,7 +1007,8 @@ class AvatarWidget extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.08),
-        border: border ?? Border.all(color: const Color(0xFFC9A84C), width: 1.5),
+        border:
+            border ?? Border.all(color: const Color(0xFFC9A84C), width: 1.5),
       ),
       child: ClipOval(child: child),
     );

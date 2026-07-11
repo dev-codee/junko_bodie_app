@@ -52,7 +52,7 @@ class _RouletteTableState extends State<RouletteTable> {
             // Request nearly the full felt height; the FittedBox below caps it
             // so it never overflows. The toggle is overlaid on the wheel's rim
             // (not stacked below) so the wheel gets the whole height.
-            final double wheelSize = (height * 1.15).clamp(280.0, 540.0);
+            final double wheelSize = (height * 1.25).clamp(280.0, 570.0);
             // Large size for the centered spin overlay. While spinning the table
             // fills the whole screen (header/footer are hidden), so this sizes the
             // wheel to the full screen height for a dramatic, centered spin.
@@ -77,7 +77,14 @@ class _RouletteTableState extends State<RouletteTable> {
               height: height,
               // Edge-to-edge solid green with no frame while spinning, so the
               // wheel fills the whole screen on a clean green backdrop.
-              padding: isSpinning ? EdgeInsets.zero : const EdgeInsets.all(3.0),
+              padding: isSpinning
+                  ? EdgeInsets.zero
+                  : const EdgeInsets.only(
+                      left: 0.0,
+                      top: 3.0,
+                      bottom: 3.0,
+                      right: 3.0,
+                    ),
               decoration: isSpinning
                   ? const BoxDecoration(color: Color(0xFF0A2318))
                   : BoxDecoration(
@@ -134,12 +141,7 @@ class _RouletteTableState extends State<RouletteTable> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.fromLTRB(
-                          12.0,
-                          0.0,
-                          12.0,
-                          4.0,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(0.0, 0.0, 12.0, 4.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -147,105 +149,117 @@ class _RouletteTableState extends State<RouletteTable> {
                             // While spinning the wheel is lifted into a centered
                             // overlay (below), so here we reserve its width with
                             // a placeholder to keep the layout stable.
-                            SizedBox(
-                              width: wheelSize,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Centered brand title
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                            isSpinning
+                                ? SizedBox(width: height * 0.85)
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      ShaderMask(
-                                        shaderCallback: (bounds) =>
-                                            const LinearGradient(
-                                              colors: [
-                                                Color(0xFFF5EDD5),
-                                                Color(0xFFC9A44C),
-                                              ],
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                            ).createShader(bounds),
-                                        child: const Text(
-                                          'JUNKO BODIE',
-                                          style: TextStyle(
-                                            fontFamily: 'Georgia',
-                                            fontSize: 15,
-                                            fontStyle: FontStyle.italic,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 2,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        'R O U L E T T E',
-                                        style: TextStyle(
-                                          fontFamily: 'Georgia',
-                                          color: const Color(
-                                            0xFFC9A84C,
-                                          ).withOpacity(0.6),
-                                          fontSize: 6,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 3,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  isSpinning
-                                      ? const SizedBox.shrink()
-                                      : Flexible(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                SizedBox(
-                                                  width: wheelSize,
-                                                  height: wheelSize,
-                                                  child: Stack(
-                                                    clipBehavior: Clip.none,
-                                                    children: [
-                                                      Positioned.fill(child: wheelWidget),
-                                                      if (provider.isTimerEnabled && canBet)
-                                                        Positioned(
-                                                          bottom: 0,
-                                                          right: -24,
-                                                          child: BetTimer(
-                                                            duration: 45,
-                                                            isActive: canBet,
-                                                            onTimeout: () => _handleTimeout(provider),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                // Variant toggle sits below the wheel
-                                                // (compact) so it never overlaps it.
-                                                if (!tournamentMode &&
-                                                    canBet) ...[
-                                                  const SizedBox(height: 2),
-                                                  WheelTypeToggle(
-                                                    wheelType:
-                                                        provider.wheelType,
-                                                    onChanged: (t) {
-                                                      soundEngine.playClick();
-                                                      provider.setWheelType(t);
-                                                    },
-                                                  ),
-                                                ],
-                                              ],
+                                      // Centered brand title
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          ShaderMask(
+                                            shaderCallback: (bounds) =>
+                                                const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFFF5EDD5),
+                                                    Color(0xFFC9A44C),
+                                                  ],
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                ).createShader(bounds),
+                                            child: const Text(
+                                              'JUNKO BODIE',
+                                              style: TextStyle(
+                                                fontFamily: 'Georgia',
+                                                fontSize: 15,
+                                                fontStyle: FontStyle.italic,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 2,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                ],
-                              ),
-                            ),
+                                          Text(
+                                            'R O U L E T T E',
+                                            style: TextStyle(
+                                              fontFamily: 'Georgia',
+                                              color: const Color(
+                                                0xFFC9A84C,
+                                              ).withOpacity(0.6),
+                                              fontSize: 6,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 3,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      isSpinning
+                                          ? const SizedBox.shrink()
+                                          : Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                clipBehavior: Clip.none,
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: wheelSize,
+                                                      height: wheelSize,
+                                                      child: Stack(
+                                                        clipBehavior: Clip.none,
+                                                        children: [
+                                                          Positioned.fill(
+                                                            child: wheelWidget,
+                                                          ),
+                                                          if (provider
+                                                                  .isTimerEnabled &&
+                                                              canBet)
+                                                            Positioned(
+                                                              bottom: 10,
+                                                              right: -100,
+                                                              child: BetTimer(
+                                                                duration: 45,
+                                                                isActive:
+                                                                    canBet,
+                                                                onTimeout: () =>
+                                                                    _handleTimeout(
+                                                                      provider,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    // Variant toggle sits below the wheel
+                                                    // (compact) so it never overlaps it.
+                                                    if (!tournamentMode &&
+                                                        canBet) ...[
+                                                      const SizedBox(height: 2),
+                                                      WheelTypeToggle(
+                                                        wheelType:
+                                                            provider.wheelType,
+                                                        onChanged: (t) {
+                                                          soundEngine
+                                                              .playClick();
+                                                          provider.setWheelType(
+                                                            t,
+                                                          );
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                    ],
+                                  ),
                             const SizedBox(width: 4),
                             // 2. Betting Table Section (Right)
                             Expanded(
@@ -598,8 +612,8 @@ class _BetTimerState extends State<BetTimer> {
 
   @override
   Widget build(BuildContext context) {
-    const double size = 76.0;
-    const double strokeWidth = 5.0;
+    const double size = 100.0;
+    const double strokeWidth = 7.0;
     final double value = _timeLeft / widget.duration;
 
     final isDanger = _timeLeft <= 5;
@@ -620,16 +634,20 @@ class _BetTimerState extends State<BetTimer> {
               alignment: Alignment.center,
               children: [
                 // Background Circle track
-                CircularProgressIndicator(
-                  value: 1.0,
-                  strokeWidth: strokeWidth,
-                  color: Colors.white.withOpacity(0.1),
+                Positioned.fill(
+                  child: CircularProgressIndicator(
+                    value: 1.0,
+                    strokeWidth: strokeWidth,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
                 ),
                 // Active Countdown Circle
-                CircularProgressIndicator(
-                  value: value,
-                  strokeWidth: strokeWidth,
-                  color: displayColor,
+                Positioned.fill(
+                  child: CircularProgressIndicator(
+                    value: value,
+                    strokeWidth: strokeWidth,
+                    color: displayColor,
+                  ),
                 ),
                 // Text countdown
                 AnimatedOpacity(
@@ -639,7 +657,7 @@ class _BetTimerState extends State<BetTimer> {
                     '$_timeLeft',
                     style: GoogleFonts.inter(
                       color: displayColor,
-                      fontSize: 22,
+                      fontSize: 36,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -647,12 +665,12 @@ class _BetTimerState extends State<BetTimer> {
               ],
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 8),
           Text(
             'TIME TO BET',
             style: GoogleFonts.inter(
               color: const Color(0xFFC9A84C).withOpacity(0.6),
-              fontSize: 6,
+              fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
