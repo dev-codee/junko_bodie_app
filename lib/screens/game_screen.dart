@@ -728,8 +728,8 @@ class SpinHistoryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // "HISTORY" label (with count) shown before the result circles, matching
     // the web app's header.
-    final Widget label = Text(
-      history.isEmpty ? 'HISTORY' : 'HISTORY  ${history.length}',
+    final Widget label = const Text(
+      'HISTORY',
       style: const TextStyle(
         fontFamily: 'Georgia',
         color: Color(0xFFF5EDD5),

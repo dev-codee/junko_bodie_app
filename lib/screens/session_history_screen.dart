@@ -146,14 +146,27 @@ class _SessionHistoryScreenState extends State<SessionHistoryScreen> {
           GestureDetector(
             onTap: () => context.go('/lobby'),
             child: Container(
-              width: 34,
-              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _kGold.withValues(alpha: 0.4)),
               ),
-              child: const Icon(Icons.arrow_back, color: _kInk, size: 18),
+              child: Row(
+                children: [
+                  const Icon(Icons.arrow_back, color: _kInk, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LOBBY',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: _kInk,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -311,16 +324,16 @@ class _SessionHistoryScreenState extends State<SessionHistoryScreen> {
       _LifeItem(Icons.layers_outlined, 'Total Sessions', _fmt(s.totalSessions.toDouble()), 'completed sessions'),
       _LifeItem(Icons.bolt_outlined, 'Total Spins', _fmt(s.totalSpins.toDouble()), '${_fmt(s.totalWins.toDouble())} wins'),
       _LifeItem(Icons.gps_fixed, 'Avg Win Rate', '${_fmt(s.avgWinPercentage, 1)}%', 'across all sessions'),
-      _LifeItem(Icons.bar_chart, 'Lifetime P&L', '${sign(s.totalProfitLoss)}\$${money(s.totalProfitLoss)}', 'total profit / loss',
-          variant: s.totalProfitLoss >= 0 ? 1 : -1),
+      _LifeItem(Icons.show_chart, 'Avg / Spin', '${sign(s.avgNetPerSpin)}\$${money2(s.avgNetPerSpin)}', 'average net per spin',
+          variant: s.avgNetPerSpin >= 0 ? 1 : -1),
       _LifeItem(Icons.trending_up, 'Best Session', '+\$${_fmt(s.bestSessionProfit)}', 'single session profit', variant: 1),
       _LifeItem(Icons.trending_down, 'Worst Session', '${sign(s.worstSessionLoss)}\$${money(s.worstSessionLoss)}', 'single session loss',
           variant: s.worstSessionLoss < 0 ? -1 : 0),
       _LifeItem(Icons.emoji_events_outlined, 'Biggest Win', '+\$${_fmt(s.biggestSingleWin)}', 'single spin profit', variant: 1),
-      _LifeItem(Icons.show_chart, 'Avg / Spin', '${sign(s.avgNetPerSpin)}\$${money2(s.avgNetPerSpin)}', 'average net per spin',
-          variant: s.avgNetPerSpin >= 0 ? 1 : -1),
       _LifeItem(Icons.trending_up, 'Peak Bankroll', '\$${_fmt(s.bestBankroll)}', 'all-time highest'),
       _LifeItem(Icons.layers_outlined, 'Total Wagered', '\$${_fmt(s.totalVolumeWagered)}', 'chips wagered lifetime'),
+      _LifeItem(Icons.bar_chart, 'Lifetime P&L', '${sign(s.totalProfitLoss)}\$${money(s.totalProfitLoss)}', 'total profit / loss',
+          variant: s.totalProfitLoss >= 0 ? 1 : -1),
     ];
 
     return GridView.builder(
@@ -490,6 +503,9 @@ class _SessionCard extends StatelessWidget {
     final double winPct = session.winPercentage ??
         (session.totalSpins > 0 ? session.totalWins / session.totalSpins * 100 : 0);
 
+    final double avgProfitPerSpin = session.totalSpins > 0 ? (profit ?? 0) / session.totalSpins : 0;
+    final double finalBalance = session.endingBankroll ?? session.currentBankroll ?? session.startingBankroll;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -577,13 +593,15 @@ class _SessionCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              _statChip('Start', '\$${_fmt(session.startingBankroll)}'),
               _statChip('Spins', '${session.totalSpins}'),
               _statChip('Win %', '${_fmt(winPct, 1)}%'),
-              _statChip('Start', '\$${_fmt(session.startingBankroll)}'),
-              _statChip('Peak', '\$${_fmt(session.highestBankroll)}', gold: true),
-              _statChip('Low', '\$${_fmt(session.lowestBankroll)}'),
+              _statChip('Avg / Spin', '${avgProfitPerSpin >= 0 ? '+' : '-'}\$${avgProfitPerSpin.abs().toStringAsFixed(2)}'),
               _statChip('Best Win', '\$${_fmt(session.biggestSingleWin)}', gold: true),
+              _statChip('Low', '\$${_fmt(session.lowestBankroll)}'),
+              _statChip('Peak', '\$${_fmt(session.highestBankroll)}', gold: true),
               _statChip('Drawdown', '\$${_fmt(session.largestDrawdown)}'),
+              _statChip('Final Balance', '\$${_fmt(finalBalance)}'),
               if (session.strategyName != null && session.strategyName!.isNotEmpty)
                 _statChip('Strategy', session.strategyName!),
             ],

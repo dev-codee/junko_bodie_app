@@ -61,8 +61,8 @@ class MiniChip extends StatelessWidget {
               color: parsedCustomColor != null
                   ? parsedCustomColor.withOpacity(0.5)
                   : Colors.black.withOpacity(0.6),
-              blurRadius: 3,
-              offset: const Offset(0, 1.5),
+              blurRadius: 4,
+              offset: const Offset(0, 0),
             ),
           ],
           border: Border.all(
@@ -129,16 +129,14 @@ class ChipStackWidget extends StatelessWidget {
     final visibleChips = chips.length > 4 ? chips.sublist(chips.length - 4) : chips;
     final hiddenCount = chips.length - 4;
 
-    // Size the container to the ACTUAL stack height so that when it's centered
-    // inside a bet cell / on a line intersection, the chips land dead-center
-    // rather than being top-anchored inside an oversized 33px box.
+    // Set size to EXACTLY the base chip size. This ensures the bottom-most 
+    // chip is perfectly centered on intersections. The stack will visually 
+    // grow upwards by overflowing the clip box.
     const double chipSize = 24.0;
-    const double chipStep = 3.0;
-    final double stackHeight = chipSize + (visibleChips.length - 1) * chipStep;
 
     return SizedBox(
       width: chipSize,
-      height: stackHeight,
+      height: chipSize,
       child: Stack(
         alignment: Alignment.topCenter,
         clipBehavior: Clip.none,
@@ -149,7 +147,7 @@ class ChipStackWidget extends StatelessWidget {
             return MiniChip(
               key: ValueKey('chip-${chips.length - visibleChips.length + idx}'),
               chipVal: chipVal,
-              yOffset: (visibleChips.length - 1 - idx) * 3.0,
+              yOffset: -(idx * 3.0), // Stack grows upwards
               zIndex: idx,
               customColor: customColor,
             );
@@ -158,7 +156,7 @@ class ChipStackWidget extends StatelessWidget {
           // Delete icon badge overlay (if deleteMode is enabled)
           if (deleteMode && isMine)
             Positioned(
-              top: -6,
+              top: -((visibleChips.length - 1) * 3.0) - 6,
               right: -6,
               child: Container(
                 width: 14,

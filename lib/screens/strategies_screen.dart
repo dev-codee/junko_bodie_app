@@ -241,7 +241,7 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
 
   Widget _buildBackButton() {
     return GestureDetector(
-      onTap: () => context.pop(),
+      onTap: () => context.go('/lobby'),
       child: Container(
         height: 34,
         padding: const EdgeInsets.symmetric(horizontal: 14),

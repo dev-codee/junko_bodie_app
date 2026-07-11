@@ -343,13 +343,11 @@ class _DropZoneState extends State<DropZone> {
     final hasBet = bet != null;
 
     return Positioned(
-      left: widget.left,
-      top: widget.top,
+      left: widget.left - widget.width / 2,
+      top: widget.top - widget.height / 2,
       width: widget.width,
       height: widget.height,
-      child: FractionalTranslation(
-        translation: const Offset(-0.5, -0.5),
-        child: MouseRegion(
+      child: MouseRegion(
           onEnter: (_) {
             if (!widget.disabled) {
               widget.onHover?.call(widget.numbers, widget.betId);
@@ -453,7 +451,6 @@ class _DropZoneState extends State<DropZone> {
             ),
           ),
         ),
-      ),
     );
   }
 }

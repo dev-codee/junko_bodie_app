@@ -344,11 +344,11 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   Widget _buildTopBar() {
     return Row(
       children: [
-        _navPill('BACK TO LOBBY', Icons.arrow_back, () => context.go('/lobby')),
+        _navPill('LOBBY', Icons.arrow_back, () => context.go('/lobby')),
         const SizedBox(width: 12),
         Container(width: 1, height: 16, color: _kInkText.withValues(alpha: 0.25)),
         const SizedBox(width: 12),
-        _navPill('RETURN TO LIBRARY', null, () => context.go('/strategies')),
+        _navPill('LIBRARY', null, () => context.go('/strategies')),
         const Spacer(),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -429,7 +429,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               const Icon(Icons.save_outlined, size: 15, color: _kGold),
             const SizedBox(width: 8),
             Text(
-              _isSaving ? 'SAVING...' : _isSaved ? 'SAVED ✓' : 'SAVE STRATEGY',
+              _isSaving ? 'SAVING...' : _isSaved ? 'SAVED ✓' : 'SAVE',
               style: GoogleFonts.inter(
                 color: _kGold,
                 fontWeight: FontWeight.w800,
@@ -590,7 +590,15 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       children: [
         _buildStageTabs(),
         const SizedBox(height: 8),
-        Expanded(child: _buildTableCard()),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: AspectRatio(
+              aspectRatio: 1.6,
+              child: _buildTableCard(),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -618,7 +626,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                     const Icon(Icons.add, size: 14, color: _kInkText),
                     const SizedBox(width: 4),
                     Text(
-                      'ADD STAGE',
+                      '+ADD STAGE',
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -653,7 +661,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
-                'Stage ${_stages[idx].stageNumber}',
+                'STAGE ${_stages[idx].stageNumber}',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -667,10 +675,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               onTap: () => _deleteStage(idx),
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Icon(
-                  Icons.close,
-                  size: 13,
-                  color: active ? _kGold.withValues(alpha: 0.8) : _kInkText.withValues(alpha: 0.5),
+                child: Text(
+                  'X',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.redAccent,
+                  ),
                 ),
               ),
             ),
@@ -690,7 +701,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       child: Column(
         children: [
           // Compact single-row header: title + wager + bankroll + undo/clear
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Text(
                 'Stage ${_active.stageNumber} Layout',
@@ -700,7 +714,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                   color: _kInkText,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
               Text.rich(
                 TextSpan(
                   text: 'Wager ',
@@ -714,7 +728,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
               Text.rich(
                 TextSpan(
                   text: 'Bankroll ',
@@ -728,24 +742,20 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                   ],
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
               _tableBtn(
-                'REPEAT',
+                'REBET',
                 Icons.refresh,
                 (_activeIndex == 0 || _stages[_activeIndex - 1].bets.isEmpty)
                     ? null
                     : _repeatBet,
               ),
-              const SizedBox(width: 6),
               _tableBtn(
-                'DOUBLE',
+                '2x',
                 null,
                 _active.bets.isEmpty ? null : _doubleBet,
-                leadingText: '2X',
               ),
-              const SizedBox(width: 6),
               _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
-              const SizedBox(width: 6),
               _tableBtn('CLEAR', Icons.delete_outline, _active.bets.isEmpty ? null : _clearBoard),
             ],
           ),
