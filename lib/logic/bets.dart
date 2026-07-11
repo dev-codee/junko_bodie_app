@@ -191,7 +191,7 @@ class Bets {
   static List<BetDefinition> _buildBasketBets() {
     return [
       const BetDefinition(id: 'basket-0-1-2-3', type: BetType.basket, label: '0-3', numbers: [0, 1, 2, 3], payout: 8),
-      const BetDefinition(id: 'basket-0-00-1-2-3', type: BetType.basket, label: 'Top Line', numbers: [0, 37, 1, 2, 3], payout: 6),
+      const BetDefinition(id: 'basket-0-00-1-2-3', type: BetType.basket, label: 'Top Line', numbers: [0, 37, 1, 2, 3], payout: 5),
     ];
   }
 
