@@ -26,6 +26,7 @@ class MiniChip extends StatelessWidget {
   final double yOffset;
   final int zIndex;
   final String? customColor;
+  final String? displayText;
 
   const MiniChip({
     super.key,
@@ -33,6 +34,7 @@ class MiniChip extends StatelessWidget {
     required this.yOffset,
     required this.zIndex,
     this.customColor,
+    this.displayText,
   });
 
   @override
@@ -80,9 +82,9 @@ class MiniChip extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 1.0),
                 child: Text(
-                  chipVal >= 1000 ? '${(chipVal / 1000).toInt()}k' : '${chipVal.toInt()}',
+                  displayText ?? (chipVal >= 1000 ? '${(chipVal / 1000).toInt()}k' : '${chipVal.toInt()}'),
                   style: playfairDisplay(
-                    fontSize: 7.5,
+                    fontSize: (displayText?.length ?? 0) > 3 ? 6.0 : 7.5,
                     fontWeight: FontWeight.w900,
                     color: textColor,
                   ).copyWith(
@@ -133,6 +135,8 @@ class ChipStackWidget extends StatelessWidget {
     // chip is perfectly centered on intersections. The stack will visually 
     // grow upwards by overflowing the clip box.
     const double chipSize = 24.0;
+    final totalAmount = chips.fold<double>(0, (sum, val) => sum + val);
+    final totalAmountText = totalAmount >= 1000 ? '${(totalAmount / 1000).toInt()}k' : '${totalAmount.toInt()}';
 
     return SizedBox(
       width: chipSize,
@@ -144,12 +148,14 @@ class ChipStackWidget extends StatelessWidget {
           // Render the visible chips from bottom to top
           ...List.generate(visibleChips.length, (idx) {
             final chipVal = visibleChips[idx];
+            final isTopChip = idx == visibleChips.length - 1;
             return MiniChip(
               key: ValueKey('chip-${chips.length - visibleChips.length + idx}'),
               chipVal: chipVal,
               yOffset: -(idx * 3.0), // Stack grows upwards
               zIndex: idx,
               customColor: customColor,
+              displayText: isTopChip ? totalAmountText : null,
             );
           }),
 

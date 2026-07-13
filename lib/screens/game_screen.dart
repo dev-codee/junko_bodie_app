@@ -283,10 +283,7 @@ class _GameScreenState extends State<GameScreen> {
                     child: Padding(
                       padding: isSpinning
                           ? EdgeInsets.zero
-                          : const EdgeInsets.only(
-                              left: 0.0,
-                              right: 5.0,
-                            ),
+                          : const EdgeInsets.only(left: 0.0, right: 5.0),
                       child: const RouletteTable(
                         key: ValueKey('solo_roulette_table'),
                         tournamentMode: false,
@@ -463,8 +460,8 @@ class _GameScreenState extends State<GameScreen> {
                     // Balance Sheet Card
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 12,
+                        horizontal: 10,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -493,7 +490,7 @@ class _GameScreenState extends State<GameScreen> {
                             '\$${provider.balance.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
                             style: GoogleFonts.playfairDisplay(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -507,8 +504,8 @@ class _GameScreenState extends State<GameScreen> {
                     // Total Bet Sized Box Card
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                        horizontal: 10,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.08),
@@ -533,7 +530,7 @@ class _GameScreenState extends State<GameScreen> {
                             '\$${provider.totalBet.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
                             style: GoogleFonts.playfairDisplay(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -862,7 +859,7 @@ class SessionStatsWidget extends StatelessWidget {
 
   Widget _buildStatCard(String label, double val, Color valColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
         border: Border.all(
@@ -878,7 +875,7 @@ class SessionStatsWidget extends StatelessWidget {
             label.toUpperCase(),
             style: GoogleFonts.inter(
               color: const Color(0xFFE4E0D4).withOpacity(0.5),
-              fontSize: 6,
+              fontSize: 8,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
@@ -887,7 +884,7 @@ class SessionStatsWidget extends StatelessWidget {
             '${val >= 0 ? '' : '-'}\$${val.abs().toInt()}',
             style: GoogleFonts.inter(
               color: valColor,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w900,
             ),
           ),

@@ -125,7 +125,7 @@ class _RouletteTableState extends State<RouletteTable> {
                   // Green felt surface area
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.all(2.0),
+                      padding: const EdgeInsets.fromLTRB(2.0, 2.0, 2.0, 0.0),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: const RadialGradient(
@@ -141,7 +141,7 @@ class _RouletteTableState extends State<RouletteTable> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.fromLTRB(0.0, 0.0, 12.0, 4.0),
+                        padding: const EdgeInsets.fromLTRB(0.0, 0.0, 12.0, 0.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -390,7 +390,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 0),
                                   // Control Buttons Row — FittedBox(scaleDown) keeps
                                   // the (variable) button set within the row width so
                                   // the SPIN button never overflows on the right.

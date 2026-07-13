@@ -239,7 +239,7 @@ class _StrategyDialogState extends State<_StrategyDialog> {
                   ),
                 ),
                 child: Text(
-                  'Disable',
+                  'Off',
                   style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800),
                 ),
               ),

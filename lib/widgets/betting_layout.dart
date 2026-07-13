@@ -136,8 +136,16 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
         onExit: (_) => widget.onNumberHoverEnd?.call(),
         child: GestureDetector(
           onTapDown: (_) => widget.onNumberHover?.call(widget.num),
-          onTapUp: (_) => widget.onNumberHoverEnd?.call(),
-          onTapCancel: () => widget.onNumberHoverEnd?.call(),
+          onTapUp: (_) {
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              widget.onNumberHoverEnd?.call();
+            });
+          },
+          onTapCancel: () {
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              widget.onNumberHoverEnd?.call();
+            });
+          },
           onTap: _handleTap,
           onLongPress: _handleLongPress,
           onSecondaryTap: _handleLongPress,
@@ -169,7 +177,7 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                   border: showHover
                       ? Border.all(color: AppColors.gold, width: 1.2)
                       : (widget.border ??
-                          Border.all(color: const Color(0xFF5EA896), width: 0.5)),
+                          Border.all(color: const Color(0xFF5EA896), width: 1.5)),
                   boxShadow: winShadow != null
                       ? [winShadow]
                       : showHover
@@ -236,7 +244,7 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                     // Amount tooltip (if hovered and not compact)
                     if (hasBet && widget.isHovered && !widget.isCompact)
                       Positioned(
-                        top: -22,
+                        top: -45,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -361,6 +369,7 @@ class _DropZoneState extends State<DropZone> {
             }
           },
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTapDown: (_) {
               if (!widget.disabled) {
                 widget.onHover?.call(widget.numbers, widget.betId);
@@ -369,14 +378,22 @@ class _DropZoneState extends State<DropZone> {
             },
             onTapUp: (_) {
               if (!widget.disabled) {
-                widget.onHoverEnd?.call();
-                setState(() => _localHovered = false);
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  if (mounted) {
+                    widget.onHoverEnd?.call();
+                    setState(() => _localHovered = false);
+                  }
+                });
               }
             },
             onTapCancel: () {
               if (!widget.disabled) {
-                widget.onHoverEnd?.call();
-                setState(() => _localHovered = false);
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  if (mounted) {
+                    widget.onHoverEnd?.call();
+                    setState(() => _localHovered = false);
+                  }
+                });
               }
             },
             onTap: _handleTap,
@@ -429,7 +446,7 @@ class _DropZoneState extends State<DropZone> {
                 // Tooltip
                 if (hasBet && _localHovered)
                   Positioned(
-                    bottom: 22,
+                    bottom: 45,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
@@ -574,7 +591,7 @@ class _OutsideBetCellState extends State<OutsideBetCell> {
               color: widget.isWinner
                   ? AppColors.gold.withOpacity(0.3)
                   : widget.backgroundColor ?? Colors.transparent,
-              border: widget.border ?? Border.all(color: const Color(0xFF5EA896), width: 0.5),
+              border: widget.border ?? Border.all(color: const Color(0xFF5EA896), width: 1.5),
               boxShadow: [
                 if (widget.isWinner)
                   BoxShadow(
@@ -734,6 +751,7 @@ class _BettingLayoutState extends State<BettingLayout> {
             children: [
               // ── SECTION 1: Zeros, Numbers Grid, Columns ──
           Expanded(
+            flex: 3,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -741,7 +759,7 @@ class _BettingLayoutState extends State<BettingLayout> {
               Container(
                 width: spacerWidth,
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF5EA896), width: 0.5),
+                  border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
                   color: Colors.transparent,
                 ),
                 child: widget.wheelType == WheelType.american
@@ -759,7 +777,6 @@ class _BettingLayoutState extends State<BettingLayout> {
                                     disabled: widget.disabled,
                                     isWinner: _isWinningNumber(37) || _isBetWinner('straight-00'),
                                     phase: widget.phase,
-                                    border: const Border(bottom: BorderSide(color: Color(0xFF5EA896), width: 0.5)),
                                     isHovered: _hoveredNumbers.contains(37) || _selfHoveredNumber == 37,
                                     onNumberHover: _handleNumberHover,
                                     onNumberHoverEnd: _handleNumberHoverEnd,
@@ -777,7 +794,6 @@ class _BettingLayoutState extends State<BettingLayout> {
                                     disabled: widget.disabled,
                                     isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
                                     phase: widget.phase,
-                                    border: const Border(),
                                     isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
                                     onNumberHover: _handleNumberHover,
                                     onNumberHoverEnd: _handleNumberHoverEnd,
@@ -823,7 +839,6 @@ class _BettingLayoutState extends State<BettingLayout> {
                             disabled: widget.disabled,
                             isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
                             phase: widget.phase,
-                            border: const Border(),
                             isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
                             onNumberHover: _handleNumberHover,
                             onNumberHoverEnd: _handleNumberHoverEnd,
@@ -841,7 +856,7 @@ class _BettingLayoutState extends State<BettingLayout> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFF5EA896), width: 0.5),
+                    border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -895,8 +910,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 14,
-                              height: 22,
+                              width: 28,
+                              height: 36,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -926,8 +941,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 24,
-                              height: 12,
+                              width: 36,
+                              height: 28,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -957,8 +972,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 14,
-                              height: 14,
+                              width: 28,
+                              height: 28,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -987,8 +1002,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 24,
-                              height: 12,
+                              width: 36,
+                              height: 28,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1017,8 +1032,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 14,
-                              height: 14,
+                              width: 28,
+                              height: 28,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1036,23 +1051,23 @@ class _BettingLayoutState extends State<BettingLayout> {
                           }),
 
                           // Boundary splits with Zero
-                          DropZone(betId: 'split-0-1', left: 0, top: gridHeight * 0.833, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
-                          DropZone(betId: 'split-0-2', left: 0, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
+                          DropZone(betId: 'split-0-1', left: 0, top: gridHeight * 0.833, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
+                          DropZone(betId: 'split-0-2', left: 0, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'split-00-2', left: 0, top: gridHeight * 0.40, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
-                            DropZone(betId: 'split-00-3', left: 0, top: gridHeight * 0.166, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
+                            DropZone(betId: 'split-00-2', left: 0, top: gridHeight * 0.40, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
+                            DropZone(betId: 'split-00-3', left: 0, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'split-0-3', left: 0, top: gridHeight * 0.166, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
+                            DropZone(betId: 'split-0-3', left: 0, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
                           ],
 
                           // Trio & Basket
-                          DropZone(betId: 'trio-0-1-2', left: 0, top: gridHeight * 0.666, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
-                          DropZone(betId: 'trio-0-2-3', left: 0, top: gridHeight * 0.333, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
+                          DropZone(betId: 'trio-0-1-2', left: 0, top: gridHeight * 0.666, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
+                          DropZone(betId: 'trio-0-2-3', left: 0, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'trio-00-2-3', left: 0, top: gridHeight * 0.333, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
-                            DropZone(betId: 'basket-0-00-1-2-3', left: 0, top: gridHeight, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
+                            DropZone(betId: 'trio-00-2-3', left: 0, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
+                            DropZone(betId: 'basket-0-00-1-2-3', left: 0, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'basket-0-1-2-3', left: 0, top: gridHeight, width: 20, height: 20, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
+                            DropZone(betId: 'basket-0-1-2-3', left: 0, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
                           ],
                         ],
                       );
@@ -1065,7 +1080,7 @@ class _BettingLayoutState extends State<BettingLayout> {
               Container(
                 width: colWidth,
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF5EA896), width: 0.5),
+                  border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -1128,17 +1143,18 @@ class _BettingLayoutState extends State<BettingLayout> {
         ),
 
         // ── SECTION 2: Dozens ──
-          Row(
-            children: [
-              SizedBox(width: spacerWidth),
-              Expanded(
-                child: Container(
-                  height: widget.isCompact ? 24 : 28,
+          Expanded(
+            flex: 1,
+            child: Row(
+              children: [
+                SizedBox(width: spacerWidth),
+                Expanded(
+                  child: Container(
                   decoration: const BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: Color(0xFF5EA896), width: 0.5),
-                      right: BorderSide(color: Color(0xFF5EA896), width: 0.5),
-                      bottom: BorderSide(color: Color(0xFF5EA896), width: 0.5),
+                      left: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                      right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                      bottom: BorderSide(color: Color(0xFF5EA896), width: 1.5),
                     ),
                   ),
                   child: Row(
@@ -1201,19 +1217,21 @@ class _BettingLayoutState extends State<BettingLayout> {
               SizedBox(width: colWidth),
             ],
           ),
+        ),
 
           // ── SECTION 3: Even Chances (1-18, Even, Red, Black, Odd, 19-36) ──
-          Row(
-            children: [
-              SizedBox(width: spacerWidth),
-              Expanded(
-                child: Container(
-                  height: widget.isCompact ? 24 : 28,
+          Expanded(
+            flex: 1,
+            child: Row(
+              children: [
+                SizedBox(width: spacerWidth),
+                Expanded(
+                  child: Container(
                   decoration: const BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: Color(0xFF5EA896), width: 0.5),
-                      right: BorderSide(color: Color(0xFF5EA896), width: 0.5),
-                      bottom: BorderSide(color: Color(0xFF5EA896), width: 0.5),
+                      left: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                      right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                      bottom: BorderSide(color: Color(0xFF5EA896), width: 1.5),
                     ),
                   ),
                   child: Row(
@@ -1341,6 +1359,7 @@ class _BettingLayoutState extends State<BettingLayout> {
               SizedBox(width: colWidth),
             ],
           ),
+        ),
         ],
       ),
 

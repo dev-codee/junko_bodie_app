@@ -593,9 +593,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
-            child: AspectRatio(
-              aspectRatio: 1.6,
-              child: _buildTableCard(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                height: 700,
+                width: 1000,
+                child: _buildTableCard(),
+              ),
             ),
           ),
         ),
@@ -769,7 +773,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               disabled: false,
               showWinHighlight: false,
               phase: 'betting',
-              isCompact: true,
+              isCompact: false,
               wheelType: _wheelType == 'European' ? WheelType.european : WheelType.american,
             ),
           ),
