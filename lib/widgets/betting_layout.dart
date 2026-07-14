@@ -740,7 +740,7 @@ class _BettingLayoutState extends State<BettingLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final double spacerWidth = widget.isCompact ? 40 : 64;
+    final double spacerWidth = widget.isCompact ? 32 : 44;
     final double colWidth = widget.isCompact ? 32 : 40;
 
     return Container(
@@ -809,8 +809,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                                 betId: 'split-0-00',
                                 left: constraints.maxWidth / 2,
                                 top: constraints.maxHeight / 2,
-                                width: 24,
-                                height: 12,
+                                width: 16,
+                                height: 8,
                                 bets: widget.bets,
                                 onPlace: widget.onPlaceBet,
                                 onRemove: widget.onRemoveBet,
@@ -910,8 +910,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 28,
-                              height: 36,
+                              width: 16,
+                              height: 20,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -941,8 +941,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 36,
-                              height: 28,
+                              width: 24,
+                              height: 16,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -972,8 +972,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 28,
-                              height: 28,
+                              width: 20,
+                              height: 20,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1002,8 +1002,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 36,
-                              height: 28,
+                              width: 24,
+                              height: 16,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1032,8 +1032,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 28,
-                              height: 28,
+                              width: 20,
+                              height: 20,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,

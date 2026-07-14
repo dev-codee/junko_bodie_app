@@ -38,7 +38,6 @@ class _GameScreenState extends State<GameScreen> {
   // Staged-betting (strategy) flow state.
   bool _awaitingStrategyChoice = false;
   bool _stagePopulated = false;
-
   GameProvider? _gameProvider; // captured for safe use in dispose()
 
   @override
@@ -274,41 +273,62 @@ class _GameScreenState extends State<GameScreen> {
               // Main Layout Structure. While spinning we hide the header, footer
               // and player card and drop the felt padding, so the table (and its
               // centered wheel) fills the entire screen.
-              Column(
-                children: [
-                  // 1. Top Header Bar (hidden during spin for the full-screen wheel)
-                  if (!isSpinning) _buildHeader(provider),
-                  // 2. Main Gameplay Felt Table
-                  Expanded(
-                    child: Padding(
-                      padding: isSpinning
-                          ? EdgeInsets.zero
-                          : const EdgeInsets.only(left: 0.0, right: 5.0),
-                      child: const RouletteTable(
-                        key: ValueKey('solo_roulette_table'),
-                        tournamentMode: false,
-                      ),
-                    ),
-                  ),
-                  // 3. Footer Bar (hidden during spin)
-                  if (!isSpinning) _buildFooter(provider, isSpinning),
-                ],
-              ),
+              
+              // 1. Main Gameplay Felt Table
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                padding: isSpinning
+                    ? EdgeInsets.zero
+                    : const EdgeInsets.only(top: 40, bottom: 58),
+                child: Padding(
+                  padding: isSpinning
+                      ? EdgeInsets.zero
+                      : const EdgeInsets.only(left: 0.0, right: 5.0),
+                  child: RouletteTable(
+                    key: const ValueKey('solo_roulette_table'),
+                    tournamentMode: false,
 
-              // 4. Floating Player Card — hidden while spinning.
-              if (!isSpinning)
-                Positioned(
-                  bottom: 2.0,
-                  left: 0,
-                  right: 0,
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 48.0),
-                      child: _buildFloatingPlayerCard(),
-                    ),
                   ),
                 ),
+              ),
+
+              // 2. Top Header Bar
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                top: isSpinning ? -40 : 0,
+                left: 0,
+                right: 0,
+                child: _buildHeader(provider),
+              ),
+
+              // 3. Footer Bar
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                bottom: isSpinning ? -58 : 0,
+                left: 0,
+                right: 0,
+                child: _buildFooter(provider, isSpinning),
+              ),
+
+              // 4. Floating Player Card
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                bottom: isSpinning ? -58 : 2.0,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 48.0),
+                    child: _buildFloatingPlayerCard(),
+                  ),
+                ),
+              ),
+
 
               // 5. Result Display Blur Overlay
               ResultDisplay(
@@ -435,7 +455,10 @@ class _GameScreenState extends State<GameScreen> {
               alignment: Alignment.centerLeft,
               child: ChipTray(
                 selectedChip: provider.selectedChip,
-                onSelectChip: provider.setSelectedChip,
+                onSelectChip: (val) {
+                  soundEngine.playClick();
+                  provider.setSelectedChip(val);
+                },
                 balance: provider.balance,
                 totalBet: provider.totalBet,
                 disabled: isSpinning,

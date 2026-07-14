@@ -14,8 +14,13 @@ import 'package:junko_bodie/audio/audio_engine.dart';
 
 class RouletteTable extends StatefulWidget {
   final bool tournamentMode;
+  final VoidCallback? onInteract;
 
-  const RouletteTable({super.key, this.tournamentMode = false});
+  const RouletteTable({
+    super.key,
+    this.tournamentMode = false,
+    this.onInteract,
+  });
 
   @override
   State<RouletteTable> createState() => _RouletteTableState();
@@ -52,7 +57,8 @@ class _RouletteTableState extends State<RouletteTable> {
             // Request nearly the full felt height; the FittedBox below caps it
             // so it never overflows. The toggle is overlaid on the wheel's rim
             // (not stacked below) so the wheel gets the whole height.
-            final double wheelSize = (height * 1.25).clamp(280.0, 570.0);
+            final double maxWheelWidth = (width * 0.38).clamp(280.0, 500.0);
+            final double wheelSize = (height * 1.25).clamp(280.0, maxWheelWidth);
             // Large size for the centered spin overlay. While spinning the table
             // fills the whole screen (header/footer are hidden), so this sizes the
             // wheel to the full screen height for a dramatic, centered spin.
@@ -141,7 +147,7 @@ class _RouletteTableState extends State<RouletteTable> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.fromLTRB(0.0, 0.0, 12.0, 0.0),
+                        padding: const EdgeInsets.fromLTRB(0.0, 0.0, 4.0, 0.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -222,8 +228,8 @@ class _RouletteTableState extends State<RouletteTable> {
                                                                   .isTimerEnabled &&
                                                               canBet)
                                                             Positioned(
-                                                              bottom: 10,
-                                                              right: -100,
+                                                              bottom: -15,
+                                                              right: -80,
                                                               child: BetTimer(
                                                                 duration: 45,
                                                                 isActive:
@@ -278,22 +284,35 @@ class _RouletteTableState extends State<RouletteTable> {
                                             opacity: isSpinning ? 0.3 : 1.0,
                                             child: IgnorePointer(
                                               ignoring: !canBet,
-                                              child: BettingLayout(
-                                                bets: provider.bets,
-                                                onPlaceBet: provider.placeBet,
-                                                onRemoveBet: provider.removeBet,
-                                                disabled: !canBet,
-                                                winningResult:
-                                                    provider.currentResult,
-                                                payoutResult:
-                                                    provider.lastPayout,
-                                                showWinHighlight: isResult,
-                                                phase: provider.phase.name,
-                                                deleteMode: provider.deleteMode,
-                                                onPopLastChip:
-                                                    provider.popLastChip,
-                                                onClearZone: provider.clearZone,
-                                                wheelType: provider.wheelType,
+                                              child: SingleChildScrollView(
+                                                scrollDirection: Axis.vertical,
+                                                child: SizedBox(
+                                                  height: 300,
+                                                  child: BettingLayout(
+                                                    bets: provider.bets,
+                                                    onPlaceBet: (betId) {
+                                                      widget.onInteract?.call();
+                                                      provider.placeBet(betId);
+                                                    },
+                                                    onRemoveBet:
+                                                        provider.removeBet,
+                                                    disabled: !canBet,
+                                                    winningResult:
+                                                        provider.currentResult,
+                                                    payoutResult:
+                                                        provider.lastPayout,
+                                                    showWinHighlight: isResult,
+                                                    phase: provider.phase.name,
+                                                    deleteMode:
+                                                        provider.deleteMode,
+                                                    onPopLastChip:
+                                                        provider.popLastChip,
+                                                    onClearZone:
+                                                        provider.clearZone,
+                                                    wheelType:
+                                                        provider.wheelType,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -612,8 +631,8 @@ class _BetTimerState extends State<BetTimer> {
 
   @override
   Widget build(BuildContext context) {
-    const double size = 100.0;
-    const double strokeWidth = 7.0;
+    const double size = 60.0;
+    const double strokeWidth = 5.0;
     final double value = _timeLeft / widget.duration;
 
     final isDanger = _timeLeft <= 5;
@@ -657,7 +676,7 @@ class _BetTimerState extends State<BetTimer> {
                     '$_timeLeft',
                     style: GoogleFonts.inter(
                       color: displayColor,
-                      fontSize: 36,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

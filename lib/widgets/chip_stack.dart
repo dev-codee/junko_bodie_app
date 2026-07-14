@@ -26,7 +26,6 @@ class MiniChip extends StatelessWidget {
   final double yOffset;
   final int zIndex;
   final String? customColor;
-  final String? displayText;
 
   const MiniChip({
     super.key,
@@ -34,7 +33,6 @@ class MiniChip extends StatelessWidget {
     required this.yOffset,
     required this.zIndex,
     this.customColor,
-    this.displayText,
   });
 
   @override
@@ -74,23 +72,19 @@ class MiniChip extends StatelessWidget {
         ),
         child: ClipOval(
           child: CustomPaint(
-            painter: ChipPainter(
-              color: color,
-              isSelected: false,
-            ),
+            painter: ChipPainter(color: color, isSelected: false),
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 1.0),
                 child: Text(
-                  displayText ?? (chipVal >= 1000 ? '${(chipVal / 1000).toInt()}k' : '${chipVal.toInt()}'),
+                  chipVal >= 1000
+                      ? '${(chipVal / 1000).toInt()}k'
+                      : '${chipVal.toInt()}',
                   style: playfairDisplay(
-                    fontSize: (displayText?.length ?? 0) > 3 ? 6.0 : 7.5,
+                    fontSize: 7.5,
                     fontWeight: FontWeight.w900,
                     color: textColor,
-                  ).copyWith(
-                    letterSpacing: -0.5,
-                    height: 1.0,
-                  ),
+                  ).copyWith(letterSpacing: -0.5, height: 1.0),
                 ),
               ),
             ),
@@ -128,15 +122,15 @@ class ChipStackWidget extends StatelessWidget {
     if (chips.isEmpty) return const SizedBox.shrink();
 
     // Show last 4 chips visually in the stack
-    final visibleChips = chips.length > 4 ? chips.sublist(chips.length - 4) : chips;
+    final visibleChips = chips.length > 4
+        ? chips.sublist(chips.length - 4)
+        : chips;
     final hiddenCount = chips.length - 4;
 
-    // Set size to EXACTLY the base chip size. This ensures the bottom-most 
-    // chip is perfectly centered on intersections. The stack will visually 
+    // Set size to EXACTLY the base chip size. This ensures the bottom-most
+    // chip is perfectly centered on intersections. The stack will visually
     // grow upwards by overflowing the clip box.
     const double chipSize = 24.0;
-    final totalAmount = chips.fold<double>(0, (sum, val) => sum + val);
-    final totalAmountText = totalAmount >= 1000 ? '${(totalAmount / 1000).toInt()}k' : '${totalAmount.toInt()}';
 
     return SizedBox(
       width: chipSize,
@@ -148,14 +142,12 @@ class ChipStackWidget extends StatelessWidget {
           // Render the visible chips from bottom to top
           ...List.generate(visibleChips.length, (idx) {
             final chipVal = visibleChips[idx];
-            final isTopChip = idx == visibleChips.length - 1;
             return MiniChip(
               key: ValueKey('chip-${chips.length - visibleChips.length + idx}'),
               chipVal: chipVal,
               yOffset: -(idx * 3.0), // Stack grows upwards
               zIndex: idx,
               customColor: customColor,
-              displayText: isTopChip ? totalAmountText : null,
             );
           }),
 
