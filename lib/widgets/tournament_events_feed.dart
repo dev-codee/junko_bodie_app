@@ -90,7 +90,28 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
       return (now - ts) < 8000;
     }).toList();
 
-    if (visibleEvents.isEmpty) {
+    // Aggregate events by player to show total bet on that spin
+    final Map<String, Map<String, dynamic>> aggregated = {};
+    for (final e in visibleEvents) {
+      final username = e['username'] ?? '';
+      if (!aggregated.containsKey(username)) {
+        aggregated[username] = {
+          'username': username,
+          'amount': 0.0,
+          'color': e['color'] ?? '#c9a44c',
+          'timestamp': e['timestamp'] ?? 0,
+        };
+      }
+      aggregated[username]!['amount'] = (aggregated[username]!['amount'] as double) + (e['amount'] ?? 0.0).toDouble();
+      if ((e['timestamp'] ?? 0) > (aggregated[username]!['timestamp'] as int)) {
+        aggregated[username]!['timestamp'] = e['timestamp'] ?? 0;
+      }
+    }
+
+    final displayEvents = aggregated.values.toList()
+      ..sort((a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+
+    if (displayEvents.isEmpty) {
       return Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -142,30 +163,18 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              itemCount: visibleEvents.length,
+              itemCount: displayEvents.length,
               itemBuilder: (context, index) {
-                final e = visibleEvents[index];
+                final e = displayEvents[index];
                 final String username = e['username'] ?? '';
                 final double amount = (e['amount'] ?? 0.0).toDouble();
                 final String colorHex = e['color'] ?? '#c9a44c';
                 final String betId = e['betId'] ?? '';
                 final Color pColor = _parseHexColor(colorHex);
 
-                // Format the zone name for display
-                String zoneDisplay = betId.replaceAll('straight-', '').replaceAll('dozen-', '12s-').toUpperCase();
-                if (zoneDisplay.startsWith('split-')) {
-                  zoneDisplay = 'SPLIT';
-                } else if (zoneDisplay.startsWith('corner-')) {
-                  zoneDisplay = 'CORNER';
-                } else if (zoneDisplay.startsWith('street-')) {
-                  zoneDisplay = 'STREET';
-                } else if (zoneDisplay.startsWith('sixline-')) {
-                  zoneDisplay = '6-LINE';
-                }
-
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                   decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.white10, width: 0.5)),
                   ),
@@ -173,37 +182,30 @@ class _TournamentEventsFeedState extends State<TournamentEventsFeed> {
                     children: [
                       // User color circle indicator
                       Container(
-                        width: 5,
-                        height: 5,
+                        width: 6,
+                        height: 6,
                         decoration: BoxDecoration(
                           color: pColor,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
 
                       // Text info
                       Expanded(
-                        child: RichText(
+                        child: Text(
+                          username,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            style: const TextStyle(fontSize: 9, color: Colors.white, height: 1.1),
-                            children: [
-                              TextSpan(
-                                text: username,
-                                style: TextStyle(color: pColor, fontWeight: FontWeight.bold),
-                              ),
-                              const TextSpan(text: ' placed on '),
-                              TextSpan(
-                                text: zoneDisplay,
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70),
-                              ),
-                            ],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: pColor,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 8),
 
                       // Bet Amount
                       Text(

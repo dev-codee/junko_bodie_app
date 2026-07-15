@@ -53,6 +53,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -61,3 +62,18 @@ flutter:
     - assets/sounds/
     - assets/avatars/
     - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+  windows:
+    generate: true
+    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+  macos:
+    generate: true
+    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+  image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+

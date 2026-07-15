@@ -189,15 +189,15 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
         // Identify if me is eliminated
         final isMeEliminated = mePlayer != null && mePlayer.status == 'eliminated';
-        // Show the elimination screen persistently once I'm out (not just during
-        // the transient 'elimination' phase) so a mid-tournament elimination
-        // doesn't flash and drop me back onto the board — matching the web,
-        // where an eliminated player stays on their result screen until they
-        // return to the lobby.
-        final showElimOverlay = isMeEliminated;
-
         // Identify if tournament completed
         final isCompleted = provider.phase == 'completed' || provider.tournament?.status == 'completed';
+
+        // Show the elimination screen persistently once I'm out (not just during
+        // the transient 'elimination' phase) so a mid-tournament elimination
+        // doesn't flash and drop me back onto the board.
+        // However, if the tournament is completed, we hide this overlay so the
+        // Summary (TournamentWinnerOverlay) can be shown instead.
+        final showElimOverlay = isMeEliminated && !isCompleted;
 
         return Scaffold(
           backgroundColor: const Color(0xFF050B08),
@@ -223,11 +223,22 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             // Roulette Felt Table (Left, dominant)
-                            const Expanded(
+                            Expanded(
                               child: Padding(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                     horizontal: 2.0, vertical: 6.0),
-                                child: TournamentRouletteTable(),
+                                child: LayoutBuilder(
+                                  builder: (context, tableConstraints) {
+                                    final double tableWidth = math.max(tableConstraints.maxWidth, 850.0);
+                                    return SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: SizedBox(
+                                        width: tableWidth,
+                                        child: const TournamentRouletteTable(),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
 
@@ -291,7 +302,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
               TournamentWinnerOverlay(
                 tournament: provider.tournament?.toJson(),
                 mePlayer: _findScoreFor(provider.scores, mePlayer?.playerId.toString()),
-                visible: isCompleted && !isMeEliminated,
+                visible: isCompleted,
                 onExit: () {
                   provider.stopPolling();
                   context.go('/lobby');
@@ -331,16 +342,27 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
       child: Row(
         children: [
           // Lobby exit button
-          IconButton(
+          TextButton.icon(
             onPressed: () {
               soundEngine.playClick();
               provider.stopPolling();
               context.go('/lobby');
             },
-            icon: const Icon(Icons.arrow_back, color: Color(0xFFF5EDD5), size: 20),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            tooltip: 'Exit Arena',
+            icon: const Icon(Icons.chevron_left, color: Color(0xFFC9A44C), size: 16),
+            label: const Text(
+              'LOBBY',
+              style: TextStyle(
+                color: Color(0xFFC9A44C),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
+              backgroundColor: const Color(0xFFC9A44C).withOpacity(0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
           ),
           const SizedBox(width: 16),
 
@@ -939,7 +961,7 @@ class _SpinHistoryList extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: math.min(history.length, 6),
+        itemCount: math.min(history.length, 15),
         itemBuilder: (context, index) {
           final spin = history[index];
           final String numStr = spin['number']?.toString() ?? spin['displayNumber']?.toString() ?? '0';

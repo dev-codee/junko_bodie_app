@@ -9,14 +9,14 @@ import 'package:junko_bodie/providers/auth_provider.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
 
 // ─── Web parchment palette ─────────────────────────────────
-const Color _kPagePaper = Color(0xFFE8D9B8);
-const Color _kCardPaper = Color(0xFFF5EDD5);
+const Color _kPagePaper = Color(0xFF0A2318);
+const Color _kCardPaper = Color(0xFF0A2318);
 const Color _kGold = Color(0xFFC9A44C);
-const Color _kGoldDark = Color(0xFF8B6914);
-const Color _kInkGreen = Color(0xFF0F2318);
-const Color _kInkBrown = Color(0xFF3A3028);
-const Color _kInkMuted = Color(0xFF6B5A3A);
-const Color _kChampRed = Color(0xFFC0392B);
+const Color _kGoldDark = Color(0xFFE0C475); // Lighter gold for dark bg
+const Color _kInkGreen = Colors.white;
+const Color _kInkBrown = Colors.white70;
+const Color _kInkMuted = Colors.white54;
+const Color _kChampRed = Color(0xFFEF4444);
 
 class TournamentListScreen extends StatefulWidget {
   const TournamentListScreen({super.key});
@@ -96,15 +96,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             ),
           ),
           child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                  child: _buildBriefingCard(provider),
-                ),
-              ),
-            ),
+            child: _buildBriefingCard(provider),
           ),
         ),
       );
@@ -183,62 +175,40 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   }
 
   Widget _buildLobbyMain(TournamentProvider provider) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Stack(
-        children: [
-          // Cream card filling the safe area
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: _kCardPaper,
-                border: Border.all(color: _kGold, width: 2.5),
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: _kGold.withOpacity(0.18),
-                    blurRadius: 0,
-                    spreadRadius: 6,
-                  ),
-                  const BoxShadow(
-                    color: Color(0x26000000),
-                    blurRadius: 40,
-                    offset: Offset(0, 8),
-                  ),
-                ],
+    return Stack(
+      children: [
+        // Background filling the safe area
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                colors: [Color(0xFF1E7A5E), Color(0xFF0A2318)],
+                center: Alignment.center,
+                radius: 1.2,
               ),
-              child: Stack(
-                children: [
-                  // Inner gold inset line
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.all(7),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: _kGold.withOpacity(0.5), width: 1),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
+            ),
+            child: Stack(
+              children: [
+                // Compass watermark on the right
+                Positioned(
+                  right: -40,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: SizedBox(
+                      width: 440,
+                      height: 440,
+                      child: CustomPaint(painter: _CompassWatermarkPainter()),
                     ),
                   ),
-                  // Compass watermark on the right
-                  Positioned(
-                    right: -40,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: SizedBox(
-                        width: 440,
-                        height: 440,
-                        child: CustomPaint(painter: _CompassWatermarkPainter()),
-                      ),
-                    ),
-                  ),
-                  // Main content
-                  Padding(
+                ),
+                // Main content
+                Positioned.fill(
+                  child: Padding(
                     padding: const EdgeInsets.fromLTRB(48, 16, 48, 24),
                     child: _buildLobbyContent(),
                   ),
+                ),
                   // Sign Out (top right)
                   Positioned(
                     top: 12,
@@ -265,35 +235,35 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                       ),
                     ),
                   ),
-                  // Back chevron (bottom left, matches the "<" icon visible in the web screenshot)
-                  Positioned(
-                    top: 12,
-                    left: 20,
-                    child: GestureDetector(
-                      onTap: () => context.go('/lobby'),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _kGold.withOpacity(0.1),
-                          border: Border.all(color: _kGold.withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.chevron_left, color: _kGold, size: 22),
+                // Back chevron (bottom left, matches the "<" icon visible in the web screenshot)
+                Positioned(
+                  top: 12,
+                  left: 20,
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/lobby'),
+                    icon: const Icon(Icons.chevron_left, color: _kGold, size: 16),
+                    label: const Text(
+                      'LOBBY',
+                      style: TextStyle(
+                        color: _kGold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2.4,
                       ),
                     ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
+                      backgroundColor: _kGold.withOpacity(0.1),
+                      side: BorderSide(color: _kGold.withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          // Corner notch "bites" — quarter circles in page-paper color cutting into card corners
-          Positioned(top: 0, left: 0, child: _cornerBite(topLeft: true)),
-          Positioned(top: 0, right: 0, child: _cornerBite(topRight: true)),
-          Positioned(bottom: 0, left: 0, child: _cornerBite(bottomLeft: true)),
-          Positioned(bottom: 0, right: 0, child: _cornerBite(bottomRight: true)),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -305,7 +275,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double maxW =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 600;
+            (constraints.maxWidth.isFinite && constraints.maxWidth > 1000) ? constraints.maxWidth : 1000;
         // Two-column (landscape) whenever the card is comfortably wide. Based on
         // width only — the available height can be reported loosely here, and a
         // height check was wrongly falling back to the small single column.
@@ -372,6 +342,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         return Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
             child: SizedBox(width: maxW, child: body),
           ),
         );
@@ -380,36 +351,39 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   }
 
   Widget _topLabelRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 56,
-          height: 1.5,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Colors.transparent, _kGold, Colors.transparent]),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 1.5,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.transparent, _kGold, Colors.transparent]),
+            ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Text(
-          'THE CALM BEFORE THE STORM',
-          style: GoogleFonts.inter(
-            color: _kGoldDark,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2.9,
+          const SizedBox(width: 14),
+          Text(
+            'THE CALM BEFORE THE STORM',
+            style: GoogleFonts.inter(
+              color: _kGoldDark,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2.9,
+            ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Container(
-          width: 56,
-          height: 1.5,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Colors.transparent, _kGold, Colors.transparent]),
+          const SizedBox(width: 14),
+          Container(
+            width: 56,
+            height: 1.5,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.transparent, _kGold, Colors.transparent]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -520,7 +494,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: isActive ? _kInkGreen : _kGoldDark,
+                color: isActive ? const Color(0xFF0F2318) : _kGoldDark,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.5,
@@ -602,13 +576,13 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: _kInkGreen.withOpacity(0.85), size: 20),
+          Icon(icon, color: _kGold, size: 20),
           const SizedBox(width: 9),
           Text(
             text,
             style: const TextStyle(
               fontFamily: 'Arial',
-              color: _kInkGreen,
+              color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4,
@@ -630,7 +604,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   Widget _champCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F2318).withOpacity(0.6),
         border: Border.all(color: _kGold.withOpacity(0.4), width: 1),
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
@@ -663,7 +637,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                         'CHAMPIONSHIP POINTS',
                         style: TextStyle(
                           fontFamily: 'Arial',
-                          color: _kInkGreen,
+                          color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 2.1,
@@ -674,7 +648,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                         'Only the Top 3 players with a positive chip balance earn championship points.',
                         style: TextStyle(
                           fontFamily: 'Georgia',
-                          color: Color(0xFF5A4A30),
+                          color: Colors.white70,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -724,14 +698,17 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Georgia',
-                color: valueColor == _kGold ? const Color(0xFFB8892E) : valueColor,
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                height: 1,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  color: valueColor == _kGold ? const Color(0xFFE0C475) : valueColor,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
               ),
             ),
             const SizedBox(height: 4),
@@ -807,43 +784,11 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     return Stack(
       children: [
         Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              color: _kCardPaper,
-              border: Border.all(color: _kGold, width: 2.5),
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(color: _kGold.withOpacity(0.18), spreadRadius: 6),
-                const BoxShadow(color: Color(0x40000000), blurRadius: 40, offset: Offset(0, 12)),
-              ],
-            ),
-            child: Stack(
-              children: [
-                // Inner gold inset line
-                Positioned.fill(
-                  child: Padding(
-                    padding: const EdgeInsets.all(7),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: _kGold.withOpacity(0.5), width: 1),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(40, 32, 40, 28),
-                  child: _buildBriefingContent(provider, count, players),
-                ),
-              ],
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(40, 32, 40, 28),
+            child: _buildBriefingContent(provider, count, players),
           ),
         ),
-        // Corner notches (page color = green, since the briefing screen sits on green bg)
-        Positioned(top: 0, left: 0, child: _briefingCornerBite(topLeft: true)),
-        Positioned(top: 0, right: 0, child: _briefingCornerBite(topRight: true)),
-        Positioned(bottom: 0, left: 0, child: _briefingCornerBite(bottomLeft: true)),
-        Positioned(bottom: 0, right: 0, child: _briefingCornerBite(bottomRight: true)),
       ],
     );
   }
@@ -859,7 +804,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double w =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 700;
+            (constraints.maxWidth.isFinite && constraints.maxWidth > 1000) ? constraints.maxWidth : 1000;
         return Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -886,7 +831,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Georgia',
-                      color: Color(0xFF051410),
+                      color: Colors.white,
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
                       height: 1.1,
@@ -900,7 +845,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                     TextSpan(
                       style: const TextStyle(
                         fontFamily: 'Georgia',
-                        color: Color(0xFF3A3028),
+                        color: Colors.white70,
                         fontSize: 17,
                         fontWeight: FontWeight.w500,
                         height: 1.4,
@@ -966,7 +911,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F2318).withOpacity(0.6),
         border: Border.all(color: _kGold.withOpacity(0.4), width: 1),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
@@ -1031,7 +976,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
       decoration: BoxDecoration(
-        color: const Color(0xFF000000).withOpacity(0.03),
+        color: const Color(0xFF000000).withOpacity(0.15),
         border: Border.all(color: _kGold.withOpacity(0.1), width: 1),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -1083,7 +1028,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             TextSpan(
               style: const TextStyle(
                 fontFamily: 'Arial',
-                color: Color(0xFF3A3028),
+                color: Colors.white70,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -1092,7 +1037,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                 const TextSpan(text: 'MATCHED '),
                 TextSpan(
                   text: '$count/6',
-                  style: const TextStyle(color: _kGoldDark),
+                  style: const TextStyle(color: _kGold),
                 ),
                 const TextSpan(text: ' PLAYERS'),
               ],

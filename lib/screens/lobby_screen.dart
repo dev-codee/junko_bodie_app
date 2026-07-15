@@ -477,24 +477,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ],
         ),
-
-        const Spacer(),
-
-        // Sign out
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-          ),
-          child: IconButton(
-            onPressed: () => auth.signOut(),
-            icon: const Icon(Icons.logout, color: Color(0xFF8B6B22), size: 24),
-            tooltip: 'Sign Out',
-          ),
-        ),
       ],
     );
   }
