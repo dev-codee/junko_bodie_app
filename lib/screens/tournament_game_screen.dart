@@ -191,6 +191,8 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         final isMeEliminated = mePlayer != null && mePlayer.status == 'eliminated';
         // Identify if tournament completed
         final isCompleted = provider.phase == 'completed' || provider.tournament?.status == 'completed';
+        
+        final bool isSpinning = provider.phase == 'spinning';
 
         // Show the elimination screen persistently once I'm out (not just during
         // the transient 'elimination' phase) so a mid-tournament elimination
@@ -201,78 +203,73 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFF050B08),
+          endDrawer: Drawer(
+            width: 250.0,
+            backgroundColor: const Color(0xFF050B08),
+            child: Column(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TournamentScoresSidebar(
+                    scores: provider.scores,
+                    myPlayerId: mePlayer?.playerId,
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: TournamentEventsFeed(
+                    events: provider.events,
+                  ),
+                ),
+              ],
+            ),
+          ),
           body: Stack(
             children: [
-              // Main gameplay container
-              Column(
-                children: [
-                  // 1. Top Header
-                  _buildHeader(provider),
-                  
-                  // 2. Middle area — web layout: big felt table on the left,
-                  //    Leaderboard + Live Feed stacked in a single right column.
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Right column ~20% of the width (clamped), like the web
-                        // sidebar. Kept slim so the felt table (and its number
-                        // grid) gets the dominant share of the width.
-                        final double sidebarWidth =
-                            (constraints.maxWidth * 0.20).clamp(180.0, 250.0);
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Roulette Felt Table (Left, dominant)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 2.0, vertical: 6.0),
-                                child: LayoutBuilder(
-                                  builder: (context, tableConstraints) {
-                                    final double tableWidth = math.max(tableConstraints.maxWidth, 850.0);
-                                    return SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: SizedBox(
-                                        width: tableWidth,
-                                        child: const TournamentRouletteTable(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-
-                            // Right sidebar: Leaderboard (top) + Live Feed (bottom)
-                            SizedBox(
-                              width: sidebarWidth,
-                              child: Column(
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: TournamentScoresSidebar(
-                                      scores: provider.scores,
-                                      myPlayerId: mePlayer?.playerId,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 3,
-                                    child: TournamentEventsFeed(
-                                      events: provider.events,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+              // 1. Main Gameplay Felt Table
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                padding: isSpinning
+                    ? EdgeInsets.zero
+                    : const EdgeInsets.only(top: 48, bottom: 58),
+                child: Padding(
+                  padding: isSpinning
+                      ? EdgeInsets.zero
+                      : const EdgeInsets.only(left: 0.0, right: 5.0),
+                  child: LayoutBuilder(
+                    builder: (context, tableConstraints) {
+                      final double tableWidth = math.max(tableConstraints.maxWidth, 850.0);
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: tableWidth,
+                          child: const TournamentRouletteTable(),
+                        ),
+                      );
+                    },
                   ),
+                ),
+              ),
 
-                  // 3. Bottom footer — chip tray (left), player card (center),
-                  //    betting controls (right). Mirrors the web tournament bar.
-                  _buildFooter(provider, canBet, balance, totalBet, mePlayer),
-                ],
+              // 2. Top Header Bar
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                top: isSpinning ? -48 : 0,
+                left: 0,
+                right: 0,
+                child: _buildHeader(provider),
+              ),
+
+              // 3. Bottom footer
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                bottom: isSpinning ? -68 : 0,
+                left: 0,
+                right: 0,
+                child: _buildFooter(provider, canBet, balance, totalBet, mePlayer),
               ),
 
               // 4. Result Display Overlay
@@ -413,6 +410,20 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
+          const SizedBox(width: 8),
+
+          // Scoreboard Button
+          Builder(
+            builder: (ctx) => IconButton(
+              onPressed: () {
+                soundEngine.playClick();
+                Scaffold.of(ctx).openEndDrawer();
+              },
+              icon: const Icon(Icons.menu, color: Color(0xFFF5EDD5), size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
           const SizedBox(width: 12),
 
           // Round / Spin indicator (matches the web header, far right)
@@ -459,6 +470,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     final bool canRebet = canBet && provider.lastSpinBets.isNotEmpty;
 
     return Container(
+      height: 58,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF4A2F1F), Color(0xFF26170F)],

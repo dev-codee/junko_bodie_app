@@ -22,7 +22,7 @@ class TournamentRouletteTable extends StatelessWidget {
 
         // Build combined bets map for visual display (my bets + bot bets)
         final mergedBets = <String, PlacedBet>{};
-        
+
         // Add human player bets
         provider.bets.forEach((betId, b) {
           mergedBets[betId] = PlacedBet(
@@ -38,11 +38,16 @@ class TournamentRouletteTable extends StatelessWidget {
         for (var bb in provider.botBets) {
           final String betId = bb['betId'] ?? '';
           final double amount = (bb['amount'] ?? 0.0).toDouble();
-          final List<double> chips = (bb['chips'] as List<dynamic>?)?.map((c) => (c as num).toDouble()).toList() ?? [amount];
+          final List<double> chips =
+              (bb['chips'] as List<dynamic>?)
+                  ?.map((c) => (c as num).toDouble())
+                  .toList() ??
+              [amount];
           final String username = bb['username'] ?? 'Bot';
 
           final playerInfo = _scoreByUsername(provider.scores, username);
-          final String colorHex = (playerInfo != null && playerInfo['color'] != null)
+          final String colorHex =
+              (playerInfo != null && playerInfo['color'] != null)
               ? playerInfo['color'].toString()
               : '#ffffff';
 
@@ -53,7 +58,10 @@ class TournamentRouletteTable extends StatelessWidget {
               amount: existing.amount + amount,
               chips: [...existing.chips, ...chips],
               customColor: colorHex,
-              playerInitial: username.substring(0, math.min(2, username.length)),
+              playerInitial: username.substring(
+                0,
+                math.min(2, username.length),
+              ),
             );
           } else {
             mergedBets[betId] = PlacedBet(
@@ -61,7 +69,10 @@ class TournamentRouletteTable extends StatelessWidget {
               amount: amount,
               chips: chips,
               customColor: colorHex,
-              playerInitial: username.substring(0, math.min(2, username.length)),
+              playerInitial: username.substring(
+                0,
+                math.min(2, username.length),
+              ),
             );
           }
         }
@@ -182,15 +193,21 @@ class TournamentRouletteTable extends StatelessWidget {
                                 children: [
                                   // Top row Title
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           ShaderMask(
-                                            shaderCallback: (bounds) => const LinearGradient(
-                                              colors: [Color(0xFFF5EDD5), Color(0xFFC9A44C)],
-                                            ).createShader(bounds),
+                                            shaderCallback: (bounds) =>
+                                                const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFFF5EDD5),
+                                                    Color(0xFFC9A44C),
+                                                  ],
+                                                ).createShader(bounds),
                                             child: const Text(
                                               'JUNKO BODIE ROULETTE',
                                               style: TextStyle(
@@ -206,7 +223,9 @@ class TournamentRouletteTable extends StatelessWidget {
                                           Text(
                                             'ROUND ${provider.currentRound} | SPIN ${provider.currentSpin}/5',
                                             style: TextStyle(
-                                              color: const Color(0xFFC9A84C).withOpacity(0.5),
+                                              color: const Color(
+                                                0xFFC9A84C,
+                                              ).withOpacity(0.5),
                                               fontSize: 8,
                                               fontWeight: FontWeight.bold,
                                               letterSpacing: 1.5,
@@ -225,7 +244,9 @@ class TournamentRouletteTable extends StatelessWidget {
                                         // Betting Layout
                                         Positioned.fill(
                                           child: AnimatedOpacity(
-                                            duration: const Duration(milliseconds: 300),
+                                            duration: const Duration(
+                                              milliseconds: 300,
+                                            ),
                                             opacity: isSpinning ? 0.3 : 1.0,
                                             child: IgnorePointer(
                                               ignoring: !canBet,
@@ -235,14 +256,19 @@ class TournamentRouletteTable extends StatelessWidget {
                                                   height: 300,
                                                   child: BettingLayout(
                                                     bets: mergedBets,
-                                                    onPlaceBet: provider.placeBet,
-                                                    onRemoveBet: provider.removeBet,
+                                                    onPlaceBet:
+                                                        provider.placeBet,
+                                                    onRemoveBet:
+                                                        provider.removeBet,
                                                     disabled: !canBet,
-                                                    winningResult: currentSpinResult,
+                                                    winningResult:
+                                                        currentSpinResult,
                                                     showWinHighlight: isResult,
                                                     phase: provider.phase,
-                                                    deleteMode: provider.deleteMode,
-                                                    onClearZone: provider.clearZone,
+                                                    deleteMode:
+                                                        provider.deleteMode,
+                                                    onClearZone:
+                                                        provider.clearZone,
                                                     wheelType: wheelTypeEnum,
                                                     myBets: provider.bets,
                                                     isCompact: useCompact,
@@ -260,14 +286,28 @@ class TournamentRouletteTable extends StatelessWidget {
                                               child: Transform.rotate(
                                                 angle: -5.0 * math.pi / 180.0,
                                                 child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 24,
+                                                        vertical: 12,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.85),
-                                                    border: Border.all(color: const Color(0xFFC9A44C), width: 3),
-                                                    borderRadius: BorderRadius.circular(12),
+                                                    color: Colors.black
+                                                        .withOpacity(0.85),
+                                                    border: Border.all(
+                                                      color: const Color(
+                                                        0xFFC9A44C,
+                                                      ),
+                                                      width: 3,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
                                                   ),
                                                   child: Column(
-                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
                                                     children: [
                                                       const Text(
                                                         'BETS LOCKED',
@@ -275,8 +315,10 @@ class TournamentRouletteTable extends StatelessWidget {
                                                           fontFamily: 'Georgia',
                                                           color: Colors.white,
                                                           fontSize: 20,
-                                                          fontWeight: FontWeight.w900,
-                                                          fontStyle: FontStyle.italic,
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                          fontStyle:
+                                                              FontStyle.italic,
                                                           letterSpacing: 2,
                                                         ),
                                                       ),
@@ -286,19 +328,32 @@ class TournamentRouletteTable extends StatelessWidget {
                                                         width: 100,
                                                         decoration: const BoxDecoration(
                                                           gradient: LinearGradient(
-                                                            colors: [Colors.transparent, Color(0xFFC9A44C), Colors.transparent],
+                                                            colors: [
+                                                              Colors
+                                                                  .transparent,
+                                                              Color(0xFFC9A44C),
+                                                              Colors
+                                                                  .transparent,
+                                                            ],
                                                           ),
                                                         ),
                                                       ),
                                                       const SizedBox(height: 4),
                                                       Text(
                                                         'AWAITING SERVER SPIN...',
-                                                        style: GoogleFonts.inter(
-                                                          color: const Color(0xFFC9A84C),
-                                                          fontSize: 8,
-                                                          fontWeight: FontWeight.bold,
-                                                          letterSpacing: 2.0,
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                              color:
+                                                                  const Color(
+                                                                    0xFFC9A84C,
+                                                                  ),
+                                                              fontSize: 8,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              letterSpacing:
+                                                                  2.0,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),

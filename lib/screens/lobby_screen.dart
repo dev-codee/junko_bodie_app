@@ -369,7 +369,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Profile card
-        GestureDetector(
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
           onTap: () => context.push('/profile'),
           child: Container(
             height: 68,
@@ -447,11 +450,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   ],
                 ),
               ],
-            ),
-          ),
-        ),
-
-        const Spacer(),
+            ), // closes Row
+          ), // closes Container
+        ), // closes GestureDetector
+      ), // closes Align
+    ), // closes Expanded
 
         // Logo center
         Column(
@@ -476,6 +479,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
               ),
             ),
           ],
+        ),
+
+        Expanded(
+          child: const SizedBox(),
         ),
       ],
     );

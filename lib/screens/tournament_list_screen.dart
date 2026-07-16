@@ -205,7 +205,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                 // Main content
                 Positioned.fill(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(48, 16, 48, 24),
+                    padding: const EdgeInsets.fromLTRB(48, 48, 48, 8),
                     child: _buildLobbyContent(),
                   ),
                 ),
@@ -274,12 +274,11 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     // the single column. Either way a FittedBox guards against overflow.
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double maxW =
-            (constraints.maxWidth.isFinite && constraints.maxWidth > 1000) ? constraints.maxWidth : 1000;
-        // Two-column (landscape) whenever the card is comfortably wide. Based on
-        // width only — the available height can be reported loosely here, and a
-        // height check was wrongly falling back to the small single column.
-        final bool wide = maxW > 720;
+        // Use the actual width rather than forcing a 1000px minimum.
+        // This prevents the FittedBox from unconditionally shrinking the layout
+        // on standard phones.
+        final double width = constraints.maxWidth.isFinite ? constraints.maxWidth : 1000;
+        final bool wide = width > 720;
 
         final Widget body = wide
             ? Column(
@@ -294,15 +293,15 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _topLabelRow(),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 4),
                             _title(),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 4),
                             _diamondSeparator(),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 6),
                             _subtitle(),
-                            const SizedBox(height: 26),
+                            const SizedBox(height: 12),
                             _wheelToggle(),
-                            const SizedBox(height: 22),
+                            const SizedBox(height: 12),
                             _enterButton(),
                           ],
                         ),
@@ -312,38 +311,36 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                       Expanded(child: _champCard()),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   _statsRow(),
                 ],
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
                   _topLabelRow(),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   _title(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   _diamondSeparator(),
-                  const SizedBox(height: 10),
-                  _subtitle(),
-                  const SizedBox(height: 18),
-                  _wheelToggle(),
-                  const SizedBox(height: 18),
-                  _enterButton(),
-                  const SizedBox(height: 22),
-                  _statsRow(),
-                  const SizedBox(height: 14),
-                  _champCard(),
                   const SizedBox(height: 6),
+                  _subtitle(),
+                  const SizedBox(height: 10),
+                  _wheelToggle(),
+                  const SizedBox(height: 10),
+                  _enterButton(),
+                  const SizedBox(height: 12),
+                  _statsRow(),
+                  const SizedBox(height: 8),
+                  _champCard(),
+                  const SizedBox(height: 4),
                 ],
               );
 
         return Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: SizedBox(width: maxW, child: body),
+          child: SingleChildScrollView(
+            child: SizedBox(width: width, child: body),
           ),
         );
       },
@@ -394,8 +391,8 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
       style: const TextStyle(
         fontFamily: 'Georgia',
         color: _kInkGreen,
-        fontSize: 34,
-        fontWeight: FontWeight.w700,
+        fontSize: 42,
+        fontWeight: FontWeight.w900,
         height: 1.1,
         letterSpacing: 0.4,
         fontFeatures: [FontFeature.enable('smcp')],
@@ -429,7 +426,8 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         style: TextStyle(
           fontFamily: 'Georgia',
           color: _kInkBrown,
-          fontSize: 16,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
           height: 1.55,
         ),
       ),
@@ -452,7 +450,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: const Color(0xFF0F2318).withOpacity(0.06),
               borderRadius: BorderRadius.circular(100),
@@ -482,7 +480,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isActive ? _kGold : _kGold.withOpacity(0.08),
             borderRadius: BorderRadius.circular(100),
@@ -515,7 +513,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           width: double.infinity,
-          height: 64,
+          height: 52,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
@@ -596,7 +594,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   Widget _statVDivider() {
     return Container(
       width: 1,
-      height: 28,
+      height: 20,
       color: _kInkGreen.withOpacity(0.3),
     );
   }
@@ -615,7 +613,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         children: [
           // Top row
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             child: Row(
               children: [
                 Container(
@@ -682,7 +680,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
   Widget _champCol(String place, String value, Color valueColor, {bool dimmed = false}) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
