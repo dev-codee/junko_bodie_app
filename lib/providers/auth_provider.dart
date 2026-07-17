@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:junko_bodie/services/subscription_service.dart';
 import 'package:junko_bodie/services/user_service.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -73,6 +74,34 @@ class AuthProvider extends ChangeNotifier {
       OAuthProvider.google,
       redirectTo: 'com.junkobodieroulette.app://login-callback/',
     );
+  }
+
+  /// Sign in with Apple. Required by Apple App Store Guidelines (4.8).
+  /// Uses native flow on iOS/macOS and falls back to Web OAuth flow on other platforms.
+  Future<void> signInWithApple() async {
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS)) {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw Exception('Apple identity token is null.');
+      }
+
+      await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+      );
+    } else {
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'com.junkobodieroulette.app://login-callback/',
+      );
+    }
   }
 
   /// Sign in with email and password.

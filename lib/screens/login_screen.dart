@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:junko_bodie/config/theme.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
@@ -57,6 +58,21 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.signInWithGoogle();
     } catch (e) {
       setState(() => _error = 'Google sign-in failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final auth = context.read<AuthProvider>();
+      await auth.signInWithApple();
+    } catch (e) {
+      setState(() => _error = 'Apple sign-in failed. Please try again.');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -226,6 +242,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+
+                    // Apple Sign-In (Mandated by Apple App Review Guideline 4.8 on iOS)
+                    if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _isSubmitting ? null : _handleAppleSignIn,
+                          icon: const Icon(Icons.apple, size: 20, color: Colors.white),
+                          label: const Text('Continue with Apple'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     // Divider

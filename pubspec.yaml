@@ -1,7 +1,7 @@
 name: junko_bodie
 description: "Junko Bodie Roulette Tournament — Premium play-money roulette simulator."
 publish_to: 'none'
-version: 1.0.0+11
+version: 1.0.0+12
 
 environment:
   sdk: ^3.12.1
@@ -15,6 +15,7 @@ dependencies:
 
   # Auth
   supabase_flutter: ^2.8.0
+  sign_in_with_apple: ^6.1.3
 
   # HTTP / Networking
   http: ^1.3.0

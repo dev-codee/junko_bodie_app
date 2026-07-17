@@ -240,64 +240,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (firstConfirm != true || !mounted) return;
 
     // Second confirmation — type "DELETE"
-    final deleteController = TextEditingController();
     final secondConfirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _kCard,
-        title: const Text(
-          'Final Confirmation',
-          style: TextStyle(
-            fontFamily: 'Georgia',
-            color: Color(0xFFC0392B),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Type DELETE to confirm account deletion:',
-              style: TextStyle(color: _kInk),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: deleteController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'DELETE',
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: _kGold),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: const Color(0xFFC0392B), width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: _kGoldDark)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (deleteController.text.trim().toUpperCase() == 'DELETE') {
-                Navigator.of(ctx).pop(true);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC0392B),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete My Account'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => _DeleteConfirmDialog(
+        cardColor: _kCard,
+        inkColor: _kInk,
+        goldColor: _kGold,
       ),
     );
-    deleteController.dispose();
 
     if (secondConfirm != true || !mounted) return;
 
@@ -305,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       setState(() => _isSaving = true);
       await context.read<AuthProvider>().deleteAccount();
-      if (mounted) context.go('/');
+      // GoRouter redirect automatically handles sign out routing.
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -1123,5 +1074,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return Icon(Icons.person, size: size, color: c);
     }
+  }
+}
+
+class _DeleteConfirmDialog extends StatefulWidget {
+  final Color cardColor;
+  final Color inkColor;
+  final Color goldColor;
+
+  const _DeleteConfirmDialog({
+    required this.cardColor,
+    required this.inkColor,
+    required this.goldColor,
+  });
+
+  @override
+  State<_DeleteConfirmDialog> createState() => _DeleteConfirmDialogState();
+}
+
+class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: widget.cardColor,
+      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      title: const Text(
+        'Final Confirmation',
+        style: TextStyle(
+          fontFamily: 'Georgia',
+          color: Color(0xFFC0392B),
+          fontWeight: FontWeight.w700,
+          fontSize: 18,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Type DELETE to confirm account deletion:',
+              style: TextStyle(color: widget.inkColor, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              style: TextStyle(color: widget.inkColor, fontSize: 14),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.65),
+                hintText: 'DELETE',
+                hintStyle: TextStyle(color: widget.inkColor.withValues(alpha: 0.4), fontSize: 13),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: widget.goldColor, width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: widget.goldColor.withValues(alpha: 0.5), width: 1),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFC0392B), width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel', style: TextStyle(color: Color(0xFF8B6914))),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_controller.text.trim().toUpperCase() == 'DELETE') {
+              Navigator.of(context).pop(true);
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFC0392B),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+          child: const Text('Delete My Account'),
+        ),
+      ],
+    );
   }
 }
