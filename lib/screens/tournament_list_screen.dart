@@ -293,15 +293,15 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _topLabelRow(),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             _title(),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             _diamondSeparator(),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             _subtitle(),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             _wheelToggle(),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             _enterButton(),
                           ],
                         ),
@@ -311,30 +311,30 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                       Expanded(child: _champCard()),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   _statsRow(),
                 ],
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   _topLabelRow(),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   _title(),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   _diamondSeparator(),
-                  const SizedBox(height: 6),
-                  _subtitle(),
-                  const SizedBox(height: 10),
-                  _wheelToggle(),
-                  const SizedBox(height: 10),
-                  _enterButton(),
-                  const SizedBox(height: 12),
-                  _statsRow(),
-                  const SizedBox(height: 8),
-                  _champCard(),
                   const SizedBox(height: 4),
+                  _subtitle(),
+                  const SizedBox(height: 6),
+                  _wheelToggle(),
+                  const SizedBox(height: 8),
+                  _enterButton(),
+                  const SizedBox(height: 8),
+                  _statsRow(),
+                  const SizedBox(height: 6),
+                  _champCard(),
+                  const SizedBox(height: 2),
                 ],
               );
 
@@ -366,9 +366,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             'THE CALM BEFORE THE STORM',
             style: GoogleFonts.inter(
               color: _kGoldDark,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 2.9,
+              letterSpacing: 2.2,
             ),
           ),
           const SizedBox(width: 14),
@@ -391,7 +391,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
       style: const TextStyle(
         fontFamily: 'Georgia',
         color: _kInkGreen,
-        fontSize: 42,
+        fontSize: 24,
         fontWeight: FontWeight.w900,
         height: 1.1,
         letterSpacing: 0.4,
@@ -426,9 +426,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         style: TextStyle(
           fontFamily: 'Georgia',
           color: _kInkBrown,
-          fontSize: 18,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
-          height: 1.55,
+          height: 1.45,
         ),
       ),
     );
@@ -441,12 +441,12 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
           'SELECT WHEEL VARIANT',
           style: GoogleFonts.inter(
             color: _kGoldDark,
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
-            letterSpacing: 3.2,
+            letterSpacing: 2.5,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Container(
@@ -480,7 +480,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             color: isActive ? _kGold : _kGold.withOpacity(0.08),
             borderRadius: BorderRadius.circular(100),
@@ -493,9 +493,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
               label,
               style: TextStyle(
                 color: isActive ? const Color(0xFF0F2318) : _kGoldDark,
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
+                letterSpacing: 1.2,
                 fontFamily: 'Arial',
               ),
             ),
@@ -513,7 +513,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           width: double.infinity,
-          height: 52,
+          height: 44,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
@@ -541,9 +541,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
           child: DefaultTextStyle(
             style: const TextStyle(
               color: Color(0xFF0F2318),
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.w900,
-              letterSpacing: 4.0,
+              letterSpacing: 2.5,
               decoration: TextDecoration.none,
             ),
             child: const Text('ENTER TOURNAMENT'),
@@ -574,16 +574,16 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: _kGold, size: 20),
-          const SizedBox(width: 9),
+          Icon(icon, color: _kGold, size: 16),
+          const SizedBox(width: 8),
           Text(
             text,
             style: const TextStyle(
               fontFamily: 'Arial',
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
+              letterSpacing: 1.0,
             ),
           ),
         ],
@@ -613,19 +613,19 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         children: [
           // Top row
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
                     color: _kInkGreen,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.emoji_events, color: _kGold, size: 22),
+                  child: const Icon(Icons.emoji_events, color: _kGold, size: 18),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,19 +636,19 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                         style: TextStyle(
                           fontFamily: 'Arial',
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 2.1,
+                          letterSpacing: 1.5,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 3),
                       Text(
                         'Only the Top 3 players with a positive chip balance earn championship points.',
                         style: TextStyle(
                           fontFamily: 'Georgia',
                           color: Colors.white70,
-                          fontSize: 14,
-                          height: 1.4,
+                          fontSize: 11,
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -690,12 +690,12 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
               style: const TextStyle(
                 fontFamily: 'Arial',
                 color: _kInkMuted,
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+                letterSpacing: 1.0,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
@@ -703,17 +703,17 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                 style: TextStyle(
                   fontFamily: 'Georgia',
                   color: valueColor == _kGold ? const Color(0xFFE0C475) : valueColor,
-                  fontSize: 32,
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
                   height: 1,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Opacity(
               opacity: dimmed ? 0.35 : 0.75,
               child: CustomPaint(
-                size: const Size(56, 16),
+                size: const Size(40, 12),
                 painter: _LaurelPainter(),
               ),
             ),
@@ -723,9 +723,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
               style: TextStyle(
                 fontFamily: 'Arial',
                 color: _kInkMuted,
-                fontSize: 11,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.3,
+                letterSpacing: 1.0,
               ),
             ),
           ],

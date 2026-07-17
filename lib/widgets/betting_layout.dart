@@ -755,145 +755,154 @@ class _BettingLayoutState extends State<BettingLayout> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              // ZEROS BLOCK
-              Container(
-                width: spacerWidth,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
-                  color: Colors.transparent,
-                ),
-                child: widget.wheelType == WheelType.american
-                    ? LayoutBuilder(
-                        builder: (context, constraints) {
-                          return Stack(
-                            children: [
-                              Column(
-                                children: [
-                                  NumberCell(
-                                    num: 37, // "00"
-                                    bet: widget.bets['straight-00'],
-                                    onPlace: () => widget.onPlaceBet('straight-00'),
-                                    onRemove: () => widget.onRemoveBet('straight-00'),
-                                    disabled: widget.disabled,
-                                    isWinner: _isWinningNumber(37) || _isBetWinner('straight-00'),
-                                    phase: widget.phase,
-                                    isHovered: _hoveredNumbers.contains(37) || _selfHoveredNumber == 37,
-                                    onNumberHover: _handleNumberHover,
-                                    onNumberHoverEnd: _handleNumberHoverEnd,
-                                    deleteMode: widget.deleteMode,
-                                    onPopLastChip: widget.onPopLastChip,
-                                    onClearZone: widget.onClearZone,
-                                    isMine: widget.myBets?.containsKey('straight-00') ?? true,
-                                    isCompact: widget.isCompact,
-                                  ),
-                                  NumberCell(
-                                    num: 0,
-                                    bet: widget.bets['straight-0'],
-                                    onPlace: () => widget.onPlaceBet('straight-0'),
-                                    onRemove: () => widget.onRemoveBet('straight-0'),
-                                    disabled: widget.disabled,
-                                    isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
-                                    phase: widget.phase,
-                                    isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
-                                    onNumberHover: _handleNumberHover,
-                                    onNumberHoverEnd: _handleNumberHoverEnd,
-                                    deleteMode: widget.deleteMode,
-                                    onPopLastChip: widget.onPopLastChip,
-                                    onClearZone: widget.onClearZone,
-                                    isMine: widget.myBets?.containsKey('straight-0') ?? true,
-                                    isCompact: widget.isCompact,
-                                  ),
-                                ],
-                              ),
-                              DropZone(
-                                betId: 'split-0-00',
-                                left: constraints.maxWidth / 2,
-                                top: constraints.maxHeight / 2,
-                                width: 16,
-                                height: 8,
-                                bets: widget.bets,
-                                onPlace: widget.onPlaceBet,
-                                onRemove: widget.onRemoveBet,
-                                disabled: widget.disabled,
-                                isWinner: _isBetWinner('split-0-00'),
-                                phase: widget.phase,
-                                numbers: const [0, 37],
-                                onHover: _handleHover,
-                                onHoverEnd: _handleHoverEnd,
-                                deleteMode: widget.deleteMode,
-                                onPopLastChip: widget.onPopLastChip,
-                                onClearZone: widget.onClearZone,
-                                isMine: widget.myBets?.containsKey('split-0-00') ?? true,
-                              ),
-                            ],
-                          );
-                        },
-                      )
-                    : Column(
-                        children: [
-                          NumberCell(
-                            num: 0,
-                            bet: widget.bets['straight-0'],
-                            onPlace: () => widget.onPlaceBet('straight-0'),
-                            onRemove: () => widget.onRemoveBet('straight-0'),
-                            disabled: widget.disabled,
-                            isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
-                            phase: widget.phase,
-                            isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
-                            onNumberHover: _handleNumberHover,
-                            onNumberHoverEnd: _handleNumberHoverEnd,
-                            deleteMode: widget.deleteMode,
-                            onPopLastChip: widget.onPopLastChip,
-                            onClearZone: widget.onClearZone,
-                            isMine: widget.myBets?.containsKey('straight-0') ?? true,
-                            isCompact: widget.isCompact,
-                          ),
-                        ],
-                      ),
-              ),
-
-              // NUMBERS GRID
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
-                  ),
+                Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final gridWidth = constraints.maxWidth;
+                      final totalWidth = constraints.maxWidth;
                       final gridHeight = constraints.maxHeight;
+                      final gridWidth = totalWidth - spacerWidth;
 
                       return Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          // 3 Rows of 12 columns
-                          Column(
-                            children: gridRows.map((row) {
-                              return Expanded(
-                                child: Row(
-                                  children: row.map((num) {
-                                    final betId = 'straight-$num';
-                                    return NumberCell(
-                                      num: num,
-                                      bet: widget.bets[betId],
-                                      onPlace: () => widget.onPlaceBet(betId),
-                                      onRemove: () => widget.onRemoveBet(betId),
-                                      disabled: widget.disabled,
-                                      isWinner: _isWinningNumber(num) || _isBetWinner(betId),
-                                      phase: widget.phase,
-                                      isHovered: _hoveredNumbers.contains(num) || _selfHoveredNumber == num,
-                                      onNumberHover: _handleNumberHover,
-                                      onNumberHoverEnd: _handleNumberHoverEnd,
-                                      deleteMode: widget.deleteMode,
-                                      onPopLastChip: widget.onPopLastChip,
-                                      onClearZone: widget.onClearZone,
-                                      isMine: widget.myBets?.containsKey(betId) ?? true,
-                                      isCompact: widget.isCompact,
-                                    );
-                                  }).toList(),
+                          // Background Grid & Zeros Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ZEROS BLOCK
+                              Container(
+                                width: spacerWidth,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
+                                  color: Colors.transparent,
                                 ),
-                              );
-                            }).toList(),
+                                child: widget.wheelType == WheelType.american
+                                    ? LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          return Stack(
+                                            children: [
+                                              Column(
+                                                children: [
+                                                  NumberCell(
+                                                    num: 37, // "00"
+                                                    bet: widget.bets['straight-00'],
+                                                    onPlace: () => widget.onPlaceBet('straight-00'),
+                                                    onRemove: () => widget.onRemoveBet('straight-00'),
+                                                    disabled: widget.disabled,
+                                                    isWinner: _isWinningNumber(37) || _isBetWinner('straight-00'),
+                                                    phase: widget.phase,
+                                                    isHovered: _hoveredNumbers.contains(37) || _selfHoveredNumber == 37,
+                                                    onNumberHover: _handleNumberHover,
+                                                    onNumberHoverEnd: _handleNumberHoverEnd,
+                                                    deleteMode: widget.deleteMode,
+                                                    onPopLastChip: widget.onPopLastChip,
+                                                    onClearZone: widget.onClearZone,
+                                                    isMine: widget.myBets?.containsKey('straight-00') ?? true,
+                                                    isCompact: widget.isCompact,
+                                                  ),
+                                                  NumberCell(
+                                                    num: 0,
+                                                    bet: widget.bets['straight-0'],
+                                                    onPlace: () => widget.onPlaceBet('straight-0'),
+                                                    onRemove: () => widget.onRemoveBet('straight-0'),
+                                                    disabled: widget.disabled,
+                                                    isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
+                                                    phase: widget.phase,
+                                                    isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
+                                                    onNumberHover: _handleNumberHover,
+                                                    onNumberHoverEnd: _handleNumberHoverEnd,
+                                                    deleteMode: widget.deleteMode,
+                                                    onPopLastChip: widget.onPopLastChip,
+                                                    onClearZone: widget.onClearZone,
+                                                    isMine: widget.myBets?.containsKey('straight-0') ?? true,
+                                                    isCompact: widget.isCompact,
+                                                  ),
+                                                ],
+                                              ),
+                                              DropZone(
+                                                betId: 'split-0-00',
+                                                left: constraints.maxWidth / 2,
+                                                top: constraints.maxHeight / 2,
+                                                width: 16,
+                                                height: 8,
+                                                bets: widget.bets,
+                                                onPlace: widget.onPlaceBet,
+                                                onRemove: widget.onRemoveBet,
+                                                disabled: widget.disabled,
+                                                isWinner: _isBetWinner('split-0-00'),
+                                                phase: widget.phase,
+                                                numbers: const [0, 37],
+                                                onHover: _handleHover,
+                                                onHoverEnd: _handleHoverEnd,
+                                                deleteMode: widget.deleteMode,
+                                                onPopLastChip: widget.onPopLastChip,
+                                                onClearZone: widget.onClearZone,
+                                                isMine: widget.myBets?.containsKey('split-0-00') ?? true,
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      )
+                                    : Column(
+                                        children: [
+                                          NumberCell(
+                                            num: 0,
+                                            bet: widget.bets['straight-0'],
+                                            onPlace: () => widget.onPlaceBet('straight-0'),
+                                            onRemove: () => widget.onRemoveBet('straight-0'),
+                                            disabled: widget.disabled,
+                                            isWinner: _isWinningNumber(0) || _isBetWinner('straight-0'),
+                                            phase: widget.phase,
+                                            isHovered: _hoveredNumbers.contains(0) || _selfHoveredNumber == 0,
+                                            onNumberHover: _handleNumberHover,
+                                            onNumberHoverEnd: _handleNumberHoverEnd,
+                                            deleteMode: widget.deleteMode,
+                                            onPopLastChip: widget.onPopLastChip,
+                                            onClearZone: widget.onClearZone,
+                                            isMine: widget.myBets?.containsKey('straight-0') ?? true,
+                                            isCompact: widget.isCompact,
+                                          ),
+                                        ],
+                                      ),
+                              ),
+
+                              // NUMBERS GRID
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFF5EA896), width: 1.5),
+                                  ),
+                                  child: Column(
+                                    children: gridRows.map((row) {
+                                      return Expanded(
+                                        child: Row(
+                                          children: row.map((num) {
+                                            final betId = 'straight-$num';
+                                            return NumberCell(
+                                              num: num,
+                                              bet: widget.bets[betId],
+                                              onPlace: () => widget.onPlaceBet(betId),
+                                              onRemove: () => widget.onRemoveBet(betId),
+                                              disabled: widget.disabled,
+                                              isWinner: _isWinningNumber(num) || _isBetWinner(betId),
+                                              phase: widget.phase,
+                                              isHovered: _hoveredNumbers.contains(num) || _selfHoveredNumber == num,
+                                              onNumberHover: _handleNumberHover,
+                                              onNumberHoverEnd: _handleNumberHoverEnd,
+                                              deleteMode: widget.deleteMode,
+                                              onPopLastChip: widget.onPopLastChip,
+                                              onClearZone: widget.onClearZone,
+                                              isMine: widget.myBets?.containsKey(betId) ?? true,
+                                              isCompact: widget.isCompact,
+                                            );
+                                          }).toList(),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
 
                           // ── COMBINATION BETS OVERLAY (STREETS, SPLITS, CORNERS, SIXLINES) ──
@@ -902,7 +911,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                             final betId = 'split-$n-${n + 3}';
                             final col = (n - 1) ~/ 3;
                             final row = 2 - ((n - 1) % 3);
-                            final left = (col + 1) * (gridWidth / 12);
+                            final left = spacerWidth + (col + 1) * (gridWidth / 12);
                             final top = (row + 0.5) * (gridHeight / 3);
 
                             return DropZone(
@@ -933,7 +942,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                             final betId = 'split-$n-${n + 1}';
                             final col = (n - 1) ~/ 3;
                             final row = 2 - ((n - 1) % 3);
-                            final left = (col + 0.5) * (gridWidth / 12);
+                            final left = spacerWidth + (col + 0.5) * (gridWidth / 12);
                             final top = row * (gridHeight / 3);
 
                             return DropZone(
@@ -964,7 +973,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                             final betId = 'corner-$n-${n + 1}-${n + 3}-${n + 4}';
                             final col = (n - 1) ~/ 3;
                             final row = 2 - ((n - 1) % 3);
-                            final left = (col + 1) * (gridWidth / 12);
+                            final left = spacerWidth + (col + 1) * (gridWidth / 12);
                             final top = row * (gridHeight / 3);
 
                             return DropZone(
@@ -994,7 +1003,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                           ...[1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].map((n) {
                             final betId = 'street-$n-${n + 1}-${n + 2}';
                             final col = (n - 1) ~/ 3;
-                            final left = (col + 0.5) * (gridWidth / 12);
+                            final left = spacerWidth + (col + 0.5) * (gridWidth / 12);
                             final top = gridHeight;
 
                             return DropZone(
@@ -1024,7 +1033,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                           ...[1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31].map((n) {
                             final betId = 'sixline-$n-${n + 5}';
                             final col = (n - 1) ~/ 3;
-                            final left = (col + 1) * (gridWidth / 12);
+                            final left = spacerWidth + (col + 1) * (gridWidth / 12);
                             final top = gridHeight;
 
                             return DropZone(
@@ -1051,30 +1060,30 @@ class _BettingLayoutState extends State<BettingLayout> {
                           }),
 
                           // Boundary splits with Zero
-                          DropZone(betId: 'split-0-1', left: 0, top: gridHeight * 0.833, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
-                          DropZone(betId: 'split-0-2', left: 0, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
+                          DropZone(betId: 'split-0-1', left: spacerWidth, top: gridHeight * 0.833, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
+                          DropZone(betId: 'split-0-2', left: spacerWidth, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'split-00-2', left: 0, top: gridHeight * 0.40, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
-                            DropZone(betId: 'split-00-3', left: 0, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
+                            DropZone(betId: 'split-00-2', left: spacerWidth, top: gridHeight * 0.40, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
+                            DropZone(betId: 'split-00-3', left: spacerWidth, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'split-0-3', left: 0, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
+                            DropZone(betId: 'split-0-3', left: spacerWidth, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
                           ],
 
                           // Trio & Basket
-                          DropZone(betId: 'trio-0-1-2', left: 0, top: gridHeight * 0.666, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
-                          DropZone(betId: 'trio-0-2-3', left: 0, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
+                          DropZone(betId: 'trio-0-1-2', left: spacerWidth, top: gridHeight * 0.666, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
+                          DropZone(betId: 'trio-0-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'trio-00-2-3', left: 0, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
-                            DropZone(betId: 'basket-0-00-1-2-3', left: 0, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
+                            DropZone(betId: 'trio-00-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
+                            DropZone(betId: 'trio-0-00-2', left: spacerWidth, top: gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-00-2'), phase: widget.phase, numbers: const [0, 37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-00-2') ?? true),
+                            DropZone(betId: 'basket-0-00-1-2-3', left: spacerWidth, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'basket-0-1-2-3', left: 0, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
+                            DropZone(betId: 'basket-0-1-2-3', left: spacerWidth, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
                           ],
                         ],
                       );
                     },
                   ),
                 ),
-              ),
 
               // COLUMNS BLOCK
               Container(
@@ -1162,6 +1171,9 @@ class _BettingLayoutState extends State<BettingLayout> {
                       OutsideBetCell(
                         label: '1st 12',
                         betId: 'dozen-1st',
+                        border: const Border(
+                          right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                        ),
                         bet: widget.bets['dozen-1st'],
                         onPlace: () => widget.onPlaceBet('dozen-1st'),
                         onRemove: () => widget.onRemoveBet('dozen-1st'),
@@ -1179,6 +1191,9 @@ class _BettingLayoutState extends State<BettingLayout> {
                       OutsideBetCell(
                         label: '2nd 12',
                         betId: 'dozen-2nd',
+                        border: const Border(
+                          right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
+                        ),
                         bet: widget.bets['dozen-2nd'],
                         onPlace: () => widget.onPlaceBet('dozen-2nd'),
                         onRemove: () => widget.onRemoveBet('dozen-2nd'),
@@ -1196,6 +1211,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                       OutsideBetCell(
                         label: '3rd 12',
                         betId: 'dozen-3rd',
+                        border: const Border(),
                         bet: widget.bets['dozen-3rd'],
                         onPlace: () => widget.onPlaceBet('dozen-3rd'),
                         onRemove: () => widget.onRemoveBet('dozen-3rd'),

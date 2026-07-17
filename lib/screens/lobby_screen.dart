@@ -167,7 +167,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           final double gap = (h * 0.025).clamp(8.0, 24.0);
                           final double bottomPad = (h * 0.04).clamp(12.0, 28.0);
                           return Padding(
-                            padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPad),
+                            padding: EdgeInsets.fromLTRB(12, 8, 12, bottomPad),
                             child: Column(
                               children: [
                                 // ── Header ─────────────────────────────────────
@@ -375,8 +375,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
             child: GestureDetector(
           onTap: () => context.push('/profile'),
           child: Container(
-            height: 68,
-            padding: const EdgeInsets.fromLTRB(12, 12, 26, 12),
+            height: 60,
+            padding: const EdgeInsets.fromLTRB(10, 8, 16, 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(16),
@@ -394,11 +394,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
               children: [
                 // Avatar
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 1.5),
+                    border: Border.all(color: AppColors.gold, width: 1.0),
                   ),
                   child: ClipOval(
                     child: avatarUrl != null
@@ -411,7 +411,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         : _defaultAvatar(),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
 
                 // Name & balance
                 Column(
@@ -421,7 +421,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     Text(
                       userName,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
                         height: 1,
@@ -432,14 +432,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       children: [
                         Icon(
                           Icons.circle,
-                          size: 12,
+                          size: 10,
                           color: AppColors.gold.withValues(alpha: 0.8),
                         ),
                         const SizedBox(width: 4),
                         const Text(
                           '1,000', // TODO: From game provider
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFFA47D25),
                             height: 1,
@@ -492,7 +492,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     return Container(
       color: Colors.transparent,
       child: const Center(
-        child: Icon(Icons.person, color: AppColors.gold, size: 28),
+        child: Icon(Icons.person, color: AppColors.gold, size: 24),
       ),
     );
   }

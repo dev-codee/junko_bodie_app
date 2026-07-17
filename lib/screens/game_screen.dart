@@ -483,8 +483,8 @@ class _GameScreenState extends State<GameScreen> {
                     // Balance Sheet Card
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -505,7 +505,7 @@ class _GameScreenState extends State<GameScreen> {
                             'BALANCE',
                             style: GoogleFonts.inter(
                               color: Colors.white,
-                              fontSize: 8,
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -513,22 +513,22 @@ class _GameScreenState extends State<GameScreen> {
                             '\$${provider.balance.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
                             style: GoogleFonts.playfairDisplay(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 16,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     // Session Stats Widget
                     SessionStatsWidget(stats: provider.sessionStats),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     // Total Bet Sized Box Card
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.08),
@@ -545,7 +545,7 @@ class _GameScreenState extends State<GameScreen> {
                             'TOTAL BET',
                             style: GoogleFonts.inter(
                               color: const Color(0xFFF5D68D),
-                              fontSize: 8,
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -553,7 +553,7 @@ class _GameScreenState extends State<GameScreen> {
                             '\$${provider.totalBet.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]},")}',
                             style: GoogleFonts.playfairDisplay(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 16,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -856,7 +856,7 @@ class SessionStatsWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildStatCard('Last Bet', lastBet, Colors.white.withOpacity(0.8)),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         _buildStatCard(
           'Last Win',
           lastWin,
@@ -866,7 +866,7 @@ class SessionStatsWidget extends StatelessWidget {
               ? const Color(0xFFEF4444)
               : Colors.white.withOpacity(0.8),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         _buildStatCard(
           'Session Win',
           sessionWin,
@@ -882,14 +882,14 @@ class SessionStatsWidget extends StatelessWidget {
 
   Widget _buildStatCard(String label, double val, Color valColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
         border: Border.all(
           color: const Color(0xFFC9A84C).withOpacity(0.15),
           width: 1,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -898,7 +898,7 @@ class SessionStatsWidget extends StatelessWidget {
             label.toUpperCase(),
             style: GoogleFonts.inter(
               color: const Color(0xFFE4E0D4).withOpacity(0.5),
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
@@ -907,7 +907,7 @@ class SessionStatsWidget extends StatelessWidget {
             '${val >= 0 ? '' : '-'}\$${val.abs().toInt()}',
             style: GoogleFonts.inter(
               color: valColor,
-              fontSize: 12,
+              fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
           ),

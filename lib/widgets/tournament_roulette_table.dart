@@ -102,11 +102,11 @@ class TournamentRouletteTable extends StatelessWidget {
             // Mapping spin results
             rng.SpinResult? currentSpinResult;
             if (provider.lastSpinResult != null) {
-              final int num = provider.lastSpinResult['number'] ?? 0;
+              final int num = int.tryParse(provider.lastSpinResult['number']?.toString() ?? '') ?? 0;
               currentSpinResult = rng.SpinResult(
                 id: provider.lastSpinResult['id']?.toString() ?? '',
                 number: num,
-                displayNumber: rng.RNG.getDisplayNumber(num),
+                displayNumber: provider.lastSpinResult['displayNumber']?.toString() ?? rng.RNG.getDisplayNumber(num),
                 color: rng.RNG.getNumberColor(num),
                 parity: rng.RNG.getParity(num),
                 dozen: rng.RNG.getDozen(num),
@@ -220,19 +220,41 @@ class TournamentRouletteTable extends StatelessWidget {
                                               ),
                                             ),
                                           ),
-                                          Text(
-                                            'ROUND ${provider.currentRound} | SPIN ${provider.currentSpin}/5',
-                                            style: TextStyle(
-                                              color: const Color(
-                                                0xFFC9A84C,
-                                              ).withOpacity(0.5),
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 1.5,
-                                            ),
-                                          ),
                                         ],
                                       ),
+                                      if (provider.phase == 'betting' || provider.phase == 'locked')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: provider.phase == 'locked'
+                                                ? const Color(0xFF1E3A2F)
+                                                : const Color(0xFFC9A44C),
+                                            borderRadius: BorderRadius.circular(100),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.timer,
+                                                size: 10,
+                                                color: provider.phase == 'locked'
+                                                    ? Colors.white60
+                                                    : const Color(0xFF07140E),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                provider.phase == 'locked' ? 'LOCKED' : '${provider.timeRemaining}s',
+                                                style: TextStyle(
+                                                  color: provider.phase == 'locked'
+                                                      ? Colors.white
+                                                      : const Color(0xFF07140E),
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 9,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 6),

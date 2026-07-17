@@ -1,5 +1,6 @@
 class SpinResult {
   final int number;
+  final String displayNumber;
   final String color;
   final String parity;
   final String dozen;
@@ -8,6 +9,7 @@ class SpinResult {
 
   SpinResult({
     required this.number,
+    required this.displayNumber,
     required this.color,
     required this.parity,
     required this.dozen,
@@ -17,6 +19,7 @@ class SpinResult {
 
   factory SpinResult.fromJson(Map<String, dynamic> json) => SpinResult(
         number: json['number'] ?? 0,
+        displayNumber: json['displayNumber']?.toString() ?? '',
         color: json['color'] ?? '',
         parity: json['parity'] ?? '',
         dozen: json['dozen'] ?? '',
@@ -26,6 +29,7 @@ class SpinResult {
 
   Map<String, dynamic> toJson() => {
         'number': number,
+        'displayNumber': displayNumber,
         'color': color,
         'parity': parity,
         'dozen': dozen,

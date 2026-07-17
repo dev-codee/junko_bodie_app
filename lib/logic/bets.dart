@@ -185,6 +185,7 @@ class Bets {
       const BetDefinition(id: 'trio-0-1-2', type: BetType.trio, label: '0,1,2', numbers: [0, 1, 2], payout: 11),
       const BetDefinition(id: 'trio-0-2-3', type: BetType.trio, label: '0,2,3', numbers: [0, 2, 3], payout: 11),
       const BetDefinition(id: 'trio-00-2-3', type: BetType.trio, label: '00,2,3', numbers: [37, 2, 3], payout: 11),
+      const BetDefinition(id: 'trio-0-00-2', type: BetType.trio, label: '0,00,2', numbers: [0, 37, 2], payout: 11),
     ];
   }
 

@@ -767,6 +767,7 @@ class TournamentProvider extends ChangeNotifier {
         // int (e.g. RNG.getDisplayNumber). Store the winning number, not the
         // whole object, or the int cast throws at build time.
         'number': spin.result.number,
+        'displayNumber': spin.result.displayNumber,
         'spin_number': spin.spinNumber,
         'round_id': spin.roundId,
         'player_results': spin.playerResults,

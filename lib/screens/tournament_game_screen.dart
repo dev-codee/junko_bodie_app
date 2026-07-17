@@ -160,11 +160,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         // Custom model mapper for ResultDisplay compatibility
         SpinResult? resultModel;
         if (provider.lastSpinResult != null) {
-          final int num = provider.lastSpinResult['number'] ?? 0;
+          final int num = int.tryParse(provider.lastSpinResult['number']?.toString() ?? '') ?? 0;
           resultModel = SpinResult(
             id: provider.lastSpinResult['id']?.toString() ?? '',
             number: num,
-            displayNumber: RNG.getDisplayNumber(num),
+            displayNumber: provider.lastSpinResult['displayNumber']?.toString() ?? RNG.getDisplayNumber(num),
             color: RNG.getNumberColor(num),
             parity: RNG.getParity(num),
             dozen: RNG.getDozen(num),
@@ -335,7 +335,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           bottom: BorderSide(color: Color(0xFFC9A44C), width: 1.5),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.only(left: 16, right: 36),
       child: Row(
         children: [
           // Lobby exit button
@@ -367,35 +367,6 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           Expanded(
             child: _SpinHistoryList(history: provider.history),
           ),
-
-          // Timer display
-          if (provider.phase == 'betting' || provider.phase == 'locked')
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: provider.phase == 'locked' ? const Color(0xFF1E3A2F) : const Color(0xFFC9A44C),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.timer,
-                    size: 11,
-                    color: provider.phase == 'locked' ? Colors.white60 : const Color(0xFF07140E),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    provider.phase == 'locked' ? 'LOCKED' : '${provider.timeRemaining}s',
-                    style: TextStyle(
-                      color: provider.phase == 'locked' ? Colors.white : const Color(0xFF07140E),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(width: 12),
 
           // Settings Button
           IconButton(
@@ -489,6 +460,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         children: [
           // Left: chip tray
           Expanded(
+            flex: 6,
             child: ChipTray(
               selectedChip: provider.selectedChip,
               onSelectChip: provider.selectChip,
@@ -506,6 +478,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
           // Right: total bet, controls, balance
           Expanded(
+            flex: 5,
             child: Align(
               alignment: Alignment.centerRight,
               child: FittedBox(
@@ -976,7 +949,10 @@ class _SpinHistoryList extends StatelessWidget {
         itemCount: math.min(history.length, 15),
         itemBuilder: (context, index) {
           final spin = history[index];
-          final String numStr = spin['number']?.toString() ?? spin['displayNumber']?.toString() ?? '0';
+          final String numStr = spin['displayNumber']?.toString() ??
+              (spin['number'] != null
+                  ? RNG.getDisplayNumber(int.tryParse(spin['number'].toString()) ?? 0)
+                  : '0');
           final String colorStr = spin['color'] ?? 'green';
           final displayColor = _getColor(colorStr);
 

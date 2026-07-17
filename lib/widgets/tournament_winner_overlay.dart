@@ -124,7 +124,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
                           'JUNKO BODIE ROULETTE | TOURNAMENT COMPLETE',
                           style: TextStyle(
                             color: Color(0xFFF2E8D0),
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.0,
                           ),
@@ -168,7 +168,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
                               fontFamily: 'Playfair Display',
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
-                              fontSize: 28,
+                              fontSize: 24,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -191,7 +191,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
                                   username.toUpperCase(),
                                   style: const TextStyle(
                                     color: Color(0xFFF5E9B8),
-                                    fontSize: 18,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1.5,
                                   ),
@@ -201,7 +201,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
                                   position == 1 ? '1ST PLACE' : position == 2 ? '2ND PLACE' : position == 3 ? '3RD PLACE' : '$position\tPLACE',
                                   style: const TextStyle(
                                     color: Color(0xFFC9A84C),
-                                    fontSize: 10,
+                                    fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 2.0,
                                   ),
@@ -325,7 +325,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
                           // Points system reference footer
                           const Text(
                             'CHAMPIONSHIP POINTS SYSTEM',
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5, color: Color(0xFF1A5C35)),
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5, color: Color(0xFF1A5C35)),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -362,7 +362,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
       ),
       child: Column(
         children: [
-          Text(title, style: const TextStyle(color: Colors.black38, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+          Text(title, style: const TextStyle(color: Colors.black38, fontSize: 7, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -371,7 +371,7 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
               const SizedBox(width: 4),
               Text(
                 val,
-                style: TextStyle(color: valueColor, fontSize: 16, fontWeight: FontWeight.w900),
+                style: TextStyle(color: valueColor, fontSize: 14, fontWeight: FontWeight.w900),
               ),
             ],
           ),
@@ -390,9 +390,9 @@ class _TournamentWinnerOverlayState extends State<TournamentWinnerOverlay> {
       ),
       child: Column(
         children: [
-          Text(label, style: const TextStyle(fontSize: 8, color: Colors.black45, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(fontSize: 9, color: Colors.black45, fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
-          Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color)),
+          Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color)),
         ],
       ),
     );
