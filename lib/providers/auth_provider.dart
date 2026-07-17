@@ -7,6 +7,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:junko_bodie/services/subscription_service.dart';
+import 'package:junko_bodie/services/user_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -61,9 +62,7 @@ class AuthProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('Error checking subscription status: $e');
       }
-      // Fail-safe in development: default to true so developers are not blocked
-      // if their local Next.js server is not running.
-      _hasSubscription = true;
+      _hasSubscription = false;
     }
     notifyListeners();
   }
@@ -98,5 +97,13 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     _hasSubscription = false;
     notifyListeners();
+  }
+
+  /// Delete the current user's account and all associated data,
+  /// then sign the user out. Required by Apple App Store Guideline 5.1.1.
+  Future<void> deleteAccount() async {
+    final userService = UserService();
+    await userService.deleteAccount();
+    await signOut();
   }
 }

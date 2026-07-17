@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:junko_bodie/config/theme.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -392,6 +393,74 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // Legal consent notice
+                    Text.rich(
+                      TextSpan(
+                        text: 'By continuing, you agree to our ',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.35),
+                          height: 1.5,
+                        ),
+                        children: [
+                          WidgetSpan(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final url = Uri.parse('https://junkobodieroulette.com/terms');
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Text(
+                                'Terms of Service',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.gold.withValues(alpha: 0.7),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.gold.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' and ',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          WidgetSpan(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final url = Uri.parse('https://junkobodieroulette.com/privacy');
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Text(
+                                'Privacy Policy',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.gold.withValues(alpha: 0.7),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.gold.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                          TextSpan(
+                            text: '.',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),
@@ -402,3 +471,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

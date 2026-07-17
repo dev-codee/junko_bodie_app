@@ -68,12 +68,12 @@ flutter_launcher_icons:
   ios: true
   web:
     generate: true
-    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+    image_path: "assets/images/app_icon.png"
   windows:
     generate: true
-    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+    image_path: "assets/images/app_icon.png"
   macos:
     generate: true
-    image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
-  image_path: "e:/junko_bodie/public/roulette-wheel-hero.png"
+    image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/app_icon.png"
 

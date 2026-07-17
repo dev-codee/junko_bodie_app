@@ -4,6 +4,7 @@
 /// Auth guards redirect unauthenticated users to login.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:junko_bodie/screens/landing_screen.dart';
@@ -30,7 +31,7 @@ GoRouter buildRouter({
 }) {
   return GoRouter(
     initialLocation: '/',
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: kDebugMode,
     redirect: (context, state) {
       // While loading auth, don't redirect anywhere
       if (isLoading) return null;
@@ -134,53 +135,13 @@ GoRouter buildRouter({
       GoRoute(
         path: '/subscribe',
         name: 'subscribe',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Subscribe'),
+        redirect: (_, __) => '/lobby',
       ),
       GoRoute(
         path: '/account/billing',
         name: 'billing',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Billing'),
+        redirect: (_, __) => '/lobby',
       ),
     ],
   );
-}
-
-/// Temporary placeholder for screens not yet built.
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.construction, size: 48, color: Color(0xFFC9A84C)),
-            const SizedBox(height: 16),
-            Text(
-              '$title — Coming Soon',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFF5F5F5),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This screen will be built in a later phase.',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

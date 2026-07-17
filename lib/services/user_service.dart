@@ -36,6 +36,15 @@ class UserService {
     return json['success'] == true;
   }
 
+  /// Delete the current user's account and all associated data.
+  ///
+  /// Calls the backend which removes the user from Supabase Auth,
+  /// Stripe, and all related database tables.
+  Future<bool> deleteAccount() async {
+    final json = await _api.delete('/api/user/account');
+    return json['success'] == true;
+  }
+
   /// Update player play-money balance on the server.
   ///
   /// [action] must be 'increment', 'decrement', or 'set'.

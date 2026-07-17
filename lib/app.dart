@@ -10,6 +10,7 @@ import 'package:junko_bodie/config/routes.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
 import 'package:junko_bodie/providers/game_provider.dart';
 import 'package:junko_bodie/providers/tournament_provider.dart';
+import 'package:junko_bodie/widgets/age_gate.dart';
 
 class JunkoBodieApp extends StatelessWidget {
   const JunkoBodieApp({super.key});
@@ -27,8 +28,26 @@ class JunkoBodieApp extends StatelessWidget {
   }
 }
 
-class _AppWithRouter extends StatelessWidget {
+class _AppWithRouter extends StatefulWidget {
   const _AppWithRouter();
+
+  @override
+  State<_AppWithRouter> createState() => _AppWithRouterState();
+}
+
+class _AppWithRouterState extends State<_AppWithRouter> {
+  bool _ageGateChecked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_ageGateChecked) {
+      _ageGateChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showAgeGateIfNeeded(context);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,3 +67,4 @@ class _AppWithRouter extends StatelessWidget {
     );
   }
 }
+

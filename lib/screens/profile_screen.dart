@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/models/player.dart';
 import 'package:junko_bodie/services/user_service.dart';
 import 'package:junko_bodie/services/subscription_service.dart';
+import 'package:junko_bodie/providers/auth_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ─── Web parchment palette ─────────────────────────────────
@@ -134,6 +136,185 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _subscribeNow() => context.push('/subscribe');
+
+  Future<void> _openPrivacyPolicy() async {
+    final url = Uri.parse('https://junkobodieroulette.com/privacy');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openTermsOfService() async {
+    final url = Uri.parse('https://junkobodieroulette.com/terms');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _handleSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCard,
+        title: Text(
+          'Sign Out',
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            color: _kInk,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to sign out?',
+          style: TextStyle(color: _kInk),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: _kGoldDark)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kGold,
+              foregroundColor: _kInk,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await context.read<AuthProvider>().signOut();
+      if (mounted) context.go('/');
+    }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    // First confirmation
+    final firstConfirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCard,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFC0392B), size: 24),
+            SizedBox(width: 10),
+            Text(
+              'Delete Account',
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                color: Color(0xFFC0392B),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete your account, including:\n\n'
+          '• Your player profile and username\n'
+          '• All play-money balance and session history\n'
+          '• Tournament records and rankings\n'
+          '• Saved strategies\n'
+          '• Your subscription (if active)\n\n'
+          'This action cannot be undone.',
+          style: TextStyle(color: _kInk, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: _kGoldDark)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC0392B),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (firstConfirm != true || !mounted) return;
+
+    // Second confirmation — type "DELETE"
+    final deleteController = TextEditingController();
+    final secondConfirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCard,
+        title: const Text(
+          'Final Confirmation',
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            color: Color(0xFFC0392B),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type DELETE to confirm account deletion:',
+              style: TextStyle(color: _kInk),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: deleteController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'DELETE',
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: _kGold),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: const Color(0xFFC0392B), width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: _kGoldDark)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (deleteController.text.trim().toUpperCase() == 'DELETE') {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC0392B),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete My Account'),
+          ),
+        ],
+      ),
+    );
+    deleteController.dispose();
+
+    if (secondConfirm != true || !mounted) return;
+
+    // Perform deletion
+    try {
+      setState(() => _isSaving = true);
+      await context.read<AuthProvider>().deleteAccount();
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to delete account. Please try again or contact support.';
+          _isSaving = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -324,6 +505,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 22),
           // Authorize button
           _buildSaveButton(),
+          const SizedBox(height: 24),
+          // Account actions (Sign Out, Delete Account, Legal Links)
+          _buildAccountActions(),
         ],
       ),
     );
@@ -745,6 +929,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAccountActions() {
+    return Column(
+      children: [
+        // Divider
+        Container(
+          width: 200,
+          height: 1,
+          color: _kGold.withValues(alpha: 0.3),
+        ),
+        const SizedBox(height: 18),
+        // Sign Out & Delete Account Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Sign Out
+            GestureDetector(
+              onTap: _handleSignOut,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _kInk.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _kInk.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.logout, size: 16, color: _kInk.withValues(alpha: 0.7)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Sign Out',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _kInk.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Delete Account
+            GestureDetector(
+              onTap: _handleDeleteAccount,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC0392B).withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFC0392B).withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_forever, size: 16, color: const Color(0xFFC0392B).withValues(alpha: 0.7)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Delete Account',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFC0392B).withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        // Legal Links
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: _openPrivacyPolicy,
+              child: Text(
+                'Privacy Policy',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _kGoldDark.withValues(alpha: 0.6),
+                  decoration: TextDecoration.underline,
+                  decorationColor: _kGoldDark.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '·',
+                style: TextStyle(
+                  color: _kGoldDark.withValues(alpha: 0.4),
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: _openTermsOfService,
+              child: Text(
+                'Terms of Service',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _kGoldDark.withValues(alpha: 0.6),
+                  decoration: TextDecoration.underline,
+                  decorationColor: _kGoldDark.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'v1.0.0',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            color: _kGoldDark.withValues(alpha: 0.35),
+          ),
+        ),
+      ],
     );
   }
 

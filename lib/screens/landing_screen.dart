@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:junko_bodie/config/theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -284,7 +285,7 @@ class _LandingScreenState extends State<LandingScreen> {
                     // Disclaimer
                     Center(
                       child: Text(
-                        'Secure checkout. No chips. No gambling.\nSimulator access only.',
+                        'No real money. No prizes. No gambling.\nSimulator and strategy practice only.\nMust be 17+ to use this app.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
@@ -319,6 +320,60 @@ class _LandingScreenState extends State<LandingScreen> {
                                 color: AppColors.gold,
                                 decoration: TextDecoration.underline,
                                 decorationColor: AppColors.gold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Legal links
+                    Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final url = Uri.parse('https://junkobodieroulette.com/privacy');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: Text(
+                              'Privacy Policy',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white.withValues(alpha: 0.35),
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white.withValues(alpha: 0.25),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              '·',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () async {
+                              final url = Uri.parse('https://junkobodieroulette.com/terms');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: Text(
+                              'Terms of Service',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white.withValues(alpha: 0.35),
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white.withValues(alpha: 0.25),
                               ),
                             ),
                           ),
@@ -373,3 +428,4 @@ class _PlanTab extends StatelessWidget {
     );
   }
 }
+
