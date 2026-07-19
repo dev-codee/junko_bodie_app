@@ -251,7 +251,61 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   ),
                 ),
               ),
-
+              
+              // 2. Scoreboard Pull Handle (Right Edge)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Builder(
+                    builder: (ctx) => GestureDetector(
+                      onTap: () {
+                        soundEngine.playClick();
+                        Scaffold.of(ctx).openEndDrawer();
+                      },
+                      onHorizontalDragEnd: (details) {
+                        if (details.primaryVelocity != null && details.primaryVelocity! < 0) {
+                          soundEngine.playClick();
+                          Scaffold.of(ctx).openEndDrawer();
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 4, right: 2, top: 20, bottom: 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC9A44C).withOpacity(0.9),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            bottomLeft: Radius.circular(8),
+                          ),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(-2, 0)),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.arrow_back_ios_new, size: 9, color: Color(0xFF0F2E21)),
+                            const SizedBox(width: 2),
+                            RotatedBox(
+                              quarterTurns: 3,
+                              child: const Text(
+                                'SCORES',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                  color: Color(0xFF0F2E21),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               // 2. Top Header Bar
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
@@ -390,7 +444,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 soundEngine.playClick();
                 Scaffold.of(ctx).openEndDrawer();
               },
-              icon: const Icon(Icons.menu, color: Color(0xFFF5EDD5), size: 20),
+              icon: const Icon(Icons.emoji_events, color: Color(0xFFC9A44C), size: 22),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -460,7 +514,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         children: [
           // Left: chip tray
           Expanded(
-            flex: 6,
+            flex: 5,
             child: ChipTray(
               selectedChip: provider.selectedChip,
               onSelectChip: provider.selectChip,
@@ -478,7 +532,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
           // Right: total bet, controls, balance
           Expanded(
-            flex: 5,
+            flex: 6,
             child: Align(
               alignment: Alignment.centerRight,
               child: FittedBox(
@@ -512,7 +566,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
   Widget _footerPill(String label, String value) {
     return Container(
-      height: 38,
+      height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFC9A44C).withOpacity(0.1),
@@ -525,7 +579,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 7.5,
+              fontSize: 8,
               letterSpacing: 0.6,
               color: Color(0xFFC9A44C),
               fontWeight: FontWeight.w900,
@@ -550,8 +604,8 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        height: 38,
-        constraints: const BoxConstraints(minWidth: 40),
+        height: 40,
+        constraints: const BoxConstraints(minWidth: 44),
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           gradient: enabled
@@ -573,7 +627,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           label,
           style: TextStyle(
             color: enabled ? Colors.white : Colors.white24,
-            fontSize: 10.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.4,
           ),
@@ -588,8 +642,8 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        height: 38,
-        width: 38,
+        height: 40,
+        width: 40,
         decoration: BoxDecoration(
           gradient: !enabled
               ? null
@@ -618,7 +672,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         alignment: Alignment.center,
         child: Icon(
           Icons.close,
-          size: 16,
+          size: 18,
           color: !enabled
               ? Colors.white24
               : active
@@ -943,6 +997,7 @@ class _SpinHistoryList extends StatelessWidget {
     return SizedBox(
       height: 24,
       child: ListView.builder(
+        padding: EdgeInsets.zero,
         scrollDirection: Axis.horizontal,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

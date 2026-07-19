@@ -87,12 +87,6 @@ class TournamentRouletteTable extends StatelessWidget {
             // sidebar already claims part of the screen). A smaller wheel cap
             // lets the betting grid breathe instead of getting compressed.
             final double wheelSize = (height * 0.82).clamp(150.0, 240.0);
-            // Compact the betting grid (smaller ovals + spacers) whenever the
-            // space left for it beside the wheel is tight, so cells shrink to
-            // fit instead of overlapping and overflowing — the exact purpose of
-            // BettingLayout.isCompact. Full-size ovals are ~44px fixed, so the
-            // grid needs a wide felt to avoid overlap; below that, go compact.
-            final bool useCompact = (width - wheelSize) < 700.0;
 
             // Wheel Type mapping
             final wheelTypeEnum = provider.wheelType == 'american'
@@ -293,7 +287,6 @@ class TournamentRouletteTable extends StatelessWidget {
                                                         provider.clearZone,
                                                     wheelType: wheelTypeEnum,
                                                     myBets: provider.bets,
-                                                    isCompact: useCompact,
                                                   ),
                                                 ),
                                               ),

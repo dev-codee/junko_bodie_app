@@ -388,7 +388,7 @@ class _GameScreenState extends State<GameScreen> {
             constraints: const BoxConstraints(),
             tooltip: 'Lobby',
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 4),
           // Spin History List
           Expanded(child: SpinHistoryWidget(history: provider.history)),
           // Strategy (staged betting) Selector
@@ -780,7 +780,7 @@ class SpinHistoryWidget extends StatelessWidget {
     return Row(
       children: [
         label,
-        const SizedBox(width: 14),
+        const SizedBox(width: 4),
         Expanded(
           child: SizedBox(
             height: 24,
@@ -792,6 +792,7 @@ class SpinHistoryWidget extends StatelessWidget {
                     .take(math.min(history.length, 15))
                     .toList();
                 return ListView.builder(
+                  padding: EdgeInsets.zero,
                   scrollDirection: Axis.horizontal,
                   shrinkWrap: true,
                   itemCount: displayed.length,
@@ -800,7 +801,7 @@ class SpinHistoryWidget extends StatelessWidget {
                     final displayColor = _getColor(spin.color);
 
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(

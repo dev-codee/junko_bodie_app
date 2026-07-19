@@ -27,7 +27,7 @@ const List<String> availableAvatars = [
   'dice',
   'chip',
   'trophy',
-  'bolt'
+  'bolt',
 ];
 
 class ProfileScreen extends StatefulWidget {
@@ -77,8 +77,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _profile = profile;
           _nameController.text = profile.username;
-          _selectedAvatar =
-              profile.avatarUrl.isNotEmpty ? profile.avatarUrl : 'default';
+          _selectedAvatar = profile.avatarUrl.isNotEmpty
+              ? profile.avatarUrl
+              : 'default';
           _subStatus = sub;
           _seasonRank = profile.season.rank;
           _seasonPoints = profile.season.points;
@@ -198,7 +199,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: _kCard,
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFC0392B), size: 24),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFC0392B),
+              size: 24,
+            ),
             SizedBox(width: 10),
             Text(
               'Delete Account',
@@ -260,7 +265,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to delete account. Please try again or contact support.';
+          _error =
+              'Failed to delete account. Please try again or contact support.';
           _isSaving = false;
         });
       }
@@ -294,12 +300,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Color(0xFFC0392B), size: 48),
+              const Icon(
+                Icons.error_outline,
+                color: Color(0xFFC0392B),
+                size: 48,
+              ),
               const SizedBox(height: 16),
               Text(
                 _error ?? 'Failed to load member profile',
                 style: GoogleFonts.inter(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: _kInk),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: _kInk,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -349,7 +362,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       color: _kInk,
       padding: EdgeInsets.fromLTRB(
-          16, MediaQuery.of(context).padding.top + 3, 16, 3),
+        16,
+        MediaQuery.of(context).padding.top + 3,
+        16,
+        3,
+      ),
       child: Row(
         children: [
           GestureDetector(
@@ -395,14 +412,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Cream parchment card ───────────────────────────────────
   Widget _buildCard(Player profile) {
     return Container(
-      width: 1380,
+      width: 1600,
       decoration: BoxDecoration(
         color: _kCard,
         border: Border.all(color: _kGold, width: 2.5),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(color: _kGold.withValues(alpha: 0.18), spreadRadius: 5),
-          const BoxShadow(color: Color(0x26000000), blurRadius: 40, offset: Offset(0, 10)),
+          const BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 40,
+            offset: Offset(0, 10),
+          ),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(64, 30, 64, 30),
@@ -414,7 +435,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 70, height: 1, color: _kGold.withValues(alpha: 0.3)),
+              Container(
+                width: 70,
+                height: 1,
+                color: _kGold.withValues(alpha: 0.3),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Text(
@@ -427,7 +452,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-              Container(width: 70, height: 1, color: _kGold.withValues(alpha: 0.3)),
+              Container(
+                width: 70,
+                height: 1,
+                color: _kGold.withValues(alpha: 0.3),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -482,7 +511,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: const Color(0xFF111722),
                 border: Border.all(color: _kGold, width: 6),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x33000000), blurRadius: 14, offset: Offset(0, 6)),
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
+                  ),
                 ],
               ),
               child: ClipOval(
@@ -493,7 +526,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         errorBuilder: (_, _, _) =>
                             const Icon(Icons.person, color: _kGold, size: 60),
                       )
-                    : Center(child: _buildAvatarIcon(_selectedAvatar, size: 64, color: _kGold)),
+                    : Center(
+                        child: _buildAvatarIcon(
+                          _selectedAvatar,
+                          size: 64,
+                          color: _kGold,
+                        ),
+                      ),
               ),
             ),
             Positioned(
@@ -591,13 +630,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: _buildStat(
                   'GLOBAL RANK',
-                  _seasonRank != null && _seasonRank! > 0 ? '#$_seasonRank' : '#—',
+                  _seasonRank != null && _seasonRank! > 0
+                      ? '#$_seasonRank'
+                      : '#—',
                   const Color(0xFFB8892E),
                 ),
               ),
-              Container(width: 1, height: 48, color: _kGold.withValues(alpha: 0.15)),
+              Container(
+                width: 1,
+                height: 48,
+                color: _kGold.withValues(alpha: 0.15),
+              ),
               Expanded(
-                child: _buildStat('TOTAL POINTS', _seasonPoints.toString(), _kInk),
+                child: _buildStat(
+                  'TOTAL POINTS',
+                  _seasonPoints.toString(),
+                  _kInk,
+                ),
               ),
             ],
           ),
@@ -634,7 +683,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _kGold.withValues(alpha: 0.3)),
         boxShadow: const [
-          BoxShadow(color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 2)),
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -712,8 +765,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               hasPlan
                   ? (_subStatus!.plan == 'monthly'
-                      ? 'Monthly · \$4.99/mo'
-                      : 'Annual · \$54.99/yr')
+                        ? 'Monthly · \$4.99/mo'
+                        : 'Annual · \$54.99/yr')
                   : "You don't have an active membership.\nSubscribe to unlock full simulator and tournament access.",
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -733,7 +786,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: hasPlan
                     ? _kInk.withValues(alpha: 0.04)
                     : _kGold.withValues(alpha: 0.12),
-                border: Border(top: BorderSide(color: _kGold.withValues(alpha: 0.18))),
+                border: Border(
+                  top: BorderSide(color: _kGold.withValues(alpha: 0.18)),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -760,7 +815,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSubscriptionBadge() {
     final bool isActive = _subStatus?.hasAccess ?? false;
     final String text = (_subStatus?.status ?? 'inactive').toUpperCase();
-    final Color color = isActive ? const Color(0xFF166534) : const Color(0xFF374151);
+    final Color color = isActive
+        ? const Color(0xFF166534)
+        : const Color(0xFF374151);
     final Color bg = isActive
         ? const Color(0xFF22C55E).withValues(alpha: 0.1)
         : const Color(0xFF6B7280).withValues(alpha: 0.12);
@@ -774,7 +831,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isActive ? Icons.check_circle : Icons.cancel, size: 11, color: color),
+          Icon(
+            isActive ? Icons.check_circle : Icons.cancel,
+            size: 11,
+            color: color,
+          ),
           const SizedBox(width: 4),
           Text(
             text,
@@ -811,11 +872,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected ? _kGold : Colors.white.withValues(alpha: 0.6),
+                color: isSelected
+                    ? _kGold
+                    : Colors.white.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   if (isSelected)
-                    BoxShadow(color: _kGold.withValues(alpha: 0.4), blurRadius: 8),
+                    BoxShadow(
+                      color: _kGold.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                    ),
                 ],
               ),
               child: Center(
@@ -842,7 +908,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: _showSuccess
-                ? const LinearGradient(colors: [Color(0xFF2E9E5B), Color(0xFF1B6E3C)])
+                ? const LinearGradient(
+                    colors: [Color(0xFF2E9E5B), Color(0xFF1B6E3C)],
+                  )
                 : const LinearGradient(
                     colors: [
                       Color(0xFFF9E7B9),
@@ -860,15 +928,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // required when a borderRadius is set).
             boxShadow: const [
               BoxShadow(color: Color(0xFF6B4A08), offset: Offset(0, 5)),
-              BoxShadow(color: Color(0x33000000), blurRadius: 20, offset: Offset(0, 10)),
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
             ],
           ),
           child: Text(
             _isSaving
                 ? 'VERIFYING IDENTITY...'
                 : _showSuccess
-                    ? 'IDENTITY VERIFIED ✓'
-                    : 'AUTHORIZE & UPDATE REGISTRY',
+                ? 'IDENTITY VERIFIED ✓'
+                : 'AUTHORIZE & UPDATE REGISTRY',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _showSuccess ? Colors.white : _kInk,
@@ -887,11 +959,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         // Divider
-        Container(
-          width: 200,
-          height: 1,
-          color: _kGold.withValues(alpha: 0.3),
-        ),
+        Container(width: 200, height: 1, color: _kGold.withValues(alpha: 0.3)),
         const SizedBox(height: 18),
         // Sign Out & Delete Account Row
         Row(
@@ -901,7 +969,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               onTap: _handleSignOut,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: _kInk.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
@@ -910,7 +981,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.logout, size: 16, color: _kInk.withValues(alpha: 0.7)),
+                    Icon(
+                      Icons.logout,
+                      size: 16,
+                      color: _kInk.withValues(alpha: 0.7),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Sign Out',
@@ -929,16 +1004,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               onTap: _handleDeleteAccount,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC0392B).withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFC0392B).withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: const Color(0xFFC0392B).withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete_forever, size: 16, color: const Color(0xFFC0392B).withValues(alpha: 0.7)),
+                    Icon(
+                      Icons.delete_forever,
+                      size: 16,
+                      color: const Color(0xFFC0392B).withValues(alpha: 0.7),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Delete Account',
@@ -1031,7 +1115,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         height: 42,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: active ? _kGold.withValues(alpha: 0.12) : _kInk.withValues(alpha: 0.05),
+          color: active
+              ? _kGold.withValues(alpha: 0.12)
+              : _kInk.withValues(alpha: 0.05),
           border: Border.all(
             color: active ? _kGold : _kInk.withValues(alpha: 0.12),
             width: 2,
@@ -1058,11 +1144,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'star':
         return Icon(Icons.star, size: size, color: c);
       case 'spade':
-        return Text('♠', style: TextStyle(color: c, fontSize: size, fontWeight: FontWeight.w900));
+        return Text(
+          '♠',
+          style: TextStyle(
+            color: c,
+            fontSize: size,
+            fontWeight: FontWeight.w900,
+          ),
+        );
       case 'heart':
-        return Text('♥', style: TextStyle(color: c, fontSize: size, fontWeight: FontWeight.w900));
+        return Text(
+          '♥',
+          style: TextStyle(
+            color: c,
+            fontSize: size,
+            fontWeight: FontWeight.w900,
+          ),
+        );
       case 'club':
-        return Text('♣', style: TextStyle(color: c, fontSize: size, fontWeight: FontWeight.w900));
+        return Text(
+          '♣',
+          style: TextStyle(
+            color: c,
+            fontSize: size,
+            fontWeight: FontWeight.w900,
+          ),
+        );
       case 'dice':
         return Icon(Icons.casino, size: size, color: c);
       case 'chip':
@@ -1135,13 +1242,22 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.65),
                 hintText: 'DELETE',
-                hintStyle: TextStyle(color: widget.inkColor.withValues(alpha: 0.4), fontSize: 13),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                hintStyle: TextStyle(
+                  color: widget.inkColor.withValues(alpha: 0.4),
+                  fontSize: 13,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: widget.goldColor, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: widget.goldColor.withValues(alpha: 0.5), width: 1),
+                  borderSide: BorderSide(
+                    color: widget.goldColor.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
                 ),
                 focusedBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFFC0392B), width: 2),
@@ -1154,7 +1270,10 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel', style: TextStyle(color: Color(0xFF8B6914))),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Color(0xFF8B6914)),
+          ),
         ),
         ElevatedButton(
           onPressed: () {

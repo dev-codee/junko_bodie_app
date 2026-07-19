@@ -40,28 +40,28 @@ class _WorkStage {
   double get totalWager => bets.values.fold(0.0, (a, b) => a + b);
 
   _WorkStage clone() => _WorkStage(
-        stageNumber: stageNumber,
-        bets: Map<String, double>.from(bets),
-        onWin: onWin,
-        onLoss: onLoss,
-      );
+    stageNumber: stageNumber,
+    bets: Map<String, double>.from(bets),
+    onWin: onWin,
+    onLoss: onLoss,
+  );
 
   StrategyStage toStage() => StrategyStage(
-        stageNumber: stageNumber,
-        bets: bets.entries
-            .map((e) => StageBet(position: e.key, amount: e.value))
-            .toList(),
-        totalWager: totalWager,
-        onWin: onWin,
-        onLoss: onLoss,
-      );
+    stageNumber: stageNumber,
+    bets: bets.entries
+        .map((e) => StageBet(position: e.key, amount: e.value))
+        .toList(),
+    totalWager: totalWager,
+    onWin: onWin,
+    onLoss: onLoss,
+  );
 
   factory _WorkStage.fromStage(StrategyStage s) => _WorkStage(
-        stageNumber: s.stageNumber,
-        bets: {for (final b in s.bets) b.position: b.amount.toDouble()},
-        onWin: s.onWin,
-        onLoss: s.onLoss,
-      );
+    stageNumber: s.stageNumber,
+    bets: {for (final b in s.bets) b.position: b.amount.toDouble()},
+    onWin: s.onWin,
+    onLoss: s.onLoss,
+  );
 }
 
 class StrategyBuilderScreen extends StatefulWidget {
@@ -314,7 +314,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         child: SafeArea(
           child: _isLoading
               ? const Center(
-                  child: CircularProgressIndicator(color: _kInk, strokeWidth: 3),
+                  child: CircularProgressIndicator(
+                    color: _kInk,
+                    strokeWidth: 3,
+                  ),
                 )
               : Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -346,7 +349,11 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       children: [
         _navPill('LOBBY', Icons.arrow_back, () => context.go('/lobby')),
         const SizedBox(width: 12),
-        Container(width: 1, height: 16, color: _kInkText.withValues(alpha: 0.25)),
+        Container(
+          width: 1,
+          height: 16,
+          color: _kInkText.withValues(alpha: 0.25),
+        ),
         const SizedBox(width: 12),
         _navPill('LIBRARY', null, () => context.go('/strategies')),
         const Spacer(),
@@ -413,7 +420,11 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           color: _kInk,
           borderRadius: BorderRadius.circular(9999),
           boxShadow: const [
-            BoxShadow(color: Color(0x660F2E21), blurRadius: 12, offset: Offset(0, 4)),
+            BoxShadow(
+              color: Color(0x660F2E21),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -429,7 +440,11 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               const Icon(Icons.save_outlined, size: 15, color: _kGold),
             const SizedBox(width: 8),
             Text(
-              _isSaving ? 'SAVING...' : _isSaved ? 'SAVED ✓' : 'SAVE',
+              _isSaving
+                  ? 'SAVING...'
+                  : _isSaved
+                  ? 'SAVED ✓'
+                  : 'SAVE',
               style: GoogleFonts.inter(
                 color: _kGold,
                 fontWeight: FontWeight.w800,
@@ -449,36 +464,34 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _card(
-            'Strategy Info',
-            [
-              _fieldLabel('Strategy Name'),
-              _textField(_nameController, hint: 'e.g. Green Neighbors'),
-              const SizedBox(height: 12),
-              _fieldLabel('Wheel Type'),
-              _wheelDropdown(),
-              const SizedBox(height: 12),
-              _fieldLabel('Description (Optional)'),
-              _textField(_descController, hint: 'Notes about this strategy...', maxLines: 3),
-            ],
-          ),
+          _card('Strategy Info', [
+            _fieldLabel('Strategy Name'),
+            _textField(_nameController, hint: 'e.g. Green Neighbors'),
+            const SizedBox(height: 12),
+            _fieldLabel('Wheel Type'),
+            _wheelDropdown(),
+            const SizedBox(height: 12),
+            _fieldLabel('Description (Optional)'),
+            _textField(
+              _descController,
+              hint: 'Notes about this strategy...',
+              maxLines: 3,
+            ),
+          ]),
           const SizedBox(height: 12),
-          _card(
-            'Settings',
-            [
-              _fieldLabel('Max Stages'),
-              _textField(
-                _maxStagesController,
-                keyboardType: TextInputType.number,
-                onChanged: (v) {
-                  final n = int.tryParse(v);
-                  if (n != null && n >= 1 && n <= 100) {
-                    setState(() => _maxStages = n);
-                  }
-                },
-              ),
-            ],
-          ),
+          _card('Settings', [
+            _fieldLabel('Max Stages'),
+            _textField(
+              _maxStagesController,
+              keyboardType: TextInputType.number,
+              onChanged: (v) {
+                final n = int.tryParse(v);
+                if (n != null && n >= 1 && n <= 100) {
+                  setState(() => _maxStages = n);
+                }
+              },
+            ),
+          ]),
         ],
       ),
     );
@@ -512,17 +525,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   }
 
   Widget _fieldLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          text.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: _kGoldDark,
-            letterSpacing: 1,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      text.toUpperCase(),
+      style: GoogleFonts.inter(
+        fontSize: 9,
+        fontWeight: FontWeight.w700,
+        color: _kGoldDark,
+        letterSpacing: 1,
+      ),
+    ),
+  );
 
   Widget _textField(
     TextEditingController controller, {
@@ -536,13 +549,20 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       onChanged: onChanged,
-      style: const TextStyle(color: _kInkText, fontSize: 13, fontWeight: FontWeight.w600),
+      style: const TextStyle(
+        color: _kInkText,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: InputDecoration(
         isDense: true,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.6),
         hintText: hint,
-        hintStyle: TextStyle(color: _kInkText.withValues(alpha: 0.35), fontSize: 12),
+        hintStyle: TextStyle(
+          color: _kInkText.withValues(alpha: 0.35),
+          fontSize: 12,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -570,9 +590,16 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           isDense: true,
           isExpanded: true,
           dropdownColor: const Color(0xFFF5EDD5),
-          style: const TextStyle(color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: _kInkText,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
           items: const [
-            DropdownMenuItem(value: 'American', child: Text('American (0, 00)')),
+            DropdownMenuItem(
+              value: 'American',
+              child: Text('American (0, 00)'),
+            ),
             DropdownMenuItem(value: 'European', child: Text('European (0)')),
           ],
           onChanged: (v) {
@@ -596,8 +623,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
-                height: 700,
-                width: 1000,
+                height: 400,
+                width: 700,
                 child: _buildTableCard(),
               ),
             ),
@@ -723,11 +750,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                 TextSpan(
                   text: 'Wager ',
                   style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _kGoldDark,
+                  ),
                   children: [
                     TextSpan(
                       text: '\$${_active.totalWager.toStringAsFixed(0)}',
-                      style: const TextStyle(color: _kInkText, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: _kInkText,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
@@ -737,11 +770,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                 TextSpan(
                   text: 'Bankroll ',
                   style: GoogleFonts.inter(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _kGoldDark,
+                  ),
                   children: [
                     TextSpan(
                       text: '\$${_totalBankroll.toStringAsFixed(0)}',
-                      style: const TextStyle(color: _kInkText, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: _kInkText,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
@@ -754,13 +793,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                     ? null
                     : _repeatBet,
               ),
-              _tableBtn(
-                '2x',
-                null,
-                _active.bets.isEmpty ? null : _doubleBet,
-              ),
+              _tableBtn('2x', null, _active.bets.isEmpty ? null : _doubleBet),
               _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
-              _tableBtn('CLEAR', Icons.delete_outline, _active.bets.isEmpty ? null : _clearBoard),
+              _tableBtn(
+                'CLEAR',
+                Icons.delete_outline,
+                _active.bets.isEmpty ? null : _clearBoard,
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -773,8 +812,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               disabled: false,
               showWinHighlight: false,
               phase: 'betting',
-              isCompact: false,
-              wheelType: _wheelType == 'European' ? WheelType.european : WheelType.american,
+              wheelType: _wheelType == 'European'
+                  ? WheelType.european
+                  : WheelType.american,
             ),
           ),
           const SizedBox(height: 4),
@@ -791,8 +831,12 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
-  Widget _tableBtn(String label, IconData? icon, VoidCallback? onTap,
-      {String? leadingText}) {
+  Widget _tableBtn(
+    String label,
+    IconData? icon,
+    VoidCallback? onTap, {
+    String? leadingText,
+  }) {
     final bool enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,

@@ -30,6 +30,25 @@ class _RouletteTableState extends State<RouletteTable> {
   // Stable key so the wheel keeps its spin physics while it reparents between
   // the inline slot and the centered spinning overlay.
   final GlobalKey _wheelKey = GlobalKey();
+  
+  final ScrollController _scrollController = ScrollController();
+  bool _hasScrolled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (!_hasScrolled && _scrollController.offset > 20) {
+        setState(() => _hasScrolled = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -180,10 +199,10 @@ class _RouletteTableState extends State<RouletteTable> {
                                               'JUNKO BODIE',
                                               style: TextStyle(
                                                 fontFamily: 'Georgia',
-                                                fontSize: 15,
+                                                fontSize: 18,
                                                 fontStyle: FontStyle.italic,
                                                 fontWeight: FontWeight.w900,
-                                                letterSpacing: 2,
+                                                letterSpacing: 2.5,
                                                 color: Colors.white,
                                               ),
                                             ),
@@ -195,9 +214,9 @@ class _RouletteTableState extends State<RouletteTable> {
                                               color: const Color(
                                                 0xFFC9A84C,
                                               ).withOpacity(0.6),
-                                              fontSize: 6,
+                                              fontSize: 8,
                                               fontWeight: FontWeight.bold,
-                                              letterSpacing: 3,
+                                              letterSpacing: 4,
                                             ),
                                           ),
                                         ],
@@ -285,6 +304,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                             child: IgnorePointer(
                                               ignoring: !canBet,
                                               child: SingleChildScrollView(
+                                                controller: _scrollController,
                                                 scrollDirection: Axis.vertical,
                                                 child: SizedBox(
                                                   height: 300,
@@ -317,6 +337,41 @@ class _RouletteTableState extends State<RouletteTable> {
                                             ),
                                           ),
                                         ),
+                                        // Scroll Hint Overlay
+                                        if (!_hasScrolled && canBet && !tournamentMode)
+                                          Positioned(
+                                            bottom: 16,
+                                            right: 16,
+                                            child: IgnorePointer(
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.75),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  border: Border.all(color: const Color(0xFFC9A44C).withOpacity(0.5)),
+                                                  boxShadow: const [
+                                                    BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+                                                  ],
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      'SCROLL',
+                                                      style: TextStyle(
+                                                        color: Color(0xFFC9A44C),
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w900,
+                                                        letterSpacing: 1.0,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Icon(Icons.keyboard_arrow_down, color: Color(0xFFC9A44C), size: 14),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         // BETS CLOSED overlay
                                         if (isLocked || isSpinning)
                                           Positioned.fill(

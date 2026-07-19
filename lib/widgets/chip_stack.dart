@@ -39,7 +39,7 @@ class MiniChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = getChipColor(chipVal);
     final textColor = getChipTextColor(chipVal);
-    const size = 24.0;
+    const size = 28.0;
 
     Color? parsedCustomColor;
     if (customColor != null) {
@@ -130,7 +130,7 @@ class ChipStackWidget extends StatelessWidget {
     // Set size to EXACTLY the base chip size. This ensures the bottom-most
     // chip is perfectly centered on intersections. The stack will visually
     // grow upwards by overflowing the clip box.
-    const double chipSize = 24.0;
+    const double chipSize = 28.0;
 
     return SizedBox(
       width: chipSize,
@@ -154,8 +154,8 @@ class ChipStackWidget extends StatelessWidget {
           // Delete icon badge overlay (if deleteMode is enabled)
           if (deleteMode && isMine)
             Positioned(
-              top: -((visibleChips.length - 1) * 3.0) - 6,
-              right: -6,
+              top: -((visibleChips.length - 1) * 3.0) + 7,
+              right: 7,
               child: Container(
                 width: 14,
                 height: 14,
