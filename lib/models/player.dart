@@ -171,7 +171,7 @@ class Player {
   factory Player.fromJson(Map<String, dynamic> json) => Player(
         id: json['_id']?.toString(),
         supabaseId: json['supabase_id'] ?? '',
-        username: json['username'] ?? '',
+        username: json['username'] ?? json['name'] ?? '',
         email: json['email'] ?? '',
         avatarUrl: json['avatar_url'] ?? '',
         balance: (json['balance'] ?? 0).toDouble(),
