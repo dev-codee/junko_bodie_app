@@ -114,20 +114,27 @@ class _RankingsScreenState extends State<RankingsScreen> {
       width: double.infinity,
       color: _kInk,
       padding: EdgeInsets.fromLTRB(
-          16, MediaQuery.of(context).padding.top + 3, 16, 3),
+          24, MediaQuery.of(context).padding.top + 3, 16, 3),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => context.go('/lobby'),
             child: Container(
-              width: 28,
-              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _kGold.withValues(alpha: 0.12),
                 border: Border.all(color: _kGold.withValues(alpha: 0.35)),
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: const Icon(Icons.chevron_left, color: _kGold, size: 18),
+              child: Text(
+                'LOBBY',
+                style: GoogleFonts.inter(
+                  color: _kGold,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 14),

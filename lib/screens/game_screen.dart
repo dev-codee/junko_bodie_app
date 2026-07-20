@@ -323,7 +323,7 @@ class _GameScreenState extends State<GameScreen> {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 48.0),
+                    padding: const EdgeInsets.only(left: 0.0),
                     child: _buildFloatingPlayerCard(),
                   ),
                 ),
@@ -449,7 +449,7 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           // Left: Interactive Chips tray (flush to the left edge)
           Expanded(
-            flex: 9,
+            flex: 1,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -471,7 +471,7 @@ class _GameScreenState extends State<GameScreen> {
           // Right: Player Balance / Stats / Total Bet — FittedBox scales the
           // group down so it never overflows the footer width.
           Expanded(
-            flex: 7,
+            flex: 1,
             child: Align(
               alignment: Alignment.centerRight,
               child: FittedBox(

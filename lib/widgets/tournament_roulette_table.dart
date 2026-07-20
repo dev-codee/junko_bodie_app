@@ -150,35 +150,41 @@ class TournamentRouletteTable extends StatelessWidget {
                   Positioned.fill(
                     child: Padding(
                       padding: const EdgeInsets.all(2.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const RadialGradient(
-                            center: Alignment.center,
-                            radius: 0.8,
-                            colors: [Color(0xFF143D30), Color(0xFF081A15)],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 4.0),
-                        child: Row(
-                          children: [
-                            // 1. Wheel Section (Left)
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeInOutCubic,
-                              alignment: Alignment.center,
-                              width: isSpinning ? wheelSize * 1.15 : wheelSize,
-                              child: RouletteWheel(
-                                wheelType: wheelTypeEnum,
-                                spinResult: currentSpinResult,
-                                isSpinning: isSpinning,
-                                onSpinComplete: () {
-                                  provider.completeSpin();
-                                },
-                                size: isSpinning ? wheelSize * 1.15 : wheelSize,
-                                tournamentMode: true,
-                              ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: RadialGradient(
+                              center: Alignment.center,
+                              radius: 0.8,
+                              colors: [Color(0xFF143D30), Color(0xFF081A15)],
                             ),
+                          ),
+                          padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 4.0),
+                          child: Row(
+                            children: [
+                              // 1. Wheel Section (Left) - partially offscreen when not spinning
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeInOutCubic,
+                                alignment: Alignment.centerRight,
+                                width: isSpinning ? wheelSize * 1.15 : wheelSize * 0.40,
+                                child: OverflowBox(
+                                  alignment: Alignment.centerRight,
+                                  minWidth: isSpinning ? wheelSize * 1.15 : wheelSize,
+                                  maxWidth: isSpinning ? wheelSize * 1.15 : wheelSize,
+                                  child: RouletteWheel(
+                                    wheelType: wheelTypeEnum,
+                                    spinResult: currentSpinResult,
+                                    isSpinning: isSpinning,
+                                    onSpinComplete: () {
+                                      provider.completeSpin();
+                                    },
+                                    size: isSpinning ? wheelSize * 1.15 : wheelSize,
+                                    tournamentMode: true,
+                                  ),
+                                ),
+                              ),
                             const SizedBox(width: 8),
 
                             // 2. Felt Betting Section (Right)
@@ -389,10 +395,11 @@ class TournamentRouletteTable extends StatelessWidget {
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                ],
+                        ), // Container
+                      ), // ClipRRect
+                    ), // Padding
+                  ), // Positioned.fill
+                ], // Stack
               ),
             );
           },

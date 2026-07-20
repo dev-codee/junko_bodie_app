@@ -543,13 +543,25 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   children: [
                     _footerPill('TOTAL BET', '\$${totalBet.toStringAsFixed(0)}'),
                     const SizedBox(width: 8),
-                    _footerButton('REBET', canRebet, provider.rebet),
+                    _footerButton('REBET', canRebet, () {
+                      soundEngine.playRebetSound();
+                      provider.rebet();
+                    }),
                     const SizedBox(width: 6),
-                    _footerButton('UNDO', canBet && hasBets, provider.undo),
+                    _footerButton('UNDO', canBet && hasBets, () {
+                      soundEngine.playSwoosh();
+                      provider.undo();
+                    }),
                     const SizedBox(width: 6),
-                    _footerButton('CLEAR', canBet && hasBets, provider.clearBets),
+                    _footerButton('CLEAR', canBet && hasBets, () {
+                      soundEngine.playSwoosh();
+                      provider.clearBets();
+                    }),
                     const SizedBox(width: 6),
-                    _footerButton('2X', canBet && hasBets, provider.doubleAllBets),
+                    _footerButton('2X', canBet && hasBets, () {
+                      soundEngine.playClick();
+                      provider.doubleAllBets();
+                    }),
                     const SizedBox(width: 6),
                     _footerDeleteButton(canBet, provider.deleteMode, provider.toggleDeleteMode),
                     const SizedBox(width: 8),

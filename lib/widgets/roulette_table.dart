@@ -76,8 +76,8 @@ class _RouletteTableState extends State<RouletteTable> {
             // Request nearly the full felt height; the FittedBox below caps it
             // so it never overflows. The toggle is overlaid on the wheel's rim
             // (not stacked below) so the wheel gets the whole height.
-            final double maxWheelWidth = (width * 0.38).clamp(280.0, 500.0);
-            final double wheelSize = (height * 1.25).clamp(280.0, maxWheelWidth);
+            final double maxWheelWidth = (width * 0.34).clamp(250.0, 500.0);
+            final double wheelSize = (height * 1.25).clamp(250.0, maxWheelWidth);
             // Large size for the centered spin overlay. While spinning the table
             // fills the whole screen (header/footer are hidden), so this sizes the
             // wheel to the full screen height for a dramatic, centered spin.
@@ -483,6 +483,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                             CasinoButton(
                                               label: '2X',
                                               onTap: () {
+                                                soundEngine.playClick();
                                                 provider.doubleAllBets();
                                               },
                                               enabled: canBet,
@@ -491,7 +492,8 @@ class _RouletteTableState extends State<RouletteTable> {
                                             CasinoButton(
                                               label: provider.deleteMode
                                                   ? 'Normal'
-                                                  : 'X',
+                                                  : 'X OFF',
+                                              isDanger: !provider.deleteMode,
                                               onTap: () {
                                                 provider.toggleDeleteMode();
                                               },
@@ -762,12 +764,14 @@ class CasinoButton extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
   final bool enabled;
+  final bool isDanger;
 
   const CasinoButton({
     Key? key,
     required this.label,
     required this.onTap,
     this.enabled = true,
+    this.isDanger = false,
   }) : super(key: key);
 
   @override
@@ -796,7 +800,7 @@ class _CasinoButtonState extends State<CasinoButton> {
           top: _isPressed ? 4.0 : 0.0,
           bottom: _isPressed ? 0.0 : 4.0,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: active
@@ -807,8 +811,8 @@ class _CasinoButtonState extends State<CasinoButton> {
           ),
           border: Border.all(
             color: active
-                ? const Color(0xFFC9A44C)
-                : const Color(0xFFC9A44C).withOpacity(0.2),
+                ? (widget.isDanger ? Colors.redAccent : const Color(0xFFC9A44C))
+                : (widget.isDanger ? Colors.redAccent.withOpacity(0.2) : const Color(0xFFC9A44C).withOpacity(0.2)),
             width: 1.8,
           ),
           borderRadius: BorderRadius.circular(6),
@@ -830,10 +834,10 @@ class _CasinoButtonState extends State<CasinoButton> {
           widget.label.toUpperCase(),
           style: GoogleFonts.inter(
             color: active
-                ? const Color(0xFFE4E0D4)
-                : const Color(0xFFE4E0D4).withOpacity(0.25),
+                ? (widget.isDanger ? Colors.redAccent : const Color(0xFFE4E0D4))
+                : (widget.isDanger ? Colors.redAccent.withOpacity(0.25) : const Color(0xFFE4E0D4).withOpacity(0.25)),
             fontWeight: FontWeight.w900,
-            fontSize: 9,
+            fontSize: 10,
             letterSpacing: 0.8,
           ),
         ),

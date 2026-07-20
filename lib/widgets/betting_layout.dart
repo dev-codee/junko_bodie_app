@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:junko_bodie/config/theme.dart';
@@ -350,11 +351,15 @@ class _DropZoneState extends State<DropZone> {
     final bet = widget.bets[widget.betId];
     final hasBet = bet != null;
 
+    // Ensure hit area is at least 36x36 if a bet is placed so the chip is fully clickable.
+    final double hitWidth = hasBet ? math.max(36.0, widget.width) : widget.width;
+    final double hitHeight = hasBet ? math.max(36.0, widget.height) : widget.height;
+
     return Positioned(
-      left: widget.left - widget.width / 2,
-      top: widget.top - widget.height / 2,
-      width: widget.width,
-      height: widget.height,
+      left: widget.left - hitWidth / 2,
+      top: widget.top - hitHeight / 2,
+      width: hitWidth,
+      height: hitHeight,
       child: MouseRegion(
           onEnter: (_) {
             if (!widget.disabled) {
@@ -396,9 +401,9 @@ class _DropZoneState extends State<DropZone> {
                 });
               }
             },
-            onTap: _handleTap,
-            onLongPress: _handleLongPress,
-            onSecondaryTap: _handleLongPress,
+            onTap: (widget.deleteMode && !hasBet) ? null : _handleTap,
+            onLongPress: (widget.deleteMode && !hasBet) ? null : _handleLongPress,
+            onSecondaryTap: (widget.deleteMode && !hasBet) ? null : _handleLongPress,
             child: Stack(
               alignment: Alignment.center,
               clipBehavior: Clip.none,
@@ -1011,8 +1016,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 32,
-                              height: 32,
+                              width: 24,
+                              height: 64,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1041,8 +1046,8 @@ class _BettingLayoutState extends State<BettingLayout> {
                               betId: betId,
                               left: left,
                               top: top,
-                              width: 32,
-                              height: 32,
+                              width: 24,
+                              height: 64,
                               bets: widget.bets,
                               onPlace: widget.onPlaceBet,
                               onRemove: widget.onRemoveBet,
@@ -1060,24 +1065,24 @@ class _BettingLayoutState extends State<BettingLayout> {
                           }),
 
                           // Boundary splits with Zero
-                          DropZone(betId: 'split-0-1', left: spacerWidth, top: gridHeight * 0.833, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
-                          DropZone(betId: 'split-0-2', left: spacerWidth, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
+                          DropZone(betId: 'split-0-1', left: spacerWidth, top: gridHeight * 0.833, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-1'), phase: widget.phase, numbers: const [0, 1], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-1') ?? true),
+                          DropZone(betId: 'split-0-2', left: spacerWidth, top: widget.wheelType == WheelType.american ? gridHeight * 0.60 : gridHeight * 0.50, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-2'), phase: widget.phase, numbers: const [0, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-2') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'split-00-2', left: spacerWidth, top: gridHeight * 0.40, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
-                            DropZone(betId: 'split-00-3', left: spacerWidth, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
+                            DropZone(betId: 'split-00-2', left: spacerWidth, top: gridHeight * 0.40, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-2'), phase: widget.phase, numbers: const [37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-2') ?? true),
+                            DropZone(betId: 'split-00-3', left: spacerWidth, top: gridHeight * 0.166, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-00-3'), phase: widget.phase, numbers: const [37, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-00-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'split-0-3', left: spacerWidth, top: gridHeight * 0.166, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
+                            DropZone(betId: 'split-0-3', left: spacerWidth, top: gridHeight * 0.166, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('split-0-3'), phase: widget.phase, numbers: const [0, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('split-0-3') ?? true),
                           ],
 
                           // Trio & Basket
-                          DropZone(betId: 'trio-0-1-2', left: spacerWidth, top: gridHeight * 0.666, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
-                          DropZone(betId: 'trio-0-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
+                          DropZone(betId: 'trio-0-1-2', left: spacerWidth, top: gridHeight * 0.666, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-1-2'), phase: widget.phase, numbers: const [0, 1, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-1-2') ?? true),
+                          DropZone(betId: 'trio-0-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-2-3'), phase: widget.phase, numbers: const [0, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-2-3') ?? true),
                           if (widget.wheelType == WheelType.american) ...[
-                            DropZone(betId: 'trio-00-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
-                            DropZone(betId: 'trio-0-00-2', left: spacerWidth, top: gridHeight * 0.50, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-00-2'), phase: widget.phase, numbers: const [0, 37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-00-2') ?? true),
-                            DropZone(betId: 'basket-0-00-1-2-3', left: spacerWidth, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
+                            DropZone(betId: 'trio-00-2-3', left: spacerWidth, top: gridHeight * 0.333, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-00-2-3'), phase: widget.phase, numbers: const [37, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-00-2-3') ?? true),
+                            DropZone(betId: 'trio-0-00-2', left: spacerWidth, top: gridHeight * 0.50, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('trio-0-00-2'), phase: widget.phase, numbers: const [0, 37, 2], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('trio-0-00-2') ?? true),
+                            DropZone(betId: 'basket-0-00-1-2-3', left: spacerWidth, top: gridHeight, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-00-1-2-3'), phase: widget.phase, numbers: const [0, 37, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-00-1-2-3') ?? true),
                           ] else ...[
-                            DropZone(betId: 'basket-0-1-2-3', left: spacerWidth, top: gridHeight, width: 32, height: 32, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
+                            DropZone(betId: 'basket-0-1-2-3', left: spacerWidth, top: gridHeight, width: 44, height: 44, bets: widget.bets, onPlace: widget.onPlaceBet, onRemove: widget.onRemoveBet, disabled: widget.disabled, isWinner: _isBetWinner('basket-0-1-2-3'), phase: widget.phase, numbers: const [0, 1, 2, 3], onHover: _handleHover, onHoverEnd: _handleHoverEnd, deleteMode: widget.deleteMode, onPopLastChip: widget.onPopLastChip, onClearZone: widget.onClearZone, isMine: widget.myBets?.containsKey('basket-0-1-2-3') ?? true),
                           ],
                         ],
                       );

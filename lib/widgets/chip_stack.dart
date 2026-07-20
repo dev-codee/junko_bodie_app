@@ -23,14 +23,12 @@ Color getChipTextColor(double val) {
 /// A smaller, lightweight chip drawn on the betting layout felt.
 class MiniChip extends StatelessWidget {
   final double chipVal;
-  final double yOffset;
   final int zIndex;
   final String? customColor;
 
   const MiniChip({
     super.key,
     required this.chipVal,
-    required this.yOffset,
     required this.zIndex,
     this.customColor,
   });
@@ -49,43 +47,40 @@ class MiniChip extends StatelessWidget {
       } catch (_) {}
     }
 
-    return Positioned(
-      top: yOffset,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: parsedCustomColor != null
-                  ? parsedCustomColor.withOpacity(0.5)
-                  : Colors.black.withOpacity(0.6),
-              blurRadius: 4,
-              offset: const Offset(0, 0),
-            ),
-          ],
-          border: Border.all(
-            color: parsedCustomColor ?? AppColors.gold.withOpacity(0.75),
-            width: 1.2,
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: parsedCustomColor != null
+                ? parsedCustomColor.withOpacity(0.5)
+                : Colors.black.withOpacity(0.6),
+            blurRadius: 4,
+            offset: const Offset(0, 0),
           ),
+        ],
+        border: Border.all(
+          color: parsedCustomColor ?? AppColors.gold.withOpacity(0.75),
+          width: 1.2,
         ),
-        child: ClipOval(
-          child: CustomPaint(
-            painter: ChipPainter(color: color, isSelected: false),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 1.0),
-                child: Text(
-                  chipVal >= 1000
-                      ? '${(chipVal / 1000).toInt()}k'
-                      : '${chipVal.toInt()}',
-                  style: playfairDisplay(
-                    fontSize: 7.5,
-                    fontWeight: FontWeight.w900,
-                    color: textColor,
-                  ).copyWith(letterSpacing: -0.5, height: 1.0),
-                ),
+      ),
+      child: ClipOval(
+        child: CustomPaint(
+          painter: ChipPainter(color: color, isSelected: false),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 1.0),
+              child: Text(
+                chipVal >= 1000
+                    ? '${(chipVal / 1000).toInt()}k'
+                    : '${chipVal.toInt()}',
+                style: playfairDisplay(
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                ).copyWith(letterSpacing: -0.5, height: 1.0),
               ),
             ),
           ),
@@ -142,36 +137,57 @@ class ChipStackWidget extends StatelessWidget {
           // Render the visible chips from bottom to top
           ...List.generate(visibleChips.length, (idx) {
             final chipVal = visibleChips[idx];
-            return MiniChip(
-              key: ValueKey('chip-${chips.length - visibleChips.length + idx}'),
-              chipVal: chipVal,
-              yOffset: -(idx * 3.0), // Stack grows upwards
-              zIndex: idx,
-              customColor: customColor,
+            final chipKey = 'chip-${chips.length - visibleChips.length + idx}';
+            return Positioned(
+              top: -(idx * 3.0),
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey(chipKey),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Transform.translate(
+                      offset: Offset(0, -25 * (1 - value)), // Drops in from above
+                      child: child,
+                    ),
+                  );
+                },
+                child: MiniChip(
+                  chipVal: chipVal,
+                  zIndex: idx,
+                  customColor: customColor,
+                ),
+              ),
             );
           }),
 
           // Delete icon badge overlay (if deleteMode is enabled)
           if (deleteMode && isMine)
             Positioned(
-              top: -((visibleChips.length - 1) * 3.0) + 7,
-              right: 7,
+              top: -((visibleChips.length - 1) * 3.0),
+              left: 0,
+              width: 28,
+              height: 28,
               child: Container(
-                width: 14,
-                height: 14,
                 decoration: BoxDecoration(
-                  color: Colors.red[700],
+                  color: Colors.red[800]!.withOpacity(0.9),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.0),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.redAccent.withOpacity(0.6),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  '✕',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
             ),
