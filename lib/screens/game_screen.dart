@@ -420,6 +420,7 @@ class _GameScreenState extends State<GameScreen> {
             constraints: const BoxConstraints(),
             tooltip: 'Settings',
           ),
+          const SizedBox(width: 24),
         ],
       ),
     );
@@ -590,6 +591,7 @@ class _GameScreenState extends State<GameScreen> {
         });
       },
       child: Container(
+        constraints: const BoxConstraints(maxWidth: 176),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -639,44 +641,52 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(width: 8),
             // Profile text
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, $displayName!',
-                  style: const TextStyle(
-                    fontFamily: 'Georgia',
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hello, $displayName!',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Georgia',
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'ELITE VIP MEMBER',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFC9A84C),
-                        fontSize: 6,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'ELITE VIP MEMBER',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFC9A84C),
+                            fontSize: 6,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFC9A84C),
-                        shape: BoxShape.circle,
+                      const SizedBox(width: 3),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFC9A84C),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

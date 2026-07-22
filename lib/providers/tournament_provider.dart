@@ -1143,7 +1143,7 @@ class TournamentProvider extends ChangeNotifier {
 
     final int serverNow =
         DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
-    final int startTime = _bettingDeadline - 45000;
+    final int startTime = _bettingDeadline - 30000;
     final int elapsed = math.max(0, serverNow - startTime);
 
     for (var bet in spinBotBets) {

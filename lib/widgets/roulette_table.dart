@@ -250,7 +250,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                                               bottom: -15,
                                                               right: -80,
                                                               child: BetTimer(
-                                                                duration: 45,
+                                                                duration: 30,
                                                                 isActive:
                                                                     canBet,
                                                                 onTimeout: () =>
@@ -491,8 +491,8 @@ class _RouletteTableState extends State<RouletteTable> {
                                             const SizedBox(width: 8),
                                             CasinoButton(
                                               label: provider.deleteMode
-                                                  ? 'Normal'
-                                                  : 'X OFF',
+                                                  ? 'X OFF'
+                                                  : 'X',
                                               isDanger: !provider.deleteMode,
                                               onTap: () {
                                                 provider.toggleDeleteMode();
