@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:junko_bodie/config/theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -334,11 +333,8 @@ class _LandingScreenState extends State<LandingScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
-                            onTap: () async {
-                              final url = Uri.parse('https://junkobodieroulette.com/privacy');
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              }
+                            onTap: () {
+                              context.push('/privacy-policy');
                             },
                             child: Text(
                               'Privacy Policy',
@@ -361,11 +357,8 @@ class _LandingScreenState extends State<LandingScreen> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () async {
-                              final url = Uri.parse('https://junkobodieroulette.com/terms');
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              }
+                            onTap: () {
+                              context.push('/terms');
                             },
                             child: Text(
                               'Terms of Service',

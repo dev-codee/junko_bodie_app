@@ -19,6 +19,9 @@ import 'package:junko_bodie/screens/tournament_game_screen.dart';
 import 'package:junko_bodie/screens/session_history_screen.dart';
 import 'package:junko_bodie/screens/strategies_screen.dart';
 import 'package:junko_bodie/screens/strategy_builder_screen.dart';
+import 'package:junko_bodie/screens/privacy_policy_screen.dart';
+import 'package:junko_bodie/screens/terms_of_service_screen.dart';
+import 'package:junko_bodie/screens/subscription_screen.dart';
 
 /// Creates the app router.
 ///
@@ -46,18 +49,15 @@ GoRouter buildRouter({
         return '/login';
       }
 
-      // ⚠️ TEMPORARY: subscription paywall disabled.
-      // Original code intentionally preserved below (commented) so we can
-      // re-enable it once the Stripe flow is wired into Flutter.
-      //
-      // if (!hasSubscription) {
-      //   if (isOnSubscribe ||
-      //       state.uri.path == '/account/billing' ||
-      //       isOnLanding) {
-      //     return null;
-      //   }
-      //   return '/subscribe';
-      // }
+      // Enforce subscription paywall
+      if (!hasSubscription) {
+        if (isOnSubscribe ||
+            state.uri.path == '/account/billing' ||
+            isOnLanding) {
+          return null;
+        }
+        return '/subscribe';
+      }
 
       // Logged in → redirect away from landing/login straight into the lobby
       if (isOnLanding || isOnLogin) return '/lobby';
@@ -135,12 +135,22 @@ GoRouter buildRouter({
       GoRoute(
         path: '/subscribe',
         name: 'subscribe',
-        redirect: (_, __) => '/lobby',
+        builder: (context, state) => const SubscriptionScreen(),
       ),
       GoRoute(
         path: '/account/billing',
         name: 'billing',
         redirect: (_, __) => '/lobby',
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        name: 'privacy_policy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/terms',
+        name: 'terms',
+        builder: (context, state) => const TermsOfServiceScreen(),
       ),
     ],
   );

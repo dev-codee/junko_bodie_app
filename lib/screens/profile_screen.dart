@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -130,7 +131,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _manageSubscription() async {
-    final url = Uri.parse('https://junkobodieroulette.com/account/billing');
+    final url = defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS
+        ? Uri.parse('https://apps.apple.com/account/subscriptions')
+        : Uri.parse('https://play.google.com/store/account/subscriptions');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
@@ -138,18 +141,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _subscribeNow() => context.push('/subscribe');
 
-  Future<void> _openPrivacyPolicy() async {
-    final url = Uri.parse('https://junkobodieroulette.com/privacy');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
+  void _openPrivacyPolicy() {
+    context.push('/privacy-policy');
   }
 
-  Future<void> _openTermsOfService() async {
-    final url = Uri.parse('https://junkobodieroulette.com/terms');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
+  void _openTermsOfService() {
+    context.push('/terms');
   }
 
   Future<void> _handleSignOut() async {

@@ -10,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:junko_bodie/config/theme.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
 
@@ -29,6 +30,108 @@ class _LobbyScreenState extends State<LobbyScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkDisclaimer();
+    });
+  }
+
+  Future<void> _checkDisclaimer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool hideDisclaimer = prefs.getBool('hide_simulator_disclaimer') ?? false;
+
+    if (!hideDisclaimer && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          bool dontShowAgain = false;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                backgroundColor: const Color(0xFF0F2E21),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
+                  ),
+                ),
+                title: const Text(
+                  'DISCLAIMER',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Junko Bodie Roulette is a roulette simulator only. It is not a real money gambling application and does not offer real money prizes. All gameplay is strictly for entertainment purposes.',
+                      style: TextStyle(color: Colors.white70, height: 1.4),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            unselectedWidgetColor: Colors.white54,
+                          ),
+                          child: Checkbox(
+                            value: dontShowAgain,
+                            onChanged: (val) {
+                              setState(() {
+                                dontShowAgain = val ?? false;
+                              });
+                            },
+                            activeColor: const Color(0xFFD4BC81),
+                            checkColor: const Color(0xFF0F2E21),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                dontShowAgain = !dontShowAgain;
+                              });
+                            },
+                            child: const Text(
+                              'Do not show this again',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      if (dontShowAgain) {
+                        final p = await SharedPreferences.getInstance();
+                        await p.setBool('hide_simulator_disclaimer', true);
+                      }
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFD4BC81),
+                    ),
+                    child: const Text(
+                      'I UNDERSTAND',
+                      style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
   }
 
   @override

@@ -12,7 +12,6 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:junko_bodie/config/theme.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -446,11 +445,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           WidgetSpan(
                             child: GestureDetector(
-                              onTap: () async {
-                                final url = Uri.parse('https://junkobodieroulette.com/terms');
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
+                              onTap: () {
+                                context.push('/terms');
                               },
                               child: Text(
                                 'Terms of Service',
@@ -472,11 +468,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           WidgetSpan(
                             child: GestureDetector(
-                              onTap: () async {
-                                final url = Uri.parse('https://junkobodieroulette.com/privacy');
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
+                              onTap: () {
+                                context.push('/privacy-policy');
                               },
                               child: Text(
                                 'Privacy Policy',

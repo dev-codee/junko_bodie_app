@@ -7,6 +7,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:junko_bodie/services/subscription_service.dart';
+import 'package:junko_bodie/services/purchases_service.dart';
 import 'package:junko_bodie/services/user_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -54,9 +55,18 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Check if the user has an active subscription.
-  /// Calls the existing Next.js API endpoint.
+  /// Checks local RevenueCat state first, then calls the backend API endpoint.
   Future<void> checkSubscription() async {
     try {
+      // 1. Check local RevenueCat purchase (App Store / Play Store)
+      final rcSubscribed = await PurchasesService().isSubscribed();
+      if (rcSubscribed) {
+        _hasSubscription = true;
+        notifyListeners();
+        return;
+      }
+
+      // 2. Fallback: check backend status (Stripe web purchases)
       final status = await SubscriptionService().getStatus();
       _hasSubscription = status.hasAccess;
     } catch (e) {
