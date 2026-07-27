@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:junko_bodie/config/constants.dart';
 import 'package:junko_bodie/app.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
+import 'package:junko_bodie/services/purchases_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,9 @@ Future<void> main() async {
     url: supabaseUrl,
     publishableKey: supabaseAnonKey,
   );
+
+  // Initialize RevenueCat Purchases
+  await PurchasesService().init();
 
   // Initialize AudioEngine
   await soundEngine.init();
