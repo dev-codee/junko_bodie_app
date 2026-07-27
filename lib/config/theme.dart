@@ -361,12 +361,14 @@ TextStyle playfairDisplay({
   FontWeight fontWeight = FontWeight.w800,
   Color color = AppColors.textPrimary,
   double letterSpacing = -0.01,
+  double? height,
 }) {
   return GoogleFonts.playfairDisplay(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
     letterSpacing: letterSpacing,
+    height: height,
   );
 }
 

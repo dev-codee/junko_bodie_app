@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:junko_bodie/screens/landing_screen.dart';
 import 'package:junko_bodie/screens/login_screen.dart';
+import 'package:junko_bodie/screens/update_password_screen.dart';
 import 'package:junko_bodie/screens/lobby_screen.dart';
 import 'package:junko_bodie/screens/game_screen.dart';
 import 'package:junko_bodie/screens/profile_screen.dart';
@@ -31,6 +32,7 @@ GoRouter buildRouter({
   required bool isAuthenticated,
   required bool hasSubscription,
   required bool isLoading,
+  required bool needsPasswordReset,
 }) {
   return GoRouter(
     initialLocation: '/',
@@ -42,11 +44,20 @@ GoRouter buildRouter({
       final isOnLanding = state.uri.path == '/';
       final isOnLogin = state.uri.path == '/login';
       final isOnSubscribe = state.uri.path == '/subscribe';
+      final isOnUpdatePassword = state.uri.path == '/update-password';
 
-      // Not logged in → can only be on landing or login
+      // Not logged in → force to login screen
       if (!isAuthenticated) {
-        if (isOnLanding || isOnLogin) return null;
+        if (isOnLogin) return null;
         return '/login';
+      }
+
+      // Force password reset if flagged
+      if (needsPasswordReset) {
+        if (isOnUpdatePassword) return null;
+        return '/update-password';
+      } else if (isOnUpdatePassword) {
+        return '/lobby';
       }
 
       // Enforce subscription paywall
@@ -79,6 +90,11 @@ GoRouter buildRouter({
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/update-password',
+        name: 'update_password',
+        builder: (context, state) => const UpdatePasswordScreen(),
       ),
       GoRoute(
         path: '/lobby',

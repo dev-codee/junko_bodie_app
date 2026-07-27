@@ -56,10 +56,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     width: 1,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'DISCLAIMER',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: playfairDisplay(
+                    color: AppColors.gold,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
                   ),
@@ -67,9 +67,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Junko Bodie Roulette is a roulette simulator only. It is not a real money gambling application and does not offer real money prizes. All gameplay is strictly for entertainment purposes.',
-                      style: TextStyle(color: Colors.white70, height: 1.4),
+                      style: playfairDisplay(color: AppColors.gold, height: 1.4),
                     ),
                     const SizedBox(height: 20),
                     Row(

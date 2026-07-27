@@ -57,6 +57,7 @@ class _AppWithRouterState extends State<_AppWithRouter> {
       isAuthenticated: auth.isAuthenticated,
       hasSubscription: auth.hasSubscription,
       isLoading: auth.isLoading,
+      needsPasswordReset: auth.needsPasswordReset,
     );
 
     return MaterialApp.router(

@@ -286,10 +286,9 @@ class _LandingScreenState extends State<LandingScreen> {
                       child: Text(
                         'No real money. No prizes. No gambling.\nSimulator and strategy practice only.\nMust be 17+ to use this app.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: const Color(0xFFF5EDD5)
-                              .withValues(alpha: 0.4),
+                        style: playfairDisplay(
+                          fontSize: 13,
+                          color: AppColors.gold,
                           height: 1.5,
                         ),
                       ),

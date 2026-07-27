@@ -20,10 +20,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+enum AuthMode { signIn, signUp, forgotPassword }
+
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isSignUp = false;
+  AuthMode _authMode = AuthMode.signIn;
   bool _isSubmitting = false;
   String? _error;
+  String? _success;
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -81,47 +84,52 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Please fill in all fields.');
+    if (email.isEmpty || (_authMode != AuthMode.forgotPassword && password.isEmpty)) {
+      setState(() => _error = 'Please fill in all required fields.');
       return;
     }
 
-    if (_isSignUp && password != _confirmPasswordController.text) {
+    if (_authMode == AuthMode.signUp && password != _confirmPasswordController.text) {
       setState(() => _error = 'Passwords do not match.');
       return;
     }
 
-    if (_isSignUp && password.length < 6) {
-      setState(() => _error = 'Password must be at least 6 characters.');
+    if (_authMode == AuthMode.signUp && password.length < 8) {
+      setState(() => _error = 'Password must be at least 8 characters.');
       return;
     }
 
     setState(() {
       _isSubmitting = true;
       _error = null;
+      _success = null;
     });
 
     try {
       final auth = context.read<AuthProvider>();
-      if (_isSignUp) {
+      if (_authMode == AuthMode.signUp) {
         await auth.signUpWithEmail(email, password);
         if (mounted) {
           setState(() => _error = null);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Check your email to confirm your account.'),
-              backgroundColor: AppColors.gold,
-            ),
-          );
+        }
+      } else if (_authMode == AuthMode.forgotPassword) {
+        await auth.resetPasswordForEmail(email);
+        if (mounted) {
+          setState(() {
+            _success = 'If an account exists, a reset link was sent.';
+            _error = null;
+          });
         }
       } else {
         await auth.signInWithEmail(email, password);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = _isSignUp
+        setState(() => _error = _authMode == AuthMode.signUp
             ? 'Sign up failed. Email may already be in use.'
-            : 'Invalid email or password.');
+            : _authMode == AuthMode.forgotPassword
+                ? 'Failed to send reset email.'
+                : 'Invalid email or password.');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -211,7 +219,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Title
                     Text(
-                      _isSignUp ? 'Create Account' : 'Welcome Back',
+                      _authMode == AuthMode.signUp
+                          ? 'Create Account'
+                          : _authMode == AuthMode.forgotPassword
+                              ? 'Reset Password'
+                              : 'Welcome Back',
                       style: playfairDisplay(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -220,37 +232,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Google Sign-In
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _isSubmitting ? null : _handleGoogleSignIn,
-                        icon: const Text('G',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w700)),
-                        label: const Text('Continue with Google'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.15),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Apple Sign-In (Mandated by Apple App Review Guideline 4.8 on iOS)
-                    if (defaultTargetPlatform == TargetPlatform.iOS) ...[
-                      const SizedBox(height: 12),
+                    if (_authMode != AuthMode.forgotPassword) ...[
+                      // Google Sign-In
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: _isSubmitting ? null : _handleAppleSignIn,
-                          icon: const Icon(Icons.apple, size: 20, color: Colors.white),
-                          label: const Text('Continue with Apple'),
+                          onPressed: _isSubmitting ? null : _handleGoogleSignIn,
+                          icon: const Text('G',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w700)),
+                          label: const Text('Continue with Google'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.textPrimary,
                             side: BorderSide(
@@ -263,37 +254,60 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 20),
 
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'or',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              fontSize: 12,
+                      // Apple Sign-In (Mandated by Apple App Review Guideline 4.8 on iOS)
+                      if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _isSubmitting ? null : _handleAppleSignIn,
+                            icon: const Icon(Icons.apple, size: 20, color: Colors.white),
+                            label: const Text('Continue with Apple'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
                       ],
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
+
+                      // Divider
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'or',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Email field
                     TextField(
@@ -308,33 +322,56 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Password field
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
-                        hintText: 'Password',
-                        prefixIcon:
-                            Icon(Icons.lock_outline, color: AppColors.gold),
-                      ),
-                    ),
-
-                    // Confirm password (sign up only)
-                    if (_isSignUp) ...[
-                      const SizedBox(height: 12),
+                    if (_authMode != AuthMode.forgotPassword) ...[
+                      // Password field
                       TextField(
-                        controller: _confirmPasswordController,
+                        controller: _passwordController,
                         obscureText: true,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: const InputDecoration(
-                          hintText: 'Confirm password',
-                          prefixIcon: Icon(Icons.lock_outline,
-                              color: AppColors.gold),
+                          hintText: 'Password',
+                          prefixIcon:
+                              Icon(Icons.lock_outline, color: AppColors.gold),
                         ),
                       ),
+
+                      // Confirm password (sign up only)
+                      if (_authMode == AuthMode.signUp) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: const InputDecoration(
+                            hintText: 'Confirm password',
+                            prefixIcon: Icon(Icons.lock_outline,
+                                color: AppColors.gold),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
                     ],
-                    const SizedBox(height: 20),
+
+                    if (_success != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          _success!,
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
 
                     // Error message
                     if (_error != null)
@@ -373,29 +410,61 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: AppColors.black,
                                 ),
                               )
-                            : Text(_isSignUp ? 'Create Account' : 'Sign In'),
+                            : Text(_authMode == AuthMode.signUp
+                                ? 'Create Account'
+                                : _authMode == AuthMode.forgotPassword
+                                    ? 'Send Reset Link'
+                                    : 'Sign In'),
                       ),
                     ),
                     const SizedBox(height: 16),
 
+                    if (_authMode == AuthMode.signIn) ...[
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _authMode = AuthMode.forgotPassword;
+                          _error = null;
+                          _success = null;
+                        }),
+                        child: Text(
+                          'Forgot password?',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     // Toggle sign up / sign in
                     GestureDetector(
                       onTap: () => setState(() {
-                        _isSignUp = !_isSignUp;
+                        if (_authMode == AuthMode.forgotPassword) {
+                          _authMode = AuthMode.signIn;
+                        } else {
+                          _authMode = _authMode == AuthMode.signIn ? AuthMode.signUp : AuthMode.signIn;
+                        }
                         _error = null;
+                        _success = null;
                       }),
                       child: Text.rich(
                         TextSpan(
-                          text: _isSignUp
-                              ? 'Already have an account? '
-                              : "Don't have an account? ",
+                          text: _authMode == AuthMode.forgotPassword
+                              ? ''
+                              : _authMode == AuthMode.signUp
+                                  ? 'Already have an account? '
+                                  : "Don't have an account? ",
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 12,
                           ),
                           children: [
                             TextSpan(
-                              text: _isSignUp ? 'Sign In' : 'Sign Up',
+                              text: _authMode == AuthMode.forgotPassword
+                                  ? '← Back to sign in'
+                                  : _authMode == AuthMode.signUp ? 'Sign In' : 'Sign Up',
                               style: const TextStyle(
                                 color: AppColors.gold,
                                 fontWeight: FontWeight.w700,

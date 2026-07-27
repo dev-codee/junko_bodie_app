@@ -15,11 +15,13 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _isLoading = true;
   bool _hasSubscription = false;
+  bool _needsPasswordReset = false;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
   bool get hasSubscription => _hasSubscription;
+  bool get needsPasswordReset => _needsPasswordReset;
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -30,7 +32,12 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _init() async {
     // Listen for auth state changes
     _supabase.auth.onAuthStateChange.listen((data) async {
+      final event = data.event;
       _user = data.session?.user;
+
+      if (event == AuthChangeEvent.passwordRecovery) {
+        _needsPasswordReset = true;
+      }
 
       // Check subscription when user signs in
       if (_user != null) {
@@ -129,6 +136,23 @@ class AuthProvider extends ChangeNotifier {
       email: email,
       password: password,
     );
+  }
+
+  /// Request a password reset email.
+  Future<void> resetPasswordForEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'com.junkobodieroulette.app://login-callback/',
+    );
+  }
+
+  /// Update password (used after deep linking via password recovery)
+  Future<void> updatePassword(String newPassword) async {
+    await _supabase.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+    _needsPasswordReset = false;
+    notifyListeners();
   }
 
   /// Sign out.
