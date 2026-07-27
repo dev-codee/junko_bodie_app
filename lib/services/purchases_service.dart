@@ -77,12 +77,7 @@ class PurchasesService {
     try {
       final purchaseResult = await Purchases.purchasePackage(package);
       // Assuming your entitlement is named 'premium' in RevenueCat
-      return purchaseResult
-              .customerInfo
-              .entitlements
-              .all['premium']
-              ?.isActive ??
-          false;
+      return purchaseResult.customerInfo.entitlements.active.isNotEmpty;
     } catch (e) {
       debugPrint('Purchase error: $e');
       return false;
@@ -94,7 +89,7 @@ class PurchasesService {
     if (!_isConfigured) return false;
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      return customerInfo.entitlements.all['premium']?.isActive ?? false;
+      return customerInfo.entitlements.active.isNotEmpty;
     } catch (e) {
       debugPrint('Error checking subscription: $e');
       return false;
@@ -102,14 +97,25 @@ class PurchasesService {
   }
 
   /// Restore previous purchases
-  Future<bool> restorePurchases() async {
-    if (!_isConfigured) return false;
+  Future<String> restorePurchasesDebug() async {
+    if (!_isConfigured) return 'Purchases not configured';
     try {
       final customerInfo = await Purchases.restorePurchases();
-      return customerInfo.entitlements.all['premium']?.isActive ?? false;
+      final activeEntitlements = customerInfo.entitlements.active.keys.toList();
+      
+      if (activeEntitlements.isNotEmpty) {
+        return 'success';
+      } else {
+        return 'Active entitlements found: $activeEntitlements. Expected: [Junko Bodie Roulette Premium]. If empty, RevenueCat is rejecting your receipt. Did you upload the Google Play Service Account JSON?';
+      }
     } catch (e) {
       debugPrint('Error restoring purchases: $e');
-      return false;
+      return 'Error: $e';
     }
+  }
+
+  Future<bool> restorePurchases() async {
+    final result = await restorePurchasesDebug();
+    return result == 'success';
   }
 }

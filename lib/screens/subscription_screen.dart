@@ -73,10 +73,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Future<void> _restorePurchases() async {
     setState(() => _isLoading = true);
-    final success = await _purchasesService.restorePurchases();
+    final result = await _purchasesService.restorePurchasesDebug();
     
     if (mounted) {
-      if (success) {
+      if (result == 'success') {
         _isSubscribed = true;
         await context.read<AuthProvider>().checkSubscription();
         if (mounted) {
@@ -88,8 +88,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       } else {
         setState(() {
           _isLoading = false;
+          // Show the exact RevenueCat debug string for 6 seconds so the user can read it
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No previous purchases found.')),
+            SnackBar(
+              content: Text(result),
+              duration: const Duration(seconds: 6),
+            ),
           );
         });
       }
