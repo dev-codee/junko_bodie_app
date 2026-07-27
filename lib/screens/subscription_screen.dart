@@ -64,7 +64,32 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         setState(() {
           _isLoading = false;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Purchase cancelled or failed.')),
+            const SnackBar(content: Text('Purchase cancelled or failed. Please try again.')),
+          );
+        });
+      }
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    setState(() => _isLoading = true);
+    final success = await _purchasesService.restorePurchases();
+    
+    if (mounted) {
+      if (success) {
+        _isSubscribed = true;
+        await context.read<AuthProvider>().checkSubscription();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Purchases restored successfully!')),
+          );
+          context.go('/lobby');
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No previous purchases found.')),
           );
         });
       }
@@ -76,6 +101,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Premium Access'),
+        actions: [
+          TextButton(
+            onPressed: _restorePurchases,
+            child: const Text('Restore', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

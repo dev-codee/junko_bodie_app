@@ -100,4 +100,16 @@ class PurchasesService {
       return false;
     }
   }
+
+  /// Restore previous purchases
+  Future<bool> restorePurchases() async {
+    if (!_isConfigured) return false;
+    try {
+      final customerInfo = await Purchases.restorePurchases();
+      return customerInfo.entitlements.all['premium']?.isActive ?? false;
+    } catch (e) {
+      debugPrint('Error restoring purchases: $e');
+      return false;
+    }
+  }
 }
