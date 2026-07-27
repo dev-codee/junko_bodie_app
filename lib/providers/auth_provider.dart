@@ -29,29 +29,30 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     // Listen for auth state changes
-    _supabase.auth.onAuthStateChange.listen((data) {
+    _supabase.auth.onAuthStateChange.listen((data) async {
       _user = data.session?.user;
-      _isLoading = false;
-      notifyListeners();
 
       // Check subscription when user signs in
       if (_user != null) {
-        checkSubscription();
+        await checkSubscription();
       } else {
         _hasSubscription = false;
-        notifyListeners();
       }
+      
+      _isLoading = false;
+      notifyListeners();
     });
 
     // Get initial session
     final session = _supabase.auth.currentSession;
     _user = session?.user;
-    _isLoading = false;
-    notifyListeners();
-
+    
     if (_user != null) {
       await checkSubscription();
     }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   /// Check if the user has an active subscription.

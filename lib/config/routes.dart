@@ -59,6 +59,11 @@ GoRouter buildRouter({
         return '/subscribe';
       }
 
+      // If they have a subscription, don't let them stay on the subscribe page
+      if (hasSubscription && isOnSubscribe) {
+        return '/lobby';
+      }
+
       // Logged in → redirect away from landing/login straight into the lobby
       if (isOnLanding || isOnLogin) return '/lobby';
 
