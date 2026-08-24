@@ -526,6 +526,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           ),
         ),
         const SizedBox(width: 16),
+        if ((_strategyId ?? _savedStrategyId) != null) ...[
+          _pillButton('TEST RESULTS', Icons.bar_chart, () {
+            final id = _strategyId ?? _savedStrategyId;
+            context.push('/simulation/history?strategyId=$id');
+          }, filled: false),
+          const SizedBox(width: 10),
+        ],
         _pillButton('NAVIGATOR', Icons.insights, _openNavigator,
             filled: false),
         const SizedBox(width: 10),

@@ -243,6 +243,15 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
     if (mounted) _fetchStrategies();
   }
 
+  /// Open the Simulation Engine setup (optionally pre-selecting a strategy).
+  Future<void> _openSimulate({String? id}) async {
+    final path = id != null && id.isNotEmpty
+        ? '/simulation/setup?strategyId=$id'
+        : '/simulation/setup';
+    await context.push(path);
+    if (mounted) _fetchStrategies();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -424,6 +433,11 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
               label: 'NAVIGATOR',
               icon: Icons.insights,
               onTap: () => _openNavigator(),
+            ),
+            _buildPillButton(
+              label: 'SIMULATE',
+              icon: Icons.play_arrow,
+              onTap: () => _openSimulate(),
             ),
             _buildPillButton(
               label: _importing ? 'IMPORTING...' : 'IMPORT',

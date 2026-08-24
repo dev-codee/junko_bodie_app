@@ -132,6 +132,66 @@ class SimulationResult {
     required this.history,
     required this.stageHits,
   });
+
+  Map<String, dynamic> toJson() => {
+        'strategyId': strategyId,
+        'strategyName': strategyName,
+        'totalSpinsRequested': totalSpinsRequested,
+        'totalSpinsExecuted': totalSpinsExecuted,
+        'totalSessions': totalSessions,
+        'startingBankroll': startingBankroll,
+        'endingBankroll': endingBankroll,
+        'highestBankroll': highestBankroll,
+        'lowestBankroll': lowestBankroll,
+        'netProfit': netProfit,
+        'winningSessions': winningSessions,
+        'losingSessions': losingSessions,
+        'bankruptcyCount': bankruptcyCount,
+        'maxDrawdown': maxDrawdown,
+        'maxWinStreak': maxWinStreak,
+        'maxLossStreak': maxLossStreak,
+        'averageSpinsPerSession': averageSpinsPerSession,
+        'averageProfitPerSession': averageProfitPerSession,
+        'averageProfitPerSpin': averageProfitPerSpin,
+        'systemSuccessRatio': systemSuccessRatio,
+        'history': history.map((p) => {'x': p.x, 'y': p.y}).toList(),
+        'stageHits': stageHits,
+      };
+
+  factory SimulationResult.fromJson(Map<String, dynamic> json) {
+    double d(dynamic v) => (v as num?)?.toDouble() ?? 0;
+    int i(dynamic v) => (v as num?)?.toInt() ?? 0;
+    return SimulationResult(
+      strategyId: json['strategyId']?.toString() ?? '',
+      strategyName: json['strategyName']?.toString() ?? '',
+      totalSpinsRequested: i(json['totalSpinsRequested']),
+      totalSpinsExecuted: i(json['totalSpinsExecuted']),
+      totalSessions: i(json['totalSessions']),
+      startingBankroll: d(json['startingBankroll']),
+      endingBankroll: d(json['endingBankroll']),
+      highestBankroll: d(json['highestBankroll']),
+      lowestBankroll: d(json['lowestBankroll']),
+      netProfit: d(json['netProfit']),
+      winningSessions: i(json['winningSessions']),
+      losingSessions: i(json['losingSessions']),
+      bankruptcyCount: i(json['bankruptcyCount']),
+      maxDrawdown: d(json['maxDrawdown']),
+      maxWinStreak: i(json['maxWinStreak']),
+      maxLossStreak: i(json['maxLossStreak']),
+      averageSpinsPerSession: d(json['averageSpinsPerSession']),
+      averageProfitPerSession: d(json['averageProfitPerSession']),
+      averageProfitPerSpin: d(json['averageProfitPerSpin']),
+      systemSuccessRatio: d(json['systemSuccessRatio']),
+      history: (json['history'] as List<dynamic>? ?? [])
+          .map((p) => Point<double>(
+                ((p as Map)['x'] as num).toDouble(),
+                (p['y'] as num).toDouble(),
+              ))
+          .toList(),
+      stageHits: (json['stageHits'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(k, (v as num).toInt())),
+    );
+  }
 }
 
 class SimulationEngine {

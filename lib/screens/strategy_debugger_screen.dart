@@ -344,6 +344,35 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         if (_sessionStarted) ...[
           const SizedBox(width: 16),
           GestureDetector(
+            onTap: () {
+              final id = _selectedId;
+              context.push(id.isNotEmpty
+                  ? '/simulation/setup?strategyId=$id'
+                  : '/simulation/setup');
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              decoration: BoxDecoration(
+                color: _kInk,
+                borderRadius: BorderRadius.circular(9999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.play_arrow, size: 15, color: _kGold),
+                  const SizedBox(width: 6),
+                  Text('TEST IN SIMULATOR',
+                      style: GoogleFonts.inter(
+                          color: _kGold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
             onTap: _reset,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),

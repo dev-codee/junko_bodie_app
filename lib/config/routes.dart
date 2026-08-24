@@ -21,6 +21,9 @@ import 'package:junko_bodie/screens/session_history_screen.dart';
 import 'package:junko_bodie/screens/strategies_screen.dart';
 import 'package:junko_bodie/screens/strategy_builder_screen.dart';
 import 'package:junko_bodie/screens/strategy_debugger_screen.dart';
+import 'package:junko_bodie/screens/simulation_setup_screen.dart';
+import 'package:junko_bodie/screens/simulation_run_screen.dart';
+import 'package:junko_bodie/screens/simulation_history_screen.dart';
 import 'package:junko_bodie/screens/privacy_policy_screen.dart';
 import 'package:junko_bodie/screens/terms_of_service_screen.dart';
 import 'package:junko_bodie/screens/subscription_screen.dart';
@@ -156,6 +159,34 @@ GoRouter buildRouter({
           final id = state.uri.queryParameters['strategyId'] ??
               state.uri.queryParameters['id'];
           return StrategyDebuggerScreen(strategyId: id);
+        },
+      ),
+      GoRoute(
+        path: '/simulation/setup',
+        name: 'simulation_setup',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['strategyId'] ??
+              state.uri.queryParameters['id'];
+          return SimulationSetupScreen(strategyId: id);
+        },
+      ),
+      GoRoute(
+        path: '/simulation/run',
+        name: 'simulation_run',
+        builder: (context, state) {
+          final args = state.extra is SimulationRunArgs
+              ? state.extra as SimulationRunArgs
+              : const SimulationRunArgs();
+          return SimulationRunScreen(args: args);
+        },
+      ),
+      GoRoute(
+        path: '/simulation/history',
+        name: 'simulation_history',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['strategyId'] ??
+              state.uri.queryParameters['id'];
+          return SimulationHistoryScreen(strategyId: id);
         },
       ),
       GoRoute(
