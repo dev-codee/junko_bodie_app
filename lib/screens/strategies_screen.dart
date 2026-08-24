@@ -1,10 +1,15 @@
 /// Strategies screen — Strategy Library list page.
 ///
-/// Replicates the web app's /strategies page UI.
-/// Lists all user strategies as cards with name, wheel type, stage count,
-/// description, last updated, and edit/delete actions.
+/// Replicates the web app's /strategies page UI. Lists all user strategies as
+/// cards with name, wheel type, stage count, description, last updated, a global
+/// indicator, and Navigator / edit / hide / delete actions. Supports hiding
+/// strategies (with a "Show Hidden" toggle) and importing a strategy from a
+/// JSON file.
 library;
 
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -23,6 +28,9 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   final StrategyService _service = StrategyService();
 
   List<BettingStrategy> _strategies = [];
+  Set<String> _hiddenIds = {};
+  bool _showHidden = false;
+  bool _importing = false;
   bool _isLoading = true;
   String? _error;
 
@@ -42,10 +50,14 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
       _error = null;
     });
     try {
-      final strategies = await _service.fetchStrategies();
+      final results = await Future.wait([
+        _service.fetchStrategies(),
+        _service.fetchHiddenStrategyIds(),
+      ]);
       if (!mounted) return;
       setState(() {
-        _strategies = strategies;
+        _strategies = results[0] as List<BettingStrategy>;
+        _hiddenIds = (results[1] as List<String>).toSet();
         _isLoading = false;
       });
     } catch (e) {
@@ -55,6 +67,16 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  List<BettingStrategy> get _visibleStrategies {
+    return _strategies.where((s) {
+      final id = s.id;
+      if (id == null) return true;
+      final hidden = _hiddenIds.contains(id);
+      if (hidden && !_showHidden) return false;
+      return true;
+    }).toList();
   }
 
   Future<void> _handleDelete(String id) async {
@@ -123,12 +145,100 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
     }
   }
 
+  Future<void> _handleHideToggle(String id, bool currentlyHidden) async {
+    // Optimistic update.
+    setState(() {
+      if (currentlyHidden) {
+        _hiddenIds.remove(id);
+      } else {
+        _hiddenIds.add(id);
+      }
+    });
+    try {
+      await _service.setStrategyHidden(id, !currentlyHidden);
+    } catch (e) {
+      if (!mounted) return;
+      // Revert on failure.
+      setState(() {
+        if (currentlyHidden) {
+          _hiddenIds.add(id);
+        } else {
+          _hiddenIds.remove(id);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update: $e'),
+          backgroundColor: const Color(0xFFC0392B),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleImport() async {
+    setState(() => _importing = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) {
+        setState(() => _importing = false);
+        return;
+      }
+
+      final bytes = result.files.single.bytes;
+      if (bytes == null) throw Exception('Could not read file contents.');
+      final data = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+
+      if (data['name'] == null ||
+          data['wheel_type'] == null ||
+          data['stages'] is! List) {
+        _showSnack(
+          'Invalid strategy file. Missing required fields (name, wheel_type, stages).',
+          error: true,
+        );
+        return;
+      }
+
+      await _service.importStrategy(data);
+      await _fetchStrategies();
+      if (!mounted) return;
+      _showSnack('Strategy "${data['name']}" imported successfully!');
+    } catch (e) {
+      _showSnack('Failed to import strategy: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
+  void _showSnack(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+            error ? const Color(0xFFC0392B) : const Color(0xFF0F2E21),
+      ),
+    );
+  }
+
   /// Open the strategy builder (new when [id] is null, edit otherwise) and
   /// refresh the library when the user returns.
   Future<void> _openBuilder({String? id}) async {
     final path = id != null && id.isNotEmpty
         ? '/strategies/build?id=$id'
         : '/strategies/build';
+    await context.push(path);
+    if (mounted) _fetchStrategies();
+  }
+
+  /// Open the Navigator / Debugger for a strategy (or the picker if none given).
+  Future<void> _openNavigator({String? id}) async {
+    final path = id != null && id.isNotEmpty
+        ? '/strategies/debug?strategyId=$id'
+        : '/strategies/debug';
     await context.push(path);
     if (mounted) _fetchStrategies();
   }
@@ -152,14 +262,11 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
         ),
         child: Stack(
           children: [
-            // ── Background glow accents ──
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(painter: _GlowPainter()),
               ),
             ),
-
-            // ── Main content ──
             SafeArea(
               child: _isLoading
                   ? const Center(
@@ -217,22 +324,18 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   }
 
   Widget _buildContent() {
+    final visible = _visibleStrategies;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Back button ──
           _buildBackButton(),
           const SizedBox(height: 12),
-
-          // ── Header ──
           _buildHeader(),
           const SizedBox(height: 24),
-
-          // ── Strategy cards or empty state ──
           Expanded(
-            child: _strategies.isEmpty ? _buildEmptyState() : _buildGrid(),
+            child: visible.isEmpty ? _buildEmptyState() : _buildGrid(visible),
           ),
         ],
       ),
@@ -310,10 +413,29 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
             ],
           ),
         ),
-        _buildPillButton(
-          label: 'NEW STRATEGY',
-          icon: Icons.add,
-          onTap: _openBuilder,
+        // Header actions
+        Wrap(
+          spacing: 10,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _buildShowHiddenToggle(),
+            _buildPillButton(
+              label: 'NAVIGATOR',
+              icon: Icons.insights,
+              onTap: () => _openNavigator(),
+            ),
+            _buildPillButton(
+              label: _importing ? 'IMPORTING...' : 'IMPORT',
+              icon: Icons.upload_file,
+              onTap: _importing ? null : _handleImport,
+            ),
+            _buildPillButton(
+              label: 'NEW STRATEGY',
+              icon: Icons.add,
+              onTap: _openBuilder,
+            ),
+          ],
         ),
       ],
     )
@@ -322,41 +444,88 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
         .slideY(begin: 0.05, end: 0, duration: 400.ms, delay: 100.ms);
   }
 
+  Widget _buildShowHiddenToggle() {
+    return GestureDetector(
+      onTap: () => setState(() => _showHidden = !_showHidden),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'SHOW HIDDEN',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+              color: const Color(0xFF113626).withValues(alpha: 0.9),
+            ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 38,
+            height: 20,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: _showHidden
+                  ? const Color(0xFF0F2E21)
+                  : const Color(0xFF113626).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(9999),
+            ),
+            alignment:
+                _showHidden ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: const BoxDecoration(
+                color: Color(0xFFC9A44C),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPillButton({
     required String label,
     required IconData icon,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F2E21),
-          borderRadius: BorderRadius.circular(9999),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x660F2E21),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: const Color(0xFFC9A44C)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFC9A44C),
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-                letterSpacing: 1.5,
+    final bool enabled = onTap != null;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F2E21),
+            borderRadius: BorderRadius.circular(9999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x660F2E21),
+                blurRadius: 12,
+                offset: Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFFC9A44C)),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFC9A44C),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -427,10 +596,9 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
         );
   }
 
-  Widget _buildGrid() {
+  Widget _buildGrid(List<BettingStrategy> visible) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Determine number of columns based on available width
         final crossAxisCount = constraints.maxWidth > 900
             ? 3
             : constraints.maxWidth > 500
@@ -443,20 +611,27 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
-            childAspectRatio: 1.7,
+            childAspectRatio: 1.6,
           ),
-          itemCount: _strategies.length,
+          itemCount: visible.length,
           itemBuilder: (context, index) {
-            final strategy = _strategies[index];
+            final strategy = visible[index];
+            final hidden =
+                strategy.id != null && _hiddenIds.contains(strategy.id);
             return _StrategyCard(
               strategy: strategy,
               index: index,
+              isHidden: hidden,
               onTap: () => _openBuilder(id: strategy.id),
+              onNavigator: () => _openNavigator(id: strategy.id),
               onEdit: () => _openBuilder(id: strategy.id),
-              onDelete: () {
+              onHideToggle: () {
                 if (strategy.id != null) {
-                  _handleDelete(strategy.id!);
+                  _handleHideToggle(strategy.id!, hidden);
                 }
+              },
+              onDelete: () {
+                if (strategy.id != null) _handleDelete(strategy.id!);
               },
             );
           },
@@ -473,15 +648,21 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
 class _StrategyCard extends StatefulWidget {
   final BettingStrategy strategy;
   final int index;
+  final bool isHidden;
   final VoidCallback onTap;
+  final VoidCallback onNavigator;
   final VoidCallback onEdit;
+  final VoidCallback onHideToggle;
   final VoidCallback onDelete;
 
   const _StrategyCard({
     required this.strategy,
     required this.index,
+    required this.isHidden,
     required this.onTap,
+    required this.onNavigator,
     required this.onEdit,
+    required this.onHideToggle,
     required this.onDelete,
   });
 
@@ -502,149 +683,175 @@ class _StrategyCardState extends State<_StrategyCard> {
     final strategy = widget.strategy;
     final stageCount = strategy.stages.length;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.translationValues(0, _isPressed ? 0 : 0, 0),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: _isPressed ? 0.5 : 0.35),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: _isPressed ? 0.8 : 0.5),
+    return Opacity(
+      opacity: widget.isHidden ? 0.6 : 1.0,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: _isPressed ? 0.5 : 0.35),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: _isPressed ? 0.8 : 0.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _isPressed ? 0.12 : 0.08),
+                blurRadius: _isPressed ? 30 : 24,
+                offset: Offset(0, _isPressed ? 12 : 8),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isPressed ? 0.12 : 0.08),
-              blurRadius: _isPressed ? 30 : 24,
-              offset: Offset(0, _isPressed ? 12 : 8),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Card Header ──
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strategy.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF111111),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${strategy.wheelType} Wheel',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black.withValues(alpha: 0.55),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F2E21),
-                    borderRadius: BorderRadius.circular(9999),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x660F2E21),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    '$stageCount STAGES',
-                    style: const TextStyle(
-                      color: Color(0xFFC9A44C),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 9,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── Description ──
-            Expanded(
-              child: Text(
-                strategy.description?.isNotEmpty == true
-                    ? strategy.description!
-                    : 'No description provided.',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black.withValues(alpha: 0.6),
-                  height: 1.5,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // ── Footer ──
-            Container(
-              padding: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.black.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Last updated: ${_formatDate(strategy.updatedAt ?? strategy.createdAt)}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black.withValues(alpha: 0.45),
-                      letterSpacing: 0.5,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                strategy.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF111111),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (strategy.isGlobal) ...[
+                              const SizedBox(width: 4),
+                              const Text('🌍', style: TextStyle(fontSize: 13)),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${strategy.wheelType} Wheel',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black.withValues(alpha: 0.55),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Row(
-                    children: [
-                      _IconBtn(
-                        icon: Icons.edit_outlined,
-                        onTap: widget.onEdit,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F2E21),
+                      borderRadius: BorderRadius.circular(9999),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x660F2E21),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$stageCount STAGES',
+                      style: const TextStyle(
+                        color: Color(0xFFC9A44C),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 9,
+                        letterSpacing: 1,
                       ),
-                      const SizedBox(width: 8),
-                      _IconBtn(
-                        icon: Icons.delete_outline,
-                        onTap: widget.onDelete,
-                        isDanger: true,
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Expanded(
+                child: Text(
+                  strategy.description?.isNotEmpty == true
+                      ? strategy.description!
+                      : 'No description provided.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black.withValues(alpha: 0.6),
+                    height: 1.5,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.black.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Updated: ${_formatDate(strategy.updatedAt ?? strategy.createdAt)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black.withValues(alpha: 0.45),
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _IconBtn(
+                          icon: Icons.insights,
+                          onTap: widget.onNavigator,
+                          tooltip: 'Open in Navigator',
+                        ),
+                        const SizedBox(width: 6),
+                        _IconBtn(
+                          icon: Icons.edit_outlined,
+                          onTap: widget.onEdit,
+                          tooltip: 'Edit',
+                        ),
+                        const SizedBox(width: 6),
+                        _IconBtn(
+                          icon: widget.isHidden
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          onTap: widget.onHideToggle,
+                          tooltip: widget.isHidden ? 'Unhide' : 'Hide',
+                        ),
+                        const SizedBox(width: 6),
+                        _IconBtn(
+                          icon: Icons.delete_outline,
+                          onTap: widget.onDelete,
+                          isDanger: true,
+                          tooltip: 'Delete',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     )
@@ -664,18 +871,20 @@ class _StrategyCardState extends State<_StrategyCard> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Small icon button (edit / delete)
+// Small icon button
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _IconBtn extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isDanger;
+  final String? tooltip;
 
   const _IconBtn({
     required this.icon,
     required this.onTap,
     this.isDanger = false,
+    this.tooltip,
   });
 
   @override
@@ -687,10 +896,10 @@ class _IconBtnState extends State<_IconBtn> {
 
   @override
   Widget build(BuildContext context) {
-    final dangerColor = const Color(0xFFEF4444);
-    final normalColor = const Color(0xFF111111);
+    const dangerColor = Color(0xFFEF4444);
+    const normalColor = Color(0xFF111111);
 
-    return MouseRegion(
+    final button = MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
@@ -717,6 +926,10 @@ class _IconBtnState extends State<_IconBtn> {
         ),
       ),
     );
+
+    return widget.tooltip != null
+        ? Tooltip(message: widget.tooltip!, child: button)
+        : button;
   }
 }
 
@@ -727,7 +940,6 @@ class _IconBtnState extends State<_IconBtn> {
 class _GlowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Bottom-left warm glow
     final paint1 = Paint()
       ..shader = RadialGradient(
         center: const Alignment(-0.7, 0.5),
@@ -740,7 +952,6 @@ class _GlowPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
     canvas.drawRect(Offset.zero & size, paint1);
 
-    // Top-right warm glow
     final paint2 = Paint()
       ..shader = RadialGradient(
         center: const Alignment(0.7, -0.7),

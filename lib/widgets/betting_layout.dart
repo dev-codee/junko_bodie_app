@@ -240,6 +240,8 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                         deleteMode: widget.deleteMode,
                         isMine: widget.isMine,
                         isHovered: widget.isHovered,
+                        customColor: widget.bet!.customColor,
+                        playerInitial: widget.bet!.playerInitial,
                       ),
 
                     // Amount tooltip (if hovered and not compact)
@@ -435,6 +437,8 @@ class _DropZoneState extends State<DropZone> {
                     deleteMode: widget.deleteMode,
                     isMine: widget.isMine,
                     isHovered: _localHovered,
+                    customColor: bet.customColor,
+                    playerInitial: bet.playerInitial,
                   ),
 
                 // Winner indicator
@@ -635,6 +639,8 @@ class _OutsideBetCellState extends State<OutsideBetCell> {
                     deleteMode: widget.deleteMode,
                     isMine: widget.isMine,
                     isHovered: _isHovered,
+                    customColor: widget.bet!.customColor,
+                    playerInitial: widget.bet!.playerInitial,
                   ),
 
                 // Tooltip

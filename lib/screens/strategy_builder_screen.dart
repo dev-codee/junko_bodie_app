@@ -1,8 +1,10 @@
 /// Strategy Builder — replicates the web /strategies/build page.
 ///
 /// Lets the user create/edit a staged betting strategy: set name, wheel type,
-/// description, max stages; add/delete stages; place chips on the interactive
-/// felt per stage; undo/clear; and save (POST/PUT) to the backend.
+/// description; place chips on the interactive felt per stage; tag bets into
+/// groups; configure per-stage win/loss actions and safety/profit rules; add
+/// advanced dynamic rules; set a global End-Game Recovery rule; write strategy
+/// notes; and save (POST/PUT) to the backend.
 library;
 
 import 'package:flutter/material.dart';
@@ -21,48 +23,28 @@ const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
 const Color _kGold = Color(0xFFC9A44C);
 const Color _kGoldDark = Color(0xFF6B5220);
+const Color _kTeal = Color(0xFF3FD1B4);
+const Color _kLoss = Color(0xFFD9534F);
 
-/// Mutable working copy of a stage while editing.
-class _WorkStage {
-  int stageNumber;
-  // position (betId) -> total amount wagered
-  Map<String, double> bets;
-  String onWin;
-  String onLoss;
+/// Deterministic color per group tag letter (hex string, no leading #).
+const List<String> _groupPalette = [
+  '3FD1B4', // A
+  'F59E0B', // B
+  'EF4444', // C
+  '8B5CF6', // D
+  '3B82F6', // E
+  'EC4899', // F
+  '10B981', // G
+  'F97316', // H
+];
 
-  _WorkStage({
-    required this.stageNumber,
-    Map<String, double>? bets,
-    this.onWin = 'reset',
-    this.onLoss = 'next',
-  }) : bets = bets ?? {};
-
-  double get totalWager => bets.values.fold(0.0, (a, b) => a + b);
-
-  _WorkStage clone() => _WorkStage(
-    stageNumber: stageNumber,
-    bets: Map<String, double>.from(bets),
-    onWin: onWin,
-    onLoss: onLoss,
-  );
-
-  StrategyStage toStage() => StrategyStage(
-    stageNumber: stageNumber,
-    bets: bets.entries
-        .map((e) => StageBet(position: e.key, amount: e.value))
-        .toList(),
-    totalWager: totalWager,
-    onWin: onWin,
-    onLoss: onLoss,
-  );
-
-  factory _WorkStage.fromStage(StrategyStage s) => _WorkStage(
-    stageNumber: s.stageNumber,
-    bets: {for (final b in s.bets) b.position: b.amount.toDouble()},
-    onWin: s.onWin,
-    onLoss: s.onLoss,
-  );
+String _groupColorHex(String letter) {
+  if (letter.isEmpty) return _groupPalette[0];
+  final idx = (letter.codeUnitAt(0) - 65) % _groupPalette.length;
+  return _groupPalette[idx.abs()];
 }
+
+Color _hexColor(String hex) => Color(int.parse('0xFF${hex.replaceAll('#', '')}'));
 
 class StrategyBuilderScreen extends StatefulWidget {
   final String? strategyId;
@@ -77,18 +59,40 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   final _nameController = TextEditingController(text: 'New Strategy');
   final _descController = TextEditingController();
+  final _notesController = TextEditingController();
   final _maxStagesController = TextEditingController(text: '10');
+  final _recoveryPosController = TextEditingController();
 
   String? _strategyId;
   String _wheelType = 'American';
   int _maxStages = 10;
+  bool _isGlobal = false;
+  String? _savedStrategyId;
 
-  List<_WorkStage> _stages = [_WorkStage(stageNumber: 1)];
+  // Global End-Game Recovery.
+  final EndgameRecoveryConfig _recovery = EndgameRecoveryConfig();
+  num _recoverySelectedChip = 10;
+
+  // Stages (working copies of the model — fields are mutable).
+  List<StrategyStage> _stages = [
+    StrategyStage(
+      stageNumber: 1,
+      bets: [],
+      totalWager: 0,
+      onWin: 'reset',
+      onLoss: 'next',
+    ),
+  ];
   int _activeIndex = 0;
   double _selectedChip = 5;
 
-  // Per-stage undo history (reset on stage change), matching the web.
-  final List<Map<String, double>> _history = [];
+  // Group tagging.
+  String _activeGroupId = 'none';
+  bool _tagOnlyMode = true;
+  List<String> _customGroups = ['A', 'B', 'C'];
+
+  // Per-stage undo history (reset on stage change).
+  final List<List<StageBet>> _history = [];
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -113,7 +117,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _notesController.dispose();
     _maxStagesController.dispose();
+    _recoveryPosController.dispose();
     super.dispose();
   }
 
@@ -125,23 +131,56 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         setState(() {
           _nameController.text = s.name;
           _descController.text = s.description ?? '';
-          _wheelType = s.wheelType == 'European' ? 'European' : 'American';
+          _notesController.text = s.strategyNotes ?? '';
+          _wheelType = _normalizeWheel(s.wheelType);
           _maxStages = s.maxStages;
           _maxStagesController.text = s.maxStages.toString();
+          _isGlobal = s.isGlobal;
+          if (s.endgameRecovery != null) {
+            _recovery
+              ..enabled = s.endgameRecovery!.enabled
+              ..recoveryBets = s.endgameRecovery!.recoveryBets
+                  .map((b) => b.clone())
+                  .toList()
+              ..fallbackAmount = s.endgameRecovery!.fallbackAmount;
+          }
           if (s.stages.isNotEmpty) {
-            _stages = s.stages.map(_WorkStage.fromStage).toList();
+            _stages = s.stages.map((st) => st.clone()).toList();
+            // Rebuild the custom group list from tagged bets.
+            final groups = <String>{'A', 'B', 'C'};
+            for (final st in _stages) {
+              for (final b in st.bets) {
+                final g = b.groupId?.replaceAll('Group ', '').trim();
+                if (g != null && g.isNotEmpty) groups.add(g);
+              }
+            }
+            _customGroups = groups.toList()..sort();
           }
           _activeIndex = 0;
         });
       }
     } catch (_) {
+      // Keep defaults on failure.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  _WorkStage get _active => _stages[_activeIndex];
-  double get _totalBankroll => _stages.fold(0.0, (a, s) => a + s.totalWager);
+  String _normalizeWheel(String w) {
+    if (w == 'European') return 'European';
+    if (w == 'Both') return 'Both';
+    return 'American';
+  }
+
+  WheelType get _wheelEnum =>
+      _wheelType == 'European' ? WheelType.european : WheelType.american;
+
+  StrategyStage get _active => _stages[_activeIndex];
+  num get _totalBankroll => _stages.fold<num>(0, (a, s) => a + s.totalWager);
+
+  void _recalcWager(StrategyStage stage) {
+    stage.totalWager = stage.bets.fold<num>(0, (a, b) => a + b.amount);
+  }
 
   /// Break an amount into chip denominations (largest first) for a nice stack.
   List<double> _chipsFor(double amount) {
@@ -158,65 +197,103 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   Map<String, PlacedBet> get _currentBetsMap {
     final map = <String, PlacedBet>{};
-    _active.bets.forEach((pos, amount) {
-      map[pos] = PlacedBet(
-        betId: pos,
-        amount: amount,
-        chips: _chipsFor(amount),
-        playerInitial: 'S',
+    for (final b in _active.bets) {
+      final group = b.groupId;
+      map[b.position] = PlacedBet(
+        betId: b.position,
+        amount: b.amount.toDouble(),
+        chips: _chipsFor(b.amount.toDouble()),
+        customColor: group != null ? _groupColorHex(group) : null,
+        playerInitial: group,
       );
-    });
+    }
     return map;
   }
 
   void _pushHistory() {
-    _history.add(Map<String, double>.from(_active.bets));
+    _history.add(_active.bets.map((b) => b.clone()).toList());
   }
 
+  // ── Bet placement (mirrors web handlePlaceBet) ──────────────────────────────
   void _placeBet(String betId) {
     setState(() {
       _pushHistory();
-      _active.bets[betId] = (_active.bets[betId] ?? 0) + _selectedChip;
+      final stage = _active;
+      final idx = stage.bets.indexWhere((b) => b.position == betId);
+      final tagged = _activeGroupId != 'none';
+
+      final isTagOnlyExisting = _tagOnlyMode &&
+          idx != -1 &&
+          (tagged || stage.bets[idx].groupId != null);
+
+      if (idx != -1) {
+        final bet = stage.bets[idx];
+        if (!isTagOnlyExisting) {
+          bet.amount = bet.amount + _selectedChip;
+        }
+        bet.groupId = tagged ? _activeGroupId : null;
+      } else {
+        if (!isTagOnlyExisting) {
+          stage.bets.add(StageBet(
+            position: betId,
+            amount: _selectedChip,
+            groupId: tagged ? _activeGroupId : null,
+          ));
+        }
+      }
+      _recalcWager(stage);
     });
   }
 
   void _removeBet(String betId) {
-    if (!_active.bets.containsKey(betId)) return;
+    final idx = _active.bets.indexWhere((b) => b.position == betId);
+    if (idx == -1) return;
     setState(() {
       _pushHistory();
-      _active.bets.remove(betId);
+      _active.bets.removeAt(idx);
+      _recalcWager(_active);
     });
   }
 
   void _clearBoard() {
+    if (_active.bets.isEmpty) return;
     setState(() {
       _pushHistory();
       _active.bets.clear();
+      _recalcWager(_active);
     });
   }
 
-  /// Merge the prior stage's bets into the current stage so the player can keep
-  /// building on top of them. Only available from Stage 2 onwards. Mirrors the
-  /// web's handleRepeatBet.
+  /// Merge the prior stage's bets into the current stage. Stage 2+ only.
   void _repeatBet() {
     if (_activeIndex == 0) return;
     final prev = _stages[_activeIndex - 1];
     if (prev.bets.isEmpty) return;
     setState(() {
       _pushHistory();
-      prev.bets.forEach((pos, amount) {
-        _active.bets[pos] = (_active.bets[pos] ?? 0) + amount;
-      });
+      final stage = _active;
+      for (final pb in prev.bets) {
+        final existing =
+            stage.bets.where((b) => b.position == pb.position).toList();
+        if (existing.isNotEmpty) {
+          existing.first.amount += pb.amount;
+          existing.first.groupId ??= pb.groupId;
+        } else {
+          stage.bets.add(pb.clone());
+        }
+      }
+      _recalcWager(stage);
     });
   }
 
-  /// Double every bet on the current stage. Mirrors the web's handleDoubleBet
-  /// (and the solo game's 2X button).
   void _doubleBet() {
     if (_active.bets.isEmpty) return;
     setState(() {
       _pushHistory();
-      _active.bets.updateAll((_, amount) => amount * 2);
+      for (final b in _active.bets) {
+        b.amount *= 2;
+      }
+      _recalcWager(_active);
     });
   }
 
@@ -224,13 +301,21 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     if (_history.isEmpty) return;
     setState(() {
       _active.bets = _history.removeLast();
+      _recalcWager(_active);
     });
   }
 
+  // ── Stage management ────────────────────────────────────────────────────────
   void _addStage() {
     if (_stages.length >= _maxStages) return;
     setState(() {
-      _stages.add(_WorkStage(stageNumber: _stages.length + 1));
+      _stages.add(StrategyStage(
+        stageNumber: _stages.length + 1,
+        bets: [],
+        totalWager: 0,
+        onWin: 'reset',
+        onLoss: 'next',
+      ));
       _activeIndex = _stages.length - 1;
       _history.clear();
     });
@@ -259,6 +344,64 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     });
   }
 
+  // ── Group tagging ───────────────────────────────────────────────────────────
+  void _addGroup() {
+    if (_customGroups.length >= 26) return;
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    final next = alphabet.split('').firstWhere(
+          (l) => !_customGroups.contains(l),
+          orElse: () => 'A',
+        );
+    setState(() {
+      _customGroups = [..._customGroups, next]..sort();
+    });
+  }
+
+  void _removeGroup(String g) {
+    setState(() {
+      _customGroups.remove(g);
+      if (_activeGroupId == g) _activeGroupId = 'none';
+      for (final stage in _stages) {
+        for (final b in stage.bets) {
+          if (b.groupId == g) b.groupId = null;
+        }
+      }
+    });
+  }
+
+  // ── Dynamic rules ───────────────────────────────────────────────────────────
+  void _addDynamicRule() {
+    setState(() {
+      _active.dynamicRules ??= [];
+      _active.dynamicRules!.add(DynamicRule(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        condition: RuleCondition.win,
+        target: RuleTarget.allBets,
+        action: RuleActionType.multiply,
+        value: 2,
+      ));
+    });
+  }
+
+  void _removeDynamicRule(String id) {
+    setState(() {
+      _active.dynamicRules?.removeWhere((r) => r.id == id);
+    });
+  }
+
+  // ── Recovery positions ──────────────────────────────────────────────────────
+  void _addRecoveryPosition() {
+    final val = _recoveryPosController.text.trim();
+    if (val.isEmpty) return;
+    setState(() {
+      _recovery.recoveryBets.removeWhere((b) => b.position == val);
+      _recovery.recoveryBets
+          .add(StageBet(position: val, amount: _recoverySelectedChip));
+      _recoveryPosController.clear();
+    });
+  }
+
+  // ── Save ────────────────────────────────────────────────────────────────────
   Future<void> _save() async {
     setState(() => _isSaving = true);
     final strategy = BettingStrategy(
@@ -268,10 +411,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           : _nameController.text.trim(),
       wheelType: _wheelType,
       description: _descController.text.trim(),
+      strategyNotes: _notesController.text.trim(),
       isActive: true,
-      maxStages: _maxStages,
+      isGlobal: _isGlobal,
+      maxStages: _stages.length,
       defaultMode: 'Manual',
-      stages: _stages.map((s) => s.toStage()).toList(),
+      stages: _stages,
+      endgameRecovery: _recovery,
     );
     try {
       final newId = await _service.saveStrategy(strategy);
@@ -279,8 +425,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       setState(() {
         _isSaving = false;
         if (_strategyId == null || _strategyId!.isEmpty) {
-          _strategyId = newId; // continue editing the newly created strategy
+          _strategyId = newId;
         }
+        _savedStrategyId = newId;
         _isSaved = true;
       });
       Future.delayed(const Duration(seconds: 2), () {
@@ -296,6 +443,13 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         ),
       );
     }
+  }
+
+  void _openNavigator() {
+    final id = _strategyId ?? _savedStrategyId;
+    final path =
+        id != null ? '/strategies/debug?strategyId=$id' : '/strategies/debug';
+    context.push(path);
   }
 
   @override
@@ -314,65 +468,67 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         child: SafeArea(
           child: _isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: _kInk,
-                    strokeWidth: 3,
-                  ),
+                  child: CircularProgressIndicator(color: _kInk, strokeWidth: 3),
                 )
-              : Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTopBar(),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: _buildTopBar(),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(width: 230, child: _buildSidebar()),
-                            const SizedBox(width: 14),
-                            Expanded(child: _buildBuilderArea()),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(width: 250, child: _buildSidebar()),
+                                  const SizedBox(width: 14),
+                                  Expanded(child: _buildBuilderArea()),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildStageRulesCard(),
+                            const SizedBox(height: 16),
+                            _buildDynamicRulesCard(),
+                            const SizedBox(height: 16),
+                            _buildStrategyNotesSection(),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
         ),
       ),
     );
   }
 
+  // ── Top bar ─────────────────────────────────────────────────────────────────
   Widget _buildTopBar() {
     return Row(
       children: [
-        _navPill('LOBBY', Icons.arrow_back, () => context.go('/lobby')),
-        const SizedBox(width: 12),
-        Container(
-          width: 1,
-          height: 16,
-          color: _kInkText.withValues(alpha: 0.25),
-        ),
-        const SizedBox(width: 12),
-        _navPill('LIBRARY', null, () => context.go('/strategies')),
+        _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
         const Spacer(),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Strategy Builder',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                fontStyle: FontStyle.italic,
-                color: _kInkText,
-              ),
-            ),
-          ],
+        Text(
+          'Strategy Builder',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+            color: _kInkText,
+          ),
         ),
         const SizedBox(width: 16),
+        _pillButton('NAVIGATOR', Icons.insights, _openNavigator,
+            filled: false),
+        const SizedBox(width: 10),
         _buildSaveButton(),
       ],
     );
@@ -411,6 +567,37 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
+  Widget _pillButton(String label, IconData icon, VoidCallback onTap,
+      {bool filled = true}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: filled ? _kInk : _kInk.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(9999),
+          border: filled ? null : Border.all(color: _kInk.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: filled ? _kGold : _kInk),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: filled ? _kGold : _kInk,
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return GestureDetector(
       onTap: _isSaving ? null : _save,
@@ -421,10 +608,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           borderRadius: BorderRadius.circular(9999),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x660F2E21),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
+                color: Color(0x660F2E21), blurRadius: 12, offset: Offset(0, 4)),
           ],
         ),
         child: Row(
@@ -443,8 +627,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               _isSaving
                   ? 'SAVING...'
                   : _isSaved
-                  ? 'SAVED ✓'
-                  : 'SAVE',
+                      ? 'SAVED ✓'
+                      : 'SAVE',
               style: GoogleFonts.inter(
                 color: _kGold,
                 fontWeight: FontWeight.w800,
@@ -458,43 +642,194 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
-  // ── Left sidebar ───────────────────────────────────────────────────────────
+  // ── Left sidebar ────────────────────────────────────────────────────────────
   Widget _buildSidebar() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _card('Strategy Info', [
-            _fieldLabel('Strategy Name'),
-            _textField(_nameController, hint: 'e.g. Green Neighbors'),
-            const SizedBox(height: 12),
-            _fieldLabel('Wheel Type'),
-            _wheelDropdown(),
-            const SizedBox(height: 12),
-            _fieldLabel('Description (Optional)'),
-            _textField(
-              _descController,
-              hint: 'Notes about this strategy...',
-              maxLines: 3,
-            ),
-          ]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _card('Strategy Info', [
+          _fieldLabel('Strategy Name'),
+          _textField(_nameController, hint: 'e.g. Green Neighbors'),
           const SizedBox(height: 12),
-          _card('Settings', [
-            _fieldLabel('Max Stages'),
-            _textField(
-              _maxStagesController,
-              keyboardType: TextInputType.number,
-              onChanged: (v) {
-                final n = int.tryParse(v);
-                if (n != null && n >= 1 && n <= 100) {
-                  setState(() => _maxStages = n);
-                }
-              },
+          _fieldLabel('Wheel Type'),
+          _wheelDropdown(),
+          const SizedBox(height: 12),
+          _fieldLabel('Description (Optional)'),
+          _textField(_descController,
+              hint: 'Notes about this strategy...', maxLines: 3),
+        ]),
+        const SizedBox(height: 12),
+        _buildRecoveryCard(),
+        const SizedBox(height: 12),
+        _card('Settings', [
+          _fieldLabel('Max Stages'),
+          _textField(
+            _maxStagesController,
+            keyboardType: TextInputType.number,
+            onChanged: (v) {
+              final n = int.tryParse(v);
+              if (n != null && n >= 1 && n <= 100) {
+                setState(() => _maxStages = n);
+              }
+            },
+          ),
+          if (_isGlobal) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Text('🌍', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 6),
+                Text(
+                  'GLOBAL STRATEGY',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: _kGoldDark,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ]),
-        ],
-      ),
+          ],
+        ]),
+      ],
     );
+  }
+
+  Widget _buildRecoveryCard() {
+    return _card('⚡ End-Game Recovery', [
+      Text(
+        'Global rule — applies to ALL stages. When every tagged group has won '
+        'but session profit is negative, break-even recovery bets auto-deploy.',
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          height: 1.4,
+          fontWeight: FontWeight.w500,
+          color: _kGoldDark,
+        ),
+      ),
+      const SizedBox(height: 8),
+      _checkRow(
+        'Enable End-Game Recovery',
+        _recovery.enabled,
+        (v) => setState(() => _recovery.enabled = v),
+        accent: _kInk,
+      ),
+      if (_recovery.enabled) ...[
+        const SizedBox(height: 8),
+        _fieldLabel('Recovery Bet Positions'),
+        Text(
+          'Select a chip value, then add recovery position codes.',
+          style: GoogleFonts.inter(
+              fontSize: 10, color: _kGoldDark, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [1, 2, 5, 10, 25, 50, 100].map((chip) {
+            final sel = _recoverySelectedChip == chip;
+            return GestureDetector(
+              onTap: () => setState(() => _recoverySelectedChip = chip),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? _kGold.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: sel ? _kGold : _kGold.withValues(alpha: 0.3),
+                    width: sel ? 1.5 : 1,
+                  ),
+                ),
+                child: Text(
+                  '\$$chip',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: sel ? const Color(0xFF8C6518) : _kInkText,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        if (_recovery.recoveryBets.isEmpty)
+          Text(
+            'No recovery positions added yet.',
+            style: GoogleFonts.inter(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: _kGoldDark),
+          ),
+        ..._recovery.recoveryBets.asMap().entries.map((e) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${e.value.position}  (\$${e.value.amount})',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _kInkText),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _recovery.recoveryBets.removeAt(e.key)),
+                  child: const Icon(Icons.close, size: 15, color: _kLoss),
+                ),
+              ],
+            ),
+          );
+        }),
+        Row(
+          children: [
+            Expanded(
+              child: _textField(_recoveryPosController,
+                  hint: 'e.g. split-25-26',
+                  onSubmitted: (_) => _addRecoveryPosition()),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: _addRecoveryPosition,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _kInk,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('+ Add',
+                    style: GoogleFonts.inter(
+                        color: _kGold,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _fieldLabel('Fallback Bet Amount (\$)'),
+        _numberField(
+          value: _recovery.fallbackAmount,
+          hint: '10',
+          onChanged: (n) => setState(() => _recovery.fallbackAmount = n ?? 10),
+        ),
+      ],
+    ]);
   }
 
   Widget _card(String title, List<Widget> children) {
@@ -512,10 +847,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           Text(
             title,
             style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: _kInkText,
-            ),
+                fontSize: 13, fontWeight: FontWeight.w800, color: _kInkText),
           ),
           const SizedBox(height: 10),
           ...children,
@@ -525,17 +857,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   }
 
   Widget _fieldLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Text(
-      text.toUpperCase(),
-      style: GoogleFonts.inter(
-        fontSize: 9,
-        fontWeight: FontWeight.w700,
-        color: _kGoldDark,
-        letterSpacing: 1,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          text.toUpperCase(),
+          style: GoogleFonts.inter(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: _kGoldDark,
+            letterSpacing: 1,
+          ),
+        ),
+      );
 
   Widget _textField(
     TextEditingController controller, {
@@ -543,27 +875,57 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     int maxLines = 1,
     TextInputType? keyboardType,
     ValueChanged<String>? onChanged,
+    ValueChanged<String>? onSubmitted,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
       style: const TextStyle(
-        color: _kInkText,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-      ),
+          color: _kInkText, fontSize: 13, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         isDense: true,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.6),
         hintText: hint,
-        hintStyle: TextStyle(
-          color: _kInkText.withValues(alpha: 0.35),
-          fontSize: 12,
+        hintStyle:
+            TextStyle(color: _kInkText.withValues(alpha: 0.35), fontSize: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: _kGold.withValues(alpha: 0.3)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _kGold, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _numberField({
+    required num? value,
+    String? hint,
+    required ValueChanged<num?> onChanged,
+  }) {
+    return TextFormField(
+      initialValue: value?.toString() ?? '',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: const TextStyle(
+          color: _kInkText, fontSize: 13, fontWeight: FontWeight.w600),
+      onChanged: (v) => onChanged(v.isEmpty ? null : num.tryParse(v)),
+      decoration: InputDecoration(
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.6),
+        hintText: hint,
+        hintStyle:
+            TextStyle(color: _kInkText.withValues(alpha: 0.35), fontSize: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: _kGold.withValues(alpha: 0.3)),
@@ -577,59 +939,101 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   }
 
   Widget _wheelDropdown() {
+    return _dropdown<String>(
+      value: _wheelType,
+      items: const {
+        'American': 'American (0, 00)',
+        'European': 'European (0)',
+        'Both': 'Both (American & European)',
+      },
+      onChanged: (v) => setState(() => _wheelType = v),
+    );
+  }
+
+  /// Generic styled dropdown.
+  Widget _dropdown<T>({
+    required T value,
+    required Map<T, String> items,
+    required ValueChanged<T> onChanged,
+    Color? accent,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+        border: Border.all(
+            color: (accent ?? _kGold).withValues(alpha: 0.35), width: 1),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _wheelType,
+        child: DropdownButton<T>(
+          value: value,
           isDense: true,
           isExpanded: true,
           dropdownColor: const Color(0xFFF5EDD5),
-          style: const TextStyle(
-            color: _kInkText,
-            fontSize: 13,
+          style: TextStyle(
+            color: accent ?? _kInkText,
+            fontSize: 12.5,
             fontWeight: FontWeight.w700,
           ),
-          items: const [
-            DropdownMenuItem(
-              value: 'American',
-              child: Text('American (0, 00)'),
-            ),
-            DropdownMenuItem(value: 'European', child: Text('European (0)')),
-          ],
+          items: items.entries
+              .map((e) => DropdownMenuItem<T>(
+                    value: e.key,
+                    child: Text(e.value, overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
           onChanged: (v) {
-            if (v != null) setState(() => _wheelType = v);
+            if (v != null) onChanged(v);
           },
         ),
       ),
     );
   }
 
-  // ── Right builder area ───────────────────────────────────────────────────────
+  Widget _checkRow(String label, bool value, ValueChanged<bool> onChanged,
+      {Color accent = _kTeal}) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Checkbox(
+                value: value,
+                onChanged: (v) => onChanged(v ?? false),
+                activeColor: accent,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kInkText),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Builder area (stage tabs + table + tags + chips) ────────────────────────
   Widget _buildBuilderArea() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStageTabs(),
         const SizedBox(height: 8),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                height: 400,
-                width: 700,
-                child: _buildTableCard(),
-              ),
-            ),
-          ),
-        ),
+        _buildTableCard(),
       ],
     );
   }
@@ -657,7 +1061,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                     const Icon(Icons.add, size: 14, color: _kInkText),
                     const SizedBox(width: 4),
                     Text(
-                      '+ADD STAGE',
+                      'ADD STAGE',
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -681,9 +1085,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       decoration: BoxDecoration(
         color: active ? _kInk : Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: active ? _kInk : _kInkText.withValues(alpha: 0.2),
-        ),
+        border:
+            Border.all(color: active ? _kInk : _kInkText.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -706,14 +1109,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               onTap: () => _deleteStage(idx),
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  'X',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.redAccent,
-                  ),
-                ),
+                child: Icon(Icons.close,
+                    size: 13,
+                    color: active ? _kGold : _kLoss),
               ),
             ),
         ],
@@ -723,7 +1121,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   Widget _buildTableCard() {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(14),
@@ -731,80 +1129,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       ),
       child: Column(
         children: [
-          // Compact single-row header: title + wager + bankroll + undo/clear
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Text(
-                'Stage ${_active.stageNumber} Layout',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: _kInkText,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text.rich(
-                TextSpan(
-                  text: 'Wager ',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _kGoldDark,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '\$${_active.totalWager.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: _kInkText,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text.rich(
-                TextSpan(
-                  text: 'Bankroll ',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _kGoldDark,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '\$${_totalBankroll.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        color: _kInkText,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              _tableBtn(
-                'REBET',
-                Icons.refresh,
-                (_activeIndex == 0 || _stages[_activeIndex - 1].bets.isEmpty)
-                    ? null
-                    : _repeatBet,
-              ),
-              _tableBtn('2x', null, _active.bets.isEmpty ? null : _doubleBet),
-              _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
-              _tableBtn(
-                'CLEAR',
-                Icons.delete_outline,
-                _active.bets.isEmpty ? null : _clearBoard,
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Felt board — compact so the numbers grid gets usable height.
-          Expanded(
+          _buildTableHeader(),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 340,
             child: BettingLayout(
               bets: _currentBetsMap,
               onPlaceBet: _placeBet,
@@ -812,18 +1140,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
               disabled: false,
               showWinHighlight: false,
               phase: 'betting',
-              wheelType: _wheelType == 'European'
-                  ? WheelType.european
-                  : WheelType.american,
+              wheelType: _wheelEnum,
             ),
           ),
-          const SizedBox(height: 4),
-          // Chip tray
+          const SizedBox(height: 6),
+          _buildTagSystem(),
+          const SizedBox(height: 8),
           ChipTray(
             selectedChip: _selectedChip,
             onSelectChip: (v) => setState(() => _selectedChip = v),
             balance: 999999,
-            totalBet: _active.totalWager,
+            totalBet: _active.totalWager.toDouble(),
             disabled: false,
           ),
         ],
@@ -831,17 +1158,40 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
-  Widget _tableBtn(
-    String label,
-    IconData? icon,
-    VoidCallback? onTap, {
-    String? leadingText,
-  }) {
+  Widget _buildTableHeader() {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 10,
+      runSpacing: 8,
+      children: [
+        Text(
+          'Stage ${_active.stageNumber} Layout',
+          style: GoogleFonts.inter(
+              fontSize: 13, fontWeight: FontWeight.w800, color: _kInkText),
+        ),
+        _kv('Wager', '\$${_active.totalWager}'),
+        _kv('Bankroll', '\$$_totalBankroll'),
+        const SizedBox(width: 4),
+        _tableBtn('REBET', Icons.refresh,
+            (_activeIndex == 0 || _stages[_activeIndex - 1].bets.isEmpty)
+                ? null
+                : _repeatBet),
+        _tableBtn('DOUBLE', null, _active.bets.isEmpty ? null : _doubleBet,
+            leadingText: '2x'),
+        _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
+        _tableBtn('CLEAR', Icons.delete_outline,
+            _active.bets.isEmpty ? null : _clearBoard),
+      ],
+    );
+  }
+
+  Widget _tableBtn(String label, IconData? icon, VoidCallback? onTap,
+      {String? leadingText}) {
     final bool enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Opacity(
-        opacity: enabled ? 1.0 : 0.4,
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
@@ -853,30 +1203,622 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (leadingText != null)
-                Text(
-                  leadingText,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: _kInkText,
-                    height: 1,
-                  ),
-                )
+                Text(leadingText,
+                    style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: _kInkText,
+                        height: 1))
               else if (icon != null)
                 Icon(icon, size: 14, color: _kInkText),
               const SizedBox(width: 5),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: _kInkText,
-                  letterSpacing: 0.5,
+              Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _kInkText,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kv(String k, String v) {
+    return Text.rich(
+      TextSpan(
+        text: '$k ',
+        style: GoogleFonts.inter(
+            fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
+        children: [
+          TextSpan(
+            text: v,
+            style: const TextStyle(color: _kInkText, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagSystem() {
+    final assigned = _activeGroupId != 'none'
+        ? _active.bets.where((b) => b.groupId == _activeGroupId).toList()
+        : <StageBet>[];
+    return Column(
+      children: [
+        Text(
+          'ASSIGN TAG',
+          style: GoogleFonts.inter(
+              fontSize: 10,
+              letterSpacing: 1,
+              fontWeight: FontWeight.w700,
+              color: _kGold),
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 32,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            children: [
+              _groupTab('none', 'No Tag'),
+              for (final g in _customGroups) _groupTab(g, 'G-$g'),
+              GestureDetector(
+                onTap: _addGroup,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _kInk.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _kInk.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.add, size: 13, color: _kInkText),
+                      const SizedBox(width: 3),
+                      Text('ADD TAG',
+                          style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: _kInkText)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 6),
+        _checkRow(
+          'Tag Only Mode (assign tags without adding chips to existing bets)',
+          _tagOnlyMode,
+          (v) => setState(() => _tagOnlyMode = v),
+        ),
+        if (_activeGroupId != 'none')
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _kTeal.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _kTeal.withValues(alpha: 0.3)),
+            ),
+            child: Text.rich(
+              TextSpan(
+                text: 'Group $_activeGroupId: ',
+                style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w800, color: _kTeal),
+                children: [
+                  TextSpan(
+                    text: assigned.isEmpty
+                        ? 'No bets assigned yet. Tap chips on the board to tag them.'
+                        : '${assigned.map((b) => _prettyPos(b.position)).join(', ')} '
+                            '(${assigned.length} bets, \$${assigned.fold<num>(0, (a, b) => a + b.amount)} total)',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _kInkText),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _prettyPos(String pos) => pos
+      .replaceAll('split-', '')
+      .replaceAll('straight-', '')
+      .replaceAll('corner-', '')
+      .replaceAll('street-', '')
+      .replaceAll('sixline-', '')
+      .replaceAll('-', '/');
+
+  Widget _groupTab(String id, String label) {
+    final active = _activeGroupId == id;
+    final isGroup = id != 'none';
+    final color = isGroup ? _hexColor(_groupColorHex(id)) : _kInk;
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      decoration: BoxDecoration(
+        color: active ? color : Colors.white.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: active ? color : _kInkText.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _activeGroupId = id),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: active ? Colors.white : _kInkText,
+                ),
+              ),
+            ),
+          ),
+          if (isGroup)
+            GestureDetector(
+              onTap: () => _removeGroup(id),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(Icons.close,
+                    size: 12, color: active ? Colors.white : _kLoss),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Stage rules card ────────────────────────────────────────────────────────
+  Widget _buildStageRulesCard() {
+    final stage = _active;
+    final actionOptions = <String, String>{
+      'next': 'Advance to Next Stage',
+      'repeat': 'Repeat This Stage',
+      for (final s in _stages) 'jump_${s.stageNumber}': 'Jump to Stage ${s.stageNumber}',
+      'reset': 'Clear Bets & Reset to Stage 1',
+      'stop': 'Stop Strategy',
+      'manual': 'Exit to Manual Betting',
+    };
+    final rules = stage.optionalRules ??= StageOptionalRules();
+
+    return _wideCard(
+      icon: Icons.settings,
+      title: 'Stage ${stage.stageNumber} Rules',
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('IF SPIN LOSES',
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _kLoss,
+                          letterSpacing: 1)),
+                  const SizedBox(height: 4),
+                  _dropdown<String>(
+                    value: actionOptions.containsKey(stage.onLoss)
+                        ? stage.onLoss
+                        : 'next',
+                    items: actionOptions,
+                    accent: _kLoss,
+                    onChanged: (v) => setState(() => stage.onLoss = v),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('IF SPIN WINS',
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _kInk,
+                          letterSpacing: 1)),
+                  const SizedBox(height: 4),
+                  _dropdown<String>(
+                    value: actionOptions.containsKey(stage.onWin)
+                        ? stage.onWin
+                        : 'reset',
+                    items: actionOptions,
+                    accent: _kInk,
+                    onChanged: (v) => setState(() => stage.onWin = v),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text('OPTIONAL SAFETY & PROFIT RULES',
+            style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: _kGoldDark,
+                letterSpacing: 1)),
+        const SizedBox(height: 6),
+        _checkRow('Reset to Stage 1 on any winning spin',
+            rules.resetOnAnyWin ?? false,
+            (v) => setState(() => rules.resetOnAnyWin = v)),
+        _checkRow('Reset if overall session becomes profitable',
+            rules.resetOnProfitableSession ?? false,
+            (v) => setState(() => rules.resetOnProfitableSession = v)),
+        _checkRow('Reset if new session high reached',
+            rules.resetOnNewSessionHigh ?? false,
+            (v) => setState(() => rules.resetOnNewSessionHigh = v)),
+        _checkRow('Reset session if board is empty (0 active bets)',
+            rules.resetOnEmptyBoard ?? false,
+            (v) => setState(() => rules.resetOnEmptyBoard = v)),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('Reset if profit goal reached (\$)'),
+                  _numberField(
+                    value: rules.resetOnProfitGoal,
+                    hint: 'Optional...',
+                    onChanged: (n) =>
+                        setState(() => rules.resetOnProfitGoal = n),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('End session if stop loss reached (\$)'),
+                  _numberField(
+                    value: rules.stopOnStopLoss,
+                    hint: 'Optional...',
+                    onChanged: (n) => setState(() => rules.stopOnStopLoss = n),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Dynamic rules card ──────────────────────────────────────────────────────
+  Widget _buildDynamicRulesCard() {
+    final stage = _active;
+    final rules = stage.dynamicRules ?? [];
+    return _wideCard(
+      icon: Icons.bolt,
+      title: 'Advanced Rules (Simulation Engine)',
+      trailing: GestureDetector(
+        onTap: _addDynamicRule,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: _kInk,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add, size: 14, color: _kGold),
+              const SizedBox(width: 5),
+              Text('ADD DYNAMIC RULE',
+                  style: GoogleFonts.inter(
+                      color: _kGold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800)),
+            ],
+          ),
+        ),
+      ),
+      children: [
+        if (rules.isEmpty)
+          Text(
+            'No advanced rules configured for this stage.',
+            style: GoogleFonts.inter(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: _kGoldDark),
+          ),
+        for (int i = 0; i < rules.length; i++) _dynamicRuleRow(rules[i], i),
+      ],
+    );
+  }
+
+  Widget _dynamicRuleRow(DynamicRule rule, int idx) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('RULE ${idx + 1}',
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: _kInk,
+                      letterSpacing: 1)),
+              GestureDetector(
+                onTap: () => _removeDynamicRule(rule.id),
+                child: const Icon(Icons.delete_outline, size: 16, color: _kLoss),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(builder: (context, c) {
+            final twoCol = c.maxWidth > 560;
+            final children = <Widget>[
+              _ruleField(
+                'When condition is...',
+                _dropdown<String>(
+                  value: rule.condition,
+                  items: const {
+                    RuleCondition.win: 'On Winning Spin',
+                    RuleCondition.loss: 'On Losing Spin',
+                    RuleCondition.winSessionHighNotReached:
+                        'Win (failed to break session high)',
+                    RuleCondition.winSessionLoss:
+                        'Win (overall session negative)',
+                    RuleCondition.winSessionProfit:
+                        'Win (overall session positive)',
+                    RuleCondition.lossSessionLoss:
+                        'Loss (overall session negative)',
+                    RuleCondition.lossSessionProfit:
+                        'Loss (overall session positive)',
+                    RuleCondition.oneGroupRemainsAndNegativeProfit:
+                        '1 Group Remains & Negative Profit',
+                    RuleCondition.any: 'On Any Spin Result',
+                  },
+                  onChanged: (v) => setState(() => rule.condition = v),
+                ),
+              ),
+              _ruleField(
+                'Identify targets...',
+                _dropdown<String>(
+                  value: rule.target,
+                  items: const {
+                    RuleTarget.allBets: 'All Placed Bets',
+                    RuleTarget.winningBets: 'Only Winning Bets',
+                    RuleTarget.losingBets: 'Only Losing Bets',
+                    RuleTarget.winningGroup: 'Winning Group(s) (Tagged)',
+                    RuleTarget.losingGroup: 'Losing Group(s) (Tagged)',
+                  },
+                  onChanged: (v) => setState(() => rule.target = v),
+                ),
+              ),
+              _ruleField(
+                'Execute action...',
+                _dropdown<String>(
+                  value: rule.action,
+                  items: const {
+                    RuleActionType.multiply: 'Multiply Bet Amount',
+                    RuleActionType.add: 'Add Static Units (+)',
+                    RuleActionType.remove: 'Remove Bet Entirely',
+                    RuleActionType.set: 'Set Bet to Exact Amount',
+                    RuleActionType.setBreakEven:
+                        'Set Bet to Break-Even (or Fallback)',
+                  },
+                  onChanged: (v) => setState(() => rule.action = v),
+                ),
+              ),
+              if (rule.action != RuleActionType.remove)
+                _ruleField(
+                  _valueLabel(rule.action),
+                  _numberField(
+                    value: rule.value,
+                    onChanged: (n) => setState(() => rule.value = n),
+                  ),
+                ),
+            ];
+            if (!twoCol) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final w in children)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 8), child: w),
+                ],
+              );
+            }
+            return Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                for (final w in children)
+                  SizedBox(width: (c.maxWidth - 12) / 2, child: w),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  String _valueLabel(String action) {
+    switch (action) {
+      case RuleActionType.multiply:
+        return 'Multiplier (e.g. 2 for Double)';
+      case RuleActionType.add:
+        return 'Units to Add (\$)';
+      case RuleActionType.set:
+        return 'Exact Amount (\$)';
+      default:
+        return 'Amount / Fallback Amount (\$)';
+    }
+  }
+
+  Widget _ruleField(String label, Widget field) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel(label),
+        field,
+      ],
+    );
+  }
+
+  Widget _wideCard({
+    required IconData icon,
+    required String title,
+    required List<Widget> children,
+    Widget? trailing,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: _kInk),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _kInkText),
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  // ── Strategy notes section ──────────────────────────────────────────────────
+  Widget _buildStrategyNotesSection() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.notes, size: 18, color: _kInk),
+                const SizedBox(width: 8),
+                Text('Strategy Notes',
+                    style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: _kInkText)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Detailed notes to help you understand, test, and implement this strategy.',
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: _kGoldDark, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _textField(
+              _notesController,
+              hint:
+                  'Add background, appropriate use, testing recommendations, and progression variations...',
+              maxLines: 5,
+            ),
+          ),
+          // Creator notes box
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _kInk,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _kGold),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.person_outline, size: 32, color: _kGold),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Creator Notes',
+                          style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'This has been one of my go-to strategies for years when I want '
+                        'controlled risk and consistent action. Keep sessions short, take '
+                        'the small wins, and exit on a session high. Discipline is the key.',
+                        style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            height: 1.4,
+                            color: Colors.white.withValues(alpha: 0.7)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Junko Bodie',
+                  style: GoogleFonts.dancingScript(
+                    fontSize: 28,
+                    color: _kGold,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

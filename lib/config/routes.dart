@@ -20,6 +20,7 @@ import 'package:junko_bodie/screens/tournament_game_screen.dart';
 import 'package:junko_bodie/screens/session_history_screen.dart';
 import 'package:junko_bodie/screens/strategies_screen.dart';
 import 'package:junko_bodie/screens/strategy_builder_screen.dart';
+import 'package:junko_bodie/screens/strategy_debugger_screen.dart';
 import 'package:junko_bodie/screens/privacy_policy_screen.dart';
 import 'package:junko_bodie/screens/terms_of_service_screen.dart';
 import 'package:junko_bodie/screens/subscription_screen.dart';
@@ -146,6 +147,15 @@ GoRouter buildRouter({
         builder: (context, state) {
           final id = state.uri.queryParameters['id'];
           return StrategyBuilderScreen(strategyId: id);
+        },
+      ),
+      GoRoute(
+        path: '/strategies/debug',
+        name: 'strategies_debug',
+        builder: (context, state) {
+          final id = state.uri.queryParameters['strategyId'] ??
+              state.uri.queryParameters['id'];
+          return StrategyDebuggerScreen(strategyId: id);
         },
       ),
       GoRoute(

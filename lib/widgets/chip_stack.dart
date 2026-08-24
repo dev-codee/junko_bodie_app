@@ -112,6 +112,15 @@ class ChipStackWidget extends StatelessWidget {
     this.isHovered = false,
   });
 
+  static Color _parseHex(String hex) {
+    try {
+      final cleanHex = hex.replaceAll('#', '');
+      return Color(int.parse('0xFF$cleanHex'));
+    } catch (_) {
+      return const Color(0xFF3FD1B4);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (chips.isEmpty) return const SizedBox.shrink();
@@ -188,6 +197,35 @@ class ChipStackWidget extends StatelessWidget {
                   Icons.close,
                   color: Colors.white,
                   size: 18,
+                ),
+              ),
+            ),
+
+          // Group tag letter badge (Strategy Builder only — shown when both a
+          // group initial and a group color are supplied).
+          if (playerInitial != null &&
+              playerInitial!.isNotEmpty &&
+              customColor != null)
+            Positioned(
+              top: -((visibleChips.length - 1) * 3.0) - 4,
+              right: -4,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: _parseHex(customColor!),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  playerInitial!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
                 ),
               ),
             ),
