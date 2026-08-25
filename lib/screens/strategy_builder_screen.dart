@@ -67,6 +67,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   final _maxStagesController = TextEditingController(text: '10');
   final _recoveryPosController = TextEditingController();
 
+  // Horizontal scroll for the (widened) betting board.
+  final _boardScroll = ScrollController();
+
   String? _strategyId;
   String _wheelType = 'American';
   int _maxStages = 10;
@@ -133,6 +136,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     _notesController.dispose();
     _maxStagesController.dispose();
     _recoveryPosController.dispose();
+    _boardScroll.dispose();
     super.dispose();
   }
 
@@ -1258,15 +1262,36 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           TourTarget(
             id: 'funnel-betting-board',
             child: SizedBox(
-              height: 340,
-              child: BettingLayout(
-                bets: _currentBetsMap,
-                onPlaceBet: _placeBet,
-                onRemoveBet: _removeBet,
-                disabled: false,
-                showWinHighlight: false,
-                phase: 'betting',
-                wheelType: _wheelEnum,
+              height: 360,
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  // Widen the felt so number cells and the split/corner tap
+                  // zones between them are comfortably large; scroll if the
+                  // panel is narrower than that target width.
+                  final boardWidth =
+                      c.maxWidth > 760 ? c.maxWidth : 760.0;
+                  return Scrollbar(
+                    controller: _boardScroll,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _boardScroll,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SizedBox(
+                        width: boardWidth,
+                        child: BettingLayout(
+                          bets: _currentBetsMap,
+                          onPlaceBet: _placeBet,
+                          onRemoveBet: _removeBet,
+                          disabled: false,
+                          showWinHighlight: false,
+                          phase: 'betting',
+                          wheelType: _wheelEnum,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
