@@ -11,12 +11,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/bets.dart';
 import 'package:junko_bodie/logic/rng.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
 import 'package:junko_bodie/widgets/betting_layout.dart';
 import 'package:junko_bodie/widgets/chip_tray.dart';
+import 'package:junko_bodie/tour/tour_controller.dart';
+import 'package:junko_bodie/tour/tour_help_button.dart';
+import 'package:junko_bodie/tour/tour_registry.dart';
 
 // ─── Palette (matches the gold/cream builder page) ──
 const Color _kInk = Color(0xFF0F2E21);
@@ -98,6 +102,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   bool _isSaving = false;
   bool _isSaved = false;
 
+  // Onboarding funnel wiring.
+  TourController? _tour;
+  bool _tourChipTouched = false;
+
   static const List<double> _denoms = [1000, 500, 100, 25, 10, 5, 2, 1];
 
   @override
@@ -111,16 +119,89 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     if (_strategyId != null && _strategyId!.isNotEmpty) {
       _loadStrategy();
     }
+    // Register funnel validators as the active step changes.
+    _tour = context.read<TourController>();
+    _tour!.addListener(_syncTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncTour());
   }
 
   @override
   void dispose() {
+    _tour?.removeListener(_syncTour);
     _nameController.dispose();
     _descController.dispose();
     _notesController.dispose();
     _maxStagesController.dispose();
     _recoveryPosController.dispose();
     super.dispose();
+  }
+
+  /// Registers the correct live validator + completion state for whichever
+  /// funnel step is currently active on the builder route.
+  void _syncTour() {
+    if (!mounted) return;
+    final tour = _tour;
+    if (tour == null) return;
+    final step = tour.isActive ? tour.currentStep : null;
+    if (step == null || step.route != '/strategies/build') return;
+
+    ValidatorResult fail() => ValidatorResult.fail(step.fallbackErrorMsg);
+
+    switch (step.id) {
+      case 'builder_name':
+        bool ok() {
+          final n = _nameController.text.trim();
+          return n.isNotEmpty && n.toLowerCase() != 'new strategy';
+        }
+        tour.setStepValidator(
+            () => ok() ? ValidatorResult.ok : fail(),
+            isCompleted: ok());
+        break;
+      case 'builder_chip':
+        tour.setStepValidator(
+            () => _tourChipTouched ? ValidatorResult.ok : fail(),
+            isCompleted: _tourChipTouched);
+        break;
+      case 'builder_place_bet':
+      case 'builder_stage2_bet':
+      case 'builder_stage3_bet':
+        tour.setStepValidator(
+            () => _active.bets.isNotEmpty ? ValidatorResult.ok : fail(),
+            isCompleted: _active.bets.isNotEmpty);
+        break;
+      case 'builder_dynamic_rule':
+        bool ok() => _active.dynamicRules?.isNotEmpty ?? false;
+        tour.setStepValidator(
+            () => ok() ? ValidatorResult.ok : fail(),
+            isCompleted: ok());
+        break;
+      case 'builder_save':
+        bool ok() => _savedStrategyId != null || _isSaved;
+        tour.setStepValidator(
+            () => ok() ? ValidatorResult.ok : fail(),
+            isCompleted: ok());
+        break;
+      default:
+        // Optional / informational steps advance freely.
+        tour.setStepValidator(null);
+    }
+  }
+
+  /// Funnel "+ Add Stage" click-through (steps builder_add_stage / _add_stage3).
+  void _handleAddStageTap() {
+    _addStage();
+    final id = _tour?.currentStep?.id;
+    if (id == 'builder_add_stage' || id == 'builder_add_stage3') {
+      _tour?.advanceStep(id);
+    }
+  }
+
+  /// Funnel "NAVIGATOR" click-through (step builder_navigator).
+  void _handleNavigatorTap() {
+    if (_tour?.currentStep?.id == 'builder_navigator') {
+      _tour?.advanceStep('builder_navigator');
+    }
+    _openNavigator();
   }
 
   Future<void> _loadStrategy() async {
@@ -454,6 +535,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the funnel's "ready to advance" glow in sync with live state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncTour();
+    });
     return Scaffold(
       backgroundColor: const Color(0xFF9E7F41),
       body: Container(
@@ -494,11 +579,15 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildStageRulesCard(),
+                            TourTarget(
+                                id: 'funnel-stage-rules',
+                                child: _buildStageRulesCard()),
                             const SizedBox(height: 16),
                             _buildDynamicRulesCard(),
                             const SizedBox(height: 16),
-                            _buildStrategyNotesSection(),
+                            TourTarget(
+                                id: 'strategy-notes',
+                                child: _buildStrategyNotesSection()),
                           ],
                         ),
                       ),
@@ -512,32 +601,43 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   // ── Top bar ─────────────────────────────────────────────────────────────────
   Widget _buildTopBar() {
-    return Row(
-      children: [
-        _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
-        const Spacer(),
-        Text(
-          'Strategy Builder',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            fontStyle: FontStyle.italic,
-            color: _kInkText,
+    return TourTarget(
+      id: 'builder-top-nav',
+      child: Row(
+        children: [
+          _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
+          const SizedBox(width: 8),
+          const TourHelpButton(tourId: 'builder'),
+          const Spacer(),
+          Text(
+            'Strategy Builder',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              fontStyle: FontStyle.italic,
+              color: _kInkText,
+            ),
           ),
-        ),
-        const SizedBox(width: 16),
-        if ((_strategyId ?? _savedStrategyId) != null) ...[
-          _pillButton('TEST RESULTS', Icons.bar_chart, () {
-            final id = _strategyId ?? _savedStrategyId;
-            context.push('/simulation/history?strategyId=$id');
-          }, filled: false),
+          const SizedBox(width: 16),
+          if ((_strategyId ?? _savedStrategyId) != null) ...[
+            _pillButton('TEST RESULTS', Icons.bar_chart, () {
+              final id = _strategyId ?? _savedStrategyId;
+              context.push('/simulation/history?strategyId=$id');
+            }, filled: false),
+            const SizedBox(width: 10),
+          ],
+          TourTarget(
+            id: 'funnel-goto-navigator',
+            child: _pillButton('NAVIGATOR', Icons.insights, _handleNavigatorTap,
+                filled: false),
+          ),
           const SizedBox(width: 10),
+          TourTarget(
+            id: 'funnel-save-strategy',
+            child: _buildSaveButton(),
+          ),
         ],
-        _pillButton('NAVIGATOR', Icons.insights, _openNavigator,
-            filled: false),
-        const SizedBox(width: 10),
-        _buildSaveButton(),
-      ],
+      ),
     );
   }
 
@@ -651,19 +751,29 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   // ── Left sidebar ────────────────────────────────────────────────────────────
   Widget _buildSidebar() {
-    return Column(
+    return TourTarget(
+      id: 'builder-sidebar',
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _card('Strategy Info', [
           _fieldLabel('Strategy Name'),
-          _textField(_nameController, hint: 'e.g. Green Neighbors'),
+          TourTarget(
+            id: 'funnel-strategy-name',
+            child: _textField(_nameController,
+                hint: 'e.g. Green Neighbors',
+                onChanged: (_) => setState(() {})),
+          ),
           const SizedBox(height: 12),
           _fieldLabel('Wheel Type'),
-          _wheelDropdown(),
+          TourTarget(id: 'funnel-wheel-type', child: _wheelDropdown()),
           const SizedBox(height: 12),
           _fieldLabel('Description (Optional)'),
-          _textField(_descController,
-              hint: 'Notes about this strategy...', maxLines: 3),
+          TourTarget(
+            id: 'funnel-description',
+            child: _textField(_descController,
+                hint: 'Notes about this strategy...', maxLines: 3),
+          ),
         ]),
         const SizedBox(height: 12),
         _buildRecoveryCard(),
@@ -700,6 +810,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           ],
         ]),
       ],
+    ),
     );
   }
 
@@ -1046,15 +1157,19 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   }
 
   Widget _buildStageTabs() {
-    return SizedBox(
+    return TourTarget(
+      id: 'stage-tabs',
+      child: SizedBox(
       height: 34,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           for (int i = 0; i < _stages.length; i++) _stageTab(i),
           if (_stages.length < _maxStages)
-            GestureDetector(
-              onTap: _addStage,
+            TourTarget(
+              id: 'funnel-add-stage',
+              child: GestureDetector(
+              onTap: _handleAddStageTap,
               child: Container(
                 margin: const EdgeInsets.only(right: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1080,8 +1195,10 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                 ),
               ),
             ),
+            ),
         ],
       ),
+    ),
     );
   }
 
@@ -1136,29 +1253,38 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       ),
       child: Column(
         children: [
-          _buildTableHeader(),
+          TourTarget(id: 'table-toolbar', child: _buildTableHeader()),
           const SizedBox(height: 6),
-          SizedBox(
-            height: 340,
-            child: BettingLayout(
-              bets: _currentBetsMap,
-              onPlaceBet: _placeBet,
-              onRemoveBet: _removeBet,
-              disabled: false,
-              showWinHighlight: false,
-              phase: 'betting',
-              wheelType: _wheelEnum,
+          TourTarget(
+            id: 'funnel-betting-board',
+            child: SizedBox(
+              height: 340,
+              child: BettingLayout(
+                bets: _currentBetsMap,
+                onPlaceBet: _placeBet,
+                onRemoveBet: _removeBet,
+                disabled: false,
+                showWinHighlight: false,
+                phase: 'betting',
+                wheelType: _wheelEnum,
+              ),
             ),
           ),
           const SizedBox(height: 6),
-          _buildTagSystem(),
+          TourTarget(id: 'funnel-tag-system', child: _buildTagSystem()),
           const SizedBox(height: 8),
-          ChipTray(
-            selectedChip: _selectedChip,
-            onSelectChip: (v) => setState(() => _selectedChip = v),
-            balance: 999999,
-            totalBet: _active.totalWager.toDouble(),
-            disabled: false,
+          TourTarget(
+            id: 'funnel-chip-selector',
+            child: ChipTray(
+              selectedChip: _selectedChip,
+              onSelectChip: (v) => setState(() {
+                _selectedChip = v;
+                _tourChipTouched = true;
+              }),
+              balance: 999999,
+              totalBet: _active.totalWager.toDouble(),
+              disabled: false,
+            ),
           ),
         ],
       ),
@@ -1519,7 +1645,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     return _wideCard(
       icon: Icons.bolt,
       title: 'Advanced Rules (Simulation Engine)',
-      trailing: GestureDetector(
+      trailing: TourTarget(
+        id: 'funnel-dynamic-rules-btn',
+        child: GestureDetector(
         onTap: _addDynamicRule,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1540,6 +1668,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             ],
           ),
         ),
+      ),
       ),
       children: [
         if (rules.isEmpty)

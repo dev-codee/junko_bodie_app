@@ -47,8 +47,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
           bool dontShowAgain = false;
           return StatefulBuilder(
             builder: (context, setState) {
-              return AlertDialog(
+              return Dialog(
                 backgroundColor: const Color(0xFF0F2E21),
+                insetPadding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
@@ -56,76 +58,113 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     width: 1,
                   ),
                 ),
-                title: Text(
-                  'DISCLAIMER',
-                  style: playfairDisplay(
-                    color: AppColors.gold,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Junko Bodie Roulette is a roulette simulator only. It is not a real money gambling application and does not offer real money prizes. All gameplay is strictly for entertainment purposes.',
-                      style: playfairDisplay(color: AppColors.gold, height: 1.4),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Theme(
-                          data: Theme.of(context).copyWith(
-                            unselectedWidgetColor: Colors.white54,
-                          ),
-                          child: Checkbox(
-                            value: dontShowAgain,
-                            onChanged: (val) {
-                              setState(() {
-                                dontShowAgain = val ?? false;
-                              });
-                            },
-                            activeColor: const Color(0xFFD4BC81),
-                            checkColor: const Color(0xFF0F2E21),
+                        Text(
+                          'DISCLAIMER',
+                          style: playfairDisplay(
+                            fontSize: 22,
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
                           ),
                         ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                dontShowAgain = !dontShowAgain;
-                              });
-                            },
-                            child: const Text(
-                              'Do not show this again',
-                              style: TextStyle(color: Colors.white70),
+                        const SizedBox(height: 12),
+                        // Body scrolls if the (short) landscape viewport can't
+                        // fit it, so the dialog never overflows.
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Text(
+                              'Junko Bodie Roulette is a roulette simulator only. It is not a real money gambling application and does not offer real money prizes. All gameplay is strictly for entertainment purposes.',
+                              style: playfairDisplay(
+                                fontSize: 14,
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0,
+                                height: 1.45,
+                              ),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            // Whole row toggles the checkbox.
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => setState(
+                                    () => dontShowAgain = !dontShowAgain),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: Checkbox(
+                                          value: dontShowAgain,
+                                          onChanged: (val) => setState(() =>
+                                              dontShowAgain = val ?? false),
+                                          activeColor: const Color(0xFFD4BC81),
+                                          checkColor: const Color(0xFF0F2E21),
+                                          side: const BorderSide(
+                                              color: Colors.white54, width: 1.5),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      const Text(
+                                        'Do not show this again',
+                                        style: TextStyle(
+                                            color: Colors.white70, fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            TextButton(
+                              onPressed: () async {
+                                if (dontShowAgain) {
+                                  final p =
+                                      await SharedPreferences.getInstance();
+                                  await p.setBool(
+                                      'hide_simulator_disclaimer', true);
+                                }
+                                if (context.mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFFD4BC81),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                              ),
+                              child: const Text(
+                                'I UNDERSTAND',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.2),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () async {
-                      if (dontShowAgain) {
-                        final p = await SharedPreferences.getInstance();
-                        await p.setBool('hide_simulator_disclaimer', true);
-                      }
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFD4BC81),
-                    ),
-                    child: const Text(
-                      'I UNDERSTAND',
-                      style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2),
-                    ),
                   ),
-                ],
+                ),
               );
             },
           );

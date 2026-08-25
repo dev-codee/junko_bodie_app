@@ -14,8 +14,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/tour/tour_controller.dart';
+import 'package:junko_bodie/tour/tour_help_button.dart';
+import 'package:junko_bodie/tour/tour_registry.dart';
 
 class StrategiesScreen extends StatefulWidget {
   const StrategiesScreen({super.key});
@@ -42,6 +46,11 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     _fetchStrategies();
+    // Auto-start the onboarding funnel on first visit (after prefs load).
+    final tour = context.read<TourController>();
+    tour.ready.then((_) {
+      if (mounted) tour.maybeAutoStart('/strategies');
+    });
   }
 
   Future<void> _fetchStrategies() async {
@@ -224,6 +233,16 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
     );
   }
 
+  /// Funnel step "lib_welcome": tapping "+ New Strategy" advances the tour and
+  /// opens the builder (the click-through drives its own navigation).
+  void _handleNewStrategyTap() {
+    final tour = context.read<TourController>();
+    if (tour.currentStep?.id == 'lib_welcome') {
+      tour.advanceStep('lib_welcome');
+    }
+    _openBuilder();
+  }
+
   /// Open the strategy builder (new when [id] is null, edit otherwise) and
   /// refresh the library when the user returns.
   Future<void> _openBuilder({String? id}) async {
@@ -335,14 +354,12 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   Widget _buildContent() {
     final visible = _visibleStrategies;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBackButton(),
-          const SizedBox(height: 12),
           _buildHeader(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Expanded(
             child: visible.isEmpty ? _buildEmptyState() : _buildGrid(visible),
           ),
@@ -352,7 +369,9 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   }
 
   Widget _buildBackButton() {
-    return GestureDetector(
+    return TourTarget(
+      id: 'back-to-lobby',
+      child: GestureDetector(
       onTap: () => context.go('/lobby'),
       child: Container(
         height: 34,
@@ -381,32 +400,40 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
           ],
         ),
       ),
+    ),
     ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.05, end: 0, duration: 300.ms);
   }
 
   Widget _buildHeader() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
+          flex: 2,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Strategy Library',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 1,
-                  color: const Color(0xFF113626),
-                  height: 1,
-                  shadows: [
-                    Shadow(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                    ),
-                  ],
+              _buildBackButton(),
+              const SizedBox(height: 10),
+              TourTarget(
+                id: 'funnel-graduation-card',
+                child: Text(
+                  'Strategy Library',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: 1,
+                    color: const Color(0xFF113626),
+                    height: 1,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -422,34 +449,46 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
             ],
           ),
         ),
+        const SizedBox(width: 16),
         // Header actions
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _buildShowHiddenToggle(),
-            _buildPillButton(
-              label: 'NAVIGATOR',
-              icon: Icons.insights,
-              onTap: () => _openNavigator(),
-            ),
-            _buildPillButton(
-              label: 'SIMULATE',
-              icon: Icons.play_arrow,
-              onTap: () => _openSimulate(),
-            ),
-            _buildPillButton(
-              label: _importing ? 'IMPORTING...' : 'IMPORT',
-              icon: Icons.upload_file,
-              onTap: _importing ? null : _handleImport,
-            ),
-            _buildPillButton(
-              label: 'NEW STRATEGY',
-              icon: Icons.add,
-              onTap: _openBuilder,
-            ),
-          ],
+        Flexible(
+          flex: 3,
+          child: TourTarget(
+          id: 'header-actions',
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const TourHelpButton(tourId: 'library'),
+              _buildShowHiddenToggle(),
+              _buildPillButton(
+                label: 'NAVIGATOR',
+                icon: Icons.insights,
+                onTap: () => _openNavigator(),
+              ),
+              _buildPillButton(
+                label: 'SIMULATE',
+                icon: Icons.play_arrow,
+                onTap: () => _openSimulate(),
+              ),
+              _buildPillButton(
+                label: _importing ? 'IMPORTING...' : 'IMPORT',
+                icon: Icons.upload_file,
+                onTap: _importing ? null : _handleImport,
+              ),
+              TourTarget(
+                id: 'funnel-new-strategy',
+                child: _buildPillButton(
+                  label: 'NEW STRATEGY',
+                  icon: Icons.add,
+                  onTap: _handleNewStrategyTap,
+                ),
+              ),
+            ],
+          ),
+          ),
         ),
       ],
     )
@@ -546,60 +585,58 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.15),
-            style: BorderStyle.solid,
+    final card = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.15),
+          style: BorderStyle.solid,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.3),
+            blurRadius: 20,
+            spreadRadius: -5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.3),
-              blurRadius: 20,
-              spreadRadius: -5,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.layers_rounded,
+            size: 40,
+            color: Colors.black.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'No strategies yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111111),
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.layers_rounded,
-              size: 48,
-              color: Colors.black.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Create your first staged betting strategy to use in Solo Play.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black.withValues(alpha: 0.55),
+              height: 1.4,
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'No strategies yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF111111),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first staged betting strategy\nto use in Solo Play.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.black.withValues(alpha: 0.55),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildPillButton(
-              label: 'CREATE STRATEGY',
-              icon: Icons.add,
-              onTap: _openBuilder,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          _buildPillButton(
+            label: 'CREATE STRATEGY',
+            icon: Icons.add,
+            onTap: _openBuilder,
+          ),
+        ],
       ),
     ).animate().fadeIn(duration: 500.ms, delay: 200.ms).scale(
           begin: const Offset(0.95, 0.95),
@@ -608,6 +645,18 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
           delay: 200.ms,
           curve: Curves.easeOutCubic,
         );
+
+    // Center the card, but let it scroll if the (landscape) viewport is short.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: card),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildGrid(List<BettingStrategy> visible) {
@@ -632,10 +681,12 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
             final strategy = visible[index];
             final hidden =
                 strategy.id != null && _hiddenIds.contains(strategy.id);
-            return _StrategyCard(
+            final card = _StrategyCard(
               strategy: strategy,
               index: index,
               isHidden: hidden,
+              // First card doubles as the tour anchor for the library guide.
+              tourAnchor: index == 0,
               onTap: () => _openBuilder(id: strategy.id),
               onNavigator: () => _openNavigator(id: strategy.id),
               onEdit: () => _openBuilder(id: strategy.id),
@@ -648,6 +699,9 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
                 if (strategy.id != null) _handleDelete(strategy.id!);
               },
             );
+            return index == 0
+                ? TourTarget(id: 'strategy-card', child: card)
+                : card;
           },
         );
       },
@@ -663,6 +717,7 @@ class _StrategyCard extends StatefulWidget {
   final BettingStrategy strategy;
   final int index;
   final bool isHidden;
+  final bool tourAnchor;
   final VoidCallback onTap;
   final VoidCallback onNavigator;
   final VoidCallback onEdit;
@@ -673,6 +728,7 @@ class _StrategyCard extends StatefulWidget {
     required this.strategy,
     required this.index,
     required this.isHidden,
+    this.tourAnchor = false,
     required this.onTap,
     required this.onNavigator,
     required this.onEdit,
@@ -690,6 +746,40 @@ class _StrategyCardState extends State<_StrategyCard> {
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown';
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Widget _buildActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _IconBtn(
+          icon: Icons.insights,
+          onTap: widget.onNavigator,
+          tooltip: 'Open in Navigator',
+        ),
+        const SizedBox(width: 6),
+        _IconBtn(
+          icon: Icons.edit_outlined,
+          onTap: widget.onEdit,
+          tooltip: 'Edit',
+        ),
+        const SizedBox(width: 6),
+        _IconBtn(
+          icon: widget.isHidden
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          onTap: widget.onHideToggle,
+          tooltip: widget.isHidden ? 'Unhide' : 'Hide',
+        ),
+        const SizedBox(width: 6),
+        _IconBtn(
+          icon: Icons.delete_outline,
+          onTap: widget.onDelete,
+          isDanger: true,
+          tooltip: 'Delete',
+        ),
+      ],
+    );
   }
 
   @override
@@ -830,37 +920,9 @@ class _StrategyCardState extends State<_StrategyCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _IconBtn(
-                          icon: Icons.insights,
-                          onTap: widget.onNavigator,
-                          tooltip: 'Open in Navigator',
-                        ),
-                        const SizedBox(width: 6),
-                        _IconBtn(
-                          icon: Icons.edit_outlined,
-                          onTap: widget.onEdit,
-                          tooltip: 'Edit',
-                        ),
-                        const SizedBox(width: 6),
-                        _IconBtn(
-                          icon: widget.isHidden
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          onTap: widget.onHideToggle,
-                          tooltip: widget.isHidden ? 'Unhide' : 'Hide',
-                        ),
-                        const SizedBox(width: 6),
-                        _IconBtn(
-                          icon: Icons.delete_outline,
-                          onTap: widget.onDelete,
-                          isDanger: true,
-                          tooltip: 'Delete',
-                        ),
-                      ],
-                    ),
+                    widget.tourAnchor
+                        ? TourTarget(id: 'card-actions', child: _buildActions())
+                        : _buildActions(),
                   ],
                 ),
               ),

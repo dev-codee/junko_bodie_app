@@ -13,9 +13,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/simulation_history_service.dart';
+import 'package:junko_bodie/tour/tour_controller.dart';
+import 'package:junko_bodie/tour/tour_help_button.dart';
+import 'package:junko_bodie/tour/tour_registry.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
@@ -59,6 +63,8 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
   String _activeTab = 'overview';
   bool _cancelled = false;
 
+  TourController? _tour;
+
   @override
   void initState() {
     super.initState();
@@ -66,13 +72,42 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _begin());
+    _tour = context.read<TourController>();
+    _tour!.addListener(_syncTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncTour();
+      _begin();
+    });
   }
 
   @override
   void dispose() {
     _cancelled = true;
+    _tour?.removeListener(_syncTour);
     super.dispose();
+  }
+
+  /// The tour target currently being spotlighted on this route, or null.
+  /// Mirrors the overlay's own target resolution.
+  String? _activeTourTarget() {
+    final c = _tour;
+    if (c == null) return null;
+    if (c.pageTourActive) return c.currentPageStep?.id;
+    final route = c.routeGetter?.call() ?? '';
+    if (c.isActive && !c.isTourPaused && c.isStepVisibleOn(route)) {
+      return c.currentStep?.targetId;
+    }
+    return null;
+  }
+
+  /// The bankroll chart only lives in the "overview" tab, so force that tab
+  /// active whenever the tour needs to spotlight it.
+  void _syncTour() {
+    if (!mounted) return;
+    if (_activeTourTarget() == 'funnel-bankroll-chart' &&
+        _activeTab != 'overview') {
+      setState(() => _activeTab = 'overview');
+    }
   }
 
   Future<void> _begin() async {
@@ -242,7 +277,9 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Grade badge
-        Container(
+        TourTarget(
+          id: 'funnel-grade-card',
+          child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: g.color.withValues(alpha: 0.15),
@@ -277,6 +314,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
               ),
             ],
           ),
+          ),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -299,6 +337,8 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
             ],
           ),
         ),
+        const TourHelpButton(tourId: 'simulation-run'),
+        const SizedBox(width: 8),
         _headerBtn(
           widget.args.fromHistory ? 'HISTORY' : 'PARAMETERS',
           Icons.arrow_back,
@@ -311,10 +351,22 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
           },
         ),
         const SizedBox(width: 8),
-        _headerBtn('LIBRARY', null, () => context.go('/strategies'),
-            filled: true),
+        TourTarget(
+          id: 'funnel-return-library',
+          child: _headerBtn('LIBRARY', null, _handleReturnToLibrary,
+              filled: true),
+        ),
       ],
     );
+  }
+
+  /// Funnel "Return to Strategy Library" click-through (step sim_return).
+  void _handleReturnToLibrary() {
+    final tour = _tour;
+    if (tour != null && tour.currentStep?.id == 'sim_return') {
+      tour.advanceStep('sim_return');
+    }
+    context.go('/strategies');
   }
 
   Widget _headerBtn(String label, IconData? icon, VoidCallback onTap,
@@ -416,7 +468,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
       runSpacing: 8,
       children: tabs.entries.map((e) {
         final active = _activeTab == e.key;
-        return GestureDetector(
+        final tab = GestureDetector(
           onTap: () => setState(() => _activeTab = e.key),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -433,6 +485,11 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
                     color: active ? _kGold : _kInkText)),
           ),
         );
+        // Spotlight the Profitability tab during the guided tour.
+        if (e.key == 'profitability') {
+          return TourTarget(id: 'funnel-profit-dynamics', child: tab);
+        }
+        return tab;
       }).toList(),
     );
   }
@@ -511,7 +568,9 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
   }
 
   Widget _chartCard(SimulationResult r) {
-    return Container(
+    return TourTarget(
+      id: 'funnel-bankroll-chart',
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -552,6 +611,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
                   ),
           ),
         ],
+      ),
       ),
     );
   }

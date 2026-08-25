@@ -8,10 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/screens/simulation_run_screen.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/tour/tour_controller.dart';
+import 'package:junko_bodie/tour/tour_help_button.dart';
+import 'package:junko_bodie/tour/tour_registry.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
@@ -88,6 +92,11 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   void _run() {
     final strategy = _selected;
     if (strategy == null) return;
+    // Funnel "EXECUTE ENGINE" click-through (step sim_run).
+    final tour = context.read<TourController>();
+    if (tour.currentStep?.id == 'sim_run') {
+      tour.advanceStep('sim_run');
+    }
     final config = SimulationConfig(
       requestedSpins: _requestedSpins.clamp(10, 25000),
       startingBankroll: _startingBankroll,
@@ -165,6 +174,8 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
     return Row(
       children: [
         _navPill('STRATEGIES', Icons.arrow_back, () => context.go('/strategies')),
+        const SizedBox(width: 8),
+        const TourHelpButton(tourId: 'simulation-setup'),
         const Spacer(),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -214,7 +225,9 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
 
   Widget _runButton() {
     final enabled = _selectedId.isNotEmpty && _strategies.isNotEmpty;
-    return Opacity(
+    return TourTarget(
+      id: 'funnel-run-simulation',
+      child: Opacity(
       opacity: enabled ? 1 : 0.5,
       child: GestureDetector(
         onTap: enabled ? _run : null,
@@ -244,6 +257,7 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -305,42 +319,48 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
                 fontStyle: FontStyle.italic,
                 color: _kGoldDark))
       else
-        _dropdownBox(DropdownButton<String>(
-          value: _selectedId.isEmpty ? null : _selectedId,
+        TourTarget(
+          id: 'sim-strategy-select',
+          child: _dropdownBox(DropdownButton<String>(
+            value: _selectedId.isEmpty ? null : _selectedId,
+            isDense: true,
+            isExpanded: true,
+            underline: const SizedBox.shrink(),
+            dropdownColor: const Color(0xFFF5EDD5),
+            style: const TextStyle(
+                color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
+            items: _strategies
+                .map((s) => DropdownMenuItem(
+                      value: s.id,
+                      child: Text('${s.name} (${s.wheelType})',
+                          overflow: TextOverflow.ellipsis),
+                    ))
+                .toList(),
+            onChanged: (v) => setState(() => _selectedId = v ?? ''),
+          )),
+        ),
+      const SizedBox(height: 20),
+      _label('Session Entry Rule'),
+      TourTarget(
+        id: 'sim-entry-rule',
+        child: _dropdownBox(DropdownButton<String>(
+          value: _entryTrigger,
           isDense: true,
           isExpanded: true,
           underline: const SizedBox.shrink(),
           dropdownColor: const Color(0xFFF5EDD5),
           style: const TextStyle(
               color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
-          items: _strategies
-              .map((s) => DropdownMenuItem(
-                    value: s.id,
-                    child: Text('${s.name} (${s.wheelType})',
-                        overflow: TextOverflow.ellipsis),
-                  ))
-              .toList(),
-          onChanged: (v) => setState(() => _selectedId = v ?? ''),
+          items: const [
+            DropdownMenuItem(
+                value: 'immediate', child: Text('Start Betting Immediately')),
+            DropdownMenuItem(
+                value: 'x_misses',
+                child: Text('Wait for Specific Misses (Phantom Betting)')),
+          ],
+          onChanged: (v) => setState(() => _entryTrigger = v ?? 'immediate'),
         )),
-      const SizedBox(height: 20),
-      _label('Session Entry Rule'),
-      _dropdownBox(DropdownButton<String>(
-        value: _entryTrigger,
-        isDense: true,
-        isExpanded: true,
-        underline: const SizedBox.shrink(),
-        dropdownColor: const Color(0xFFF5EDD5),
-        style: const TextStyle(
-            color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
-        items: const [
-          DropdownMenuItem(
-              value: 'immediate', child: Text('Start Betting Immediately')),
-          DropdownMenuItem(
-              value: 'x_misses',
-              child: Text('Wait for Specific Misses (Phantom Betting)')),
-        ],
-        onChanged: (v) => setState(() => _entryTrigger = v ?? 'immediate'),
-      )),
+      ),
       if (_entryTrigger == 'x_misses') ...[
         const SizedBox(height: 12),
         _label("Consecutive 'Stage 1' misses required"),
@@ -355,11 +375,14 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   Widget _paramsCard() {
     return _card(Icons.settings, 'Engine Parameters', [
       _label('Requested Spins (max 25,000)'),
-      _numberInput(_spinsController, (v) {
-        var n = int.tryParse(v) ?? 0;
-        if (n > 25000) n = 25000;
-        setState(() => _requestedSpins = n);
-      }),
+      TourTarget(
+        id: 'sim-spins-config',
+        child: _numberInput(_spinsController, (v) {
+          var n = int.tryParse(v) ?? 0;
+          if (n > 25000) n = 25000;
+          setState(() => _requestedSpins = n);
+        }),
+      ),
       const SizedBox(height: 6),
       Text(
         'The simulation finishes an active session before stopping, so actual '
@@ -368,47 +391,56 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
             fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
       ),
       const SizedBox(height: 16),
-      _label('Starting Bankroll (\$)'),
-      _numberInput(_bankrollController, (v) {
-        final n = double.tryParse(v);
-        if (n != null) setState(() => _startingBankroll = n);
-      }),
-      const SizedBox(height: 16),
-      GestureDetector(
-        onTap: () => setState(() => _resetBankroll = !_resetBankroll),
-        child: Row(
+      TourTarget(
+        id: 'sim-bankroll-config',
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: Checkbox(
-                value: _resetBankroll,
-                onChanged: (v) => setState(() => _resetBankroll = v ?? false),
-                activeColor: _kInk,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            _label('Starting Bankroll (\$)'),
+            _numberInput(_bankrollController, (v) {
+              final n = double.tryParse(v);
+              if (n != null) setState(() => _startingBankroll = n);
+            }),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => setState(() => _resetBankroll = !_resetBankroll),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Checkbox(
+                      value: _resetBankroll,
+                      onChanged: (v) =>
+                          setState(() => _resetBankroll = v ?? false),
+                      activeColor: _kInk,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Reset bankroll to the starting amount at the beginning of each new session.',
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _kInkText),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 4),
               child: Text(
-                'Reset bankroll to the starting amount at the beginning of each new session.',
+                'Leave unchecked to compound continuously across all sessions.',
                 style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _kInkText),
+                    fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
               ),
             ),
           ],
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 30, top: 4),
-        child: Text(
-          'Leave unchecked to compound continuously across all sessions.',
-          style: GoogleFonts.inter(
-              fontSize: 11, fontWeight: FontWeight.w600, color: _kGoldDark),
         ),
       ),
     ]);

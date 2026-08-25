@@ -10,9 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/tour/tour_controller.dart';
+import 'package:junko_bodie/tour/tour_help_button.dart';
+import 'package:junko_bodie/tour/tour_registry.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
@@ -78,6 +82,8 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   List<_LogEntry> _log = [];
   int _spinCounter = 0;
 
+  TourController? _tour;
+
   @override
   void initState() {
     super.initState();
@@ -86,10 +92,61 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     _load();
+    _tour = context.read<TourController>();
+    _tour!.addListener(_syncTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncTour());
+  }
+
+  /// Registers the funnel validator for the active debugger step.
+  void _syncTour() {
+    if (!mounted) return;
+    final tour = _tour;
+    if (tour == null) return;
+    final step = tour.isActive ? tour.currentStep : null;
+    if (step == null || step.route != '/strategies/debug') return;
+
+    if (step.id == 'debug_force_number') {
+      bool ok() => _forcedController.text.trim().isNotEmpty;
+      tour.setStepValidator(
+          () => ok()
+              ? ValidatorResult.ok
+              : ValidatorResult.fail(step.fallbackErrorMsg),
+          isCompleted: ok());
+    } else {
+      tour.setStepValidator(null);
+    }
+  }
+
+  /// Funnel "Start Debug Session" click-through (step debug_start).
+  void _handleStartTap() {
+    _start();
+    if (_tour?.currentStep?.id == 'debug_start') {
+      _tour?.advanceStep('debug_start');
+    }
+  }
+
+  /// Funnel "SPIN" click-through (step debug_spin).
+  void _handleSpinTap() {
+    _spin();
+    if (_tour?.currentStep?.id == 'debug_spin') {
+      _tour?.advanceStep('debug_spin');
+    }
+  }
+
+  /// Funnel "Test in Simulator" click-through (step debug_to_sim).
+  void _handleSimulateTap() {
+    if (_tour?.currentStep?.id == 'debug_to_sim') {
+      _tour?.advanceStep('debug_to_sim');
+    }
+    final id = _selectedId;
+    context.push(id.isNotEmpty
+        ? '/simulation/setup?strategyId=$id'
+        : '/simulation/setup');
   }
 
   @override
   void dispose() {
+    _tour?.removeListener(_syncTour);
     _forcedController.dispose();
     _notesController.dispose();
     _bankrollController.dispose();
@@ -283,6 +340,9 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncTour();
+    });
     return Scaffold(
       backgroundColor: const Color(0xFF9E7F41),
       body: Container(
@@ -325,6 +385,8 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
     return Row(
       children: [
         _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
+        const SizedBox(width: 8),
+        const TourHelpButton(tourId: 'debugger'),
         const Spacer(),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -343,13 +405,10 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         ),
         if (_sessionStarted) ...[
           const SizedBox(width: 16),
-          GestureDetector(
-            onTap: () {
-              final id = _selectedId;
-              context.push(id.isNotEmpty
-                  ? '/simulation/setup?strategyId=$id'
-                  : '/simulation/setup');
-            },
+          TourTarget(
+            id: 'funnel-simulate-btn',
+            child: GestureDetector(
+            onTap: _handleSimulateTap,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
@@ -370,6 +429,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                 ],
               ),
             ),
+          ),
           ),
           const SizedBox(width: 10),
           GestureDetector(
@@ -460,9 +520,16 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             LayoutBuilder(builder: (context, c) {
               final twoCol = c.maxWidth > 640;
               final fields = <Widget>[
-                _field('Select Strategy to Debug', _strategyDropdown()),
-                _field('Starting Bankroll (\$)', _bankrollField()),
-                _field('Session Entry Rule', _entryDropdown()),
+                TourTarget(
+                    id: 'select-strategy',
+                    child: _field('Select Strategy to Debug',
+                        _strategyDropdown())),
+                TourTarget(
+                    id: 'bankroll-config',
+                    child: _field('Starting Bankroll (\$)', _bankrollField())),
+                TourTarget(
+                    id: 'session-entry-rule',
+                    child: _field('Session Entry Rule', _entryDropdown())),
                 if (_entryTrigger == 'x_misses')
                   _field('Phantom Misses Required', _missesField()),
               ];
@@ -710,10 +777,12 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
 
   Widget _startButton() {
     final enabled = _selectedId.isNotEmpty && _strategies.isNotEmpty;
-    return Opacity(
+    return TourTarget(
+      id: 'funnel-start-debug',
+      child: Opacity(
       opacity: enabled ? 1 : 0.5,
       child: GestureDetector(
-        onTap: enabled ? _start : null,
+        onTap: enabled ? _handleStartTap : null,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -736,6 +805,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -805,7 +875,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _kpiRow(state),
+        TourTarget(id: 'live-metrics', child: _kpiRow(state)),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, c) {
           final twoCol = c.maxWidth > 640;
@@ -828,7 +898,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           );
         }),
         const SizedBox(height: 12),
-        _spinLogCard(),
+        TourTarget(id: 'spin-log', child: _spinLogCard()),
       ],
     );
   }
@@ -900,11 +970,14 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         ],
       ),
       const SizedBox(height: 12),
-      _field(
+      TourTarget(
+        id: 'funnel-force-result',
+        child: _field(
         'Force Spin Result (optional)',
         TextField(
           controller: _forcedController,
           keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
           style: const TextStyle(
               color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
           decoration: InputDecoration(
@@ -927,9 +1000,12 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           ),
         ),
       ),
+      ),
       const SizedBox(height: 12),
-      GestureDetector(
-        onTap: busted ? null : _spin,
+      TourTarget(
+        id: 'funnel-spin-button',
+        child: GestureDetector(
+        onTap: busted ? null : _handleSpinTap,
         child: Opacity(
           opacity: busted ? 0.5 : 1,
           child: Container(
@@ -954,6 +1030,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             ),
           ),
         ),
+      ),
       ),
       const SizedBox(height: 12),
       Divider(color: _kInk.withValues(alpha: 0.12)),
