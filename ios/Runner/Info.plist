@@ -61,6 +61,16 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Junko Bodie requires access to your camera to take profile photos and scan files.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Junko Bodie requires access to your photo library to select profile avatars and import strategy files.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Junko Bodie requires access to save exported files and images to your photo library.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Junko Bodie uses your location to verify tournament eligibility and comply with regional gaming guidelines.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Junko Bodie uses the microphone for interactive audio and tournament features.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Junko Bodie uses speech features for tournament commentary.</string>
 	<key>UIApplicationSceneManifest</key>
