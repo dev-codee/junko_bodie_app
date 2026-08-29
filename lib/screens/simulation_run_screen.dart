@@ -20,10 +20,14 @@ import 'package:junko_bodie/services/simulation_history_service.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
 import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
+import 'package:junko_bodie/widgets/junko_tip_card.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
 const Color _kGold = Color(0xFFC9A44C);
+// Darker bronze-gold used for the "B" grade so it stays legible on the tan
+// dashboard background (the bright _kGold only reads on dark surfaces).
+const Color _kGradeGold = Color(0xFF7A5C12);
 const Color _kGoldDark = Color(0xFF6B5220);
 const Color _kPos = Color(0xFF16A34A);
 const Color _kNeg = Color(0xFFEF4444);
@@ -100,13 +104,16 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return null;
   }
 
-  /// The bankroll chart only lives in the "overview" tab, so force that tab
-  /// active whenever the tour needs to spotlight it.
+  /// The bankroll chart lives in the "bankroll" tab, so force that tab active
+  /// whenever the tour needs to spotlight it.
   void _syncTour() {
     if (!mounted) return;
-    if (_activeTourTarget() == 'funnel-bankroll-chart' &&
-        _activeTab != 'overview') {
-      setState(() => _activeTab = 'overview');
+    final target = _activeTourTarget();
+    if (target == 'funnel-bankroll-chart' && _activeTab != 'bankroll') {
+      setState(() => _activeTab = 'bankroll');
+    } else if (target == 'funnel-profit-dynamics' &&
+        _activeTab != 'profitability') {
+      setState(() => _activeTab = 'profitability');
     }
   }
 
@@ -169,10 +176,41 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return 'PREPARING REPORT...';
   }
 
+  /// Context-sensitive Junko advice keyed off the active dashboard tab —
+  /// mirrors the web run page's dynamic tip card.
+  ({String title, String text}) _junkoTip() {
+    switch (_activeTab) {
+      case 'profitability':
+        return (
+          title: 'Profitability Metric',
+          text:
+              '"A key metric for me is that the success ratio of any system I use be at least 96% (or more). I also want my average profit per spin to exceed \$2."',
+        );
+      case 'bankroll':
+        return (
+          title: 'Bankroll Stability Goal',
+          text:
+              '"The player\'s goal for this graph is to a flat or upward trajectory. Adjust your system\'s chip coverage, betting progression, bankroll, or phantom misses to increase success."',
+        );
+      case 'stages':
+        return (
+          title: 'Stage Penetration Strategy',
+          text:
+              '"The number of stages we build into a system is a critical part of its construction... and success. Understanding penetration patterns helps us to decide betting progressions to coincide with our stage construction and preserve our bankroll. Learn to determine what the critical stages are for your strategies so you can plan for contingencies."',
+        );
+      default:
+        return (
+          title: 'Simulation Advice',
+          text:
+              '"Almost all Roulette systems receive low grades at 25,000 spins. To better evaluate your system, adjust the number of spins, or your bankroll, and/or your entry points for better results. Experiment with Simulation. Try different parameters until you achieve success."',
+        );
+    }
+  }
+
   ({String grade, String label, Color color}) _grade(SimulationResult r) {
     final roi = r.startingBankroll > 0 ? r.netProfit / r.startingBankroll : 0;
     if (roi >= 0.20) return (grade: 'A', label: 'Exceptional', color: _kPos);
-    if (roi > 0) return (grade: 'B', label: 'Good', color: _kGold);
+    if (roi > 0) return (grade: 'B', label: 'Good', color: _kGradeGold);
     if (roi >= -0.25) return (grade: 'C', label: 'Average', color: const Color(0xFF3B82F6));
     if (roi >= -0.60) return (grade: 'D', label: 'Below Average', color: const Color(0xFFEA580C));
     return (grade: 'E', label: 'Fail', color: _kNeg);
@@ -252,6 +290,14 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _dashboardHeader(r, g),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: JunkoTipCard(
+              title: _junkoTip().title,
+              text: _junkoTip().text,
+            ),
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
@@ -485,9 +531,15 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
                     color: active ? _kGold : _kInkText)),
           ),
         );
-        // Spotlight the Profitability tab during the guided tour.
+        // Spotlight the relevant tabs during the guided tour.
         if (e.key == 'profitability') {
           return TourTarget(id: 'funnel-profit-dynamics', child: tab);
+        }
+        if (e.key == 'bankroll') {
+          return TourTarget(id: 'funnel-bankroll-stability', child: tab);
+        }
+        if (e.key == 'stages') {
+          return TourTarget(id: 'funnel-stage-penetration', child: tab);
         }
         return tab;
       }).toList(),
@@ -512,12 +564,19 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
           _row('Break-even / Ghost Sessions', _fmt(breakEven)),
         ]);
       case 'bankroll':
-        return _dataList('Risk & Drawdown', [
-          _row('Largest Drawdown', '-\$${_fmt(r.maxDrawdown)}', color: _kNeg),
-          _row('Lowest Bankroll Reached', '\$${_fmt(r.lowestBankroll)}'),
-          _row('Table Busts (Insufficient Funds)', _fmt(r.bankruptcyCount),
-              color: r.bankruptcyCount > 0 ? _kNeg : null),
-        ]);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _chartCard(r),
+            const SizedBox(height: 12),
+            _dataList('Risk & Drawdown', [
+              _row('Largest Drawdown', '-\$${_fmt(r.maxDrawdown)}', color: _kNeg),
+              _row('Lowest Bankroll Reached', '\$${_fmt(r.lowestBankroll)}'),
+              _row('Table Busts (Insufficient Funds)', _fmt(r.bankruptcyCount),
+                  color: r.bankruptcyCount > 0 ? _kNeg : null),
+            ]),
+          ],
+        );
       case 'stages':
         final entries = r.stageHits.entries.toList()
           ..sort((a, b) => a.key.compareTo(b.key));
@@ -532,8 +591,6 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _chartCard(r),
-            const SizedBox(height: 12),
             LayoutBuilder(builder: (context, c) {
               final meta = _dataList('Simulation Metadata', [
                 _row('Requested Spins', _fmt(r.totalSpinsRequested)),

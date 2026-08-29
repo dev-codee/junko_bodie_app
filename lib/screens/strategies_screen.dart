@@ -755,7 +755,7 @@ class _StrategyCardState extends State<_StrategyCard> {
         _IconBtn(
           icon: Icons.insights,
           onTap: widget.onNavigator,
-          tooltip: 'Open in Navigator',
+          tooltip: 'Open in Strategy Navigator',
         ),
         const SizedBox(width: 6),
         _IconBtn(

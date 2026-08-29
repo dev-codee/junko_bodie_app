@@ -16,6 +16,7 @@ import 'package:junko_bodie/logic/bets.dart';
 import 'package:junko_bodie/logic/rng.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/services/strategy_prefs.dart';
 import 'package:junko_bodie/widgets/betting_layout.dart';
 import 'package:junko_bodie/widgets/chip_tray.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
@@ -64,7 +65,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   final _nameController = TextEditingController(text: 'New Strategy');
   final _descController = TextEditingController();
   final _notesController = TextEditingController();
-  final _maxStagesController = TextEditingController(text: '10');
+  final _maxStagesController = TextEditingController(text: '30');
   final _recoveryPosController = TextEditingController();
 
   // Horizontal scroll for the (widened) betting board.
@@ -72,7 +73,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
 
   String? _strategyId;
   String _wheelType = 'American';
-  int _maxStages = 10;
+  int _maxStages = 30;
   bool _isGlobal = false;
   String? _savedStrategyId;
 
@@ -515,6 +516,11 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
         _savedStrategyId = newId;
         _isSaved = true;
       });
+      // Remember the saved strategy so the Navigator / Simulation screens can
+      // pre-select it (mirrors the web's localStorage last-active id).
+      if (newId != null && newId.isNotEmpty) {
+        await StrategyPrefs.setLastCreated(newId);
+      }
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => _isSaved = false);
       });
@@ -612,17 +618,22 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
           _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
           const SizedBox(width: 8),
           const TourHelpButton(tourId: 'builder'),
-          const Spacer(),
-          Text(
-            'Strategy Builder',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              fontStyle: FontStyle.italic,
-              color: _kInkText,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Strategy Builder',
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                fontStyle: FontStyle.italic,
+                color: _kInkText,
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           if ((_strategyId ?? _savedStrategyId) != null) ...[
             _pillButton('TEST RESULTS', Icons.bar_chart, () {
               final id = _strategyId ?? _savedStrategyId;
@@ -634,11 +645,6 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             id: 'funnel-goto-navigator',
             child: _pillButton('NAVIGATOR', Icons.insights, _handleNavigatorTap,
                 filled: false),
-          ),
-          const SizedBox(width: 10),
-          TourTarget(
-            id: 'funnel-save-strategy',
-            child: _buildSaveButton(),
           ),
         ],
       ),
@@ -789,7 +795,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             keyboardType: TextInputType.number,
             onChanged: (v) {
               final n = int.tryParse(v);
-              if (n != null && n >= 1 && n <= 100) {
+              if (n != null && n >= 1 && n <= 30) {
                 setState(() => _maxStages = n);
               }
             },
@@ -1164,45 +1170,60 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     return TourTarget(
       id: 'stage-tabs',
       child: SizedBox(
-      height: 34,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          for (int i = 0; i < _stages.length; i++) _stageTab(i),
-          if (_stages.length < _maxStages)
-            TourTarget(
-              id: 'funnel-add-stage',
-              child: GestureDetector(
-              onTap: _handleAddStageTap,
-              child: Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: _kInk.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _kInk.withValues(alpha: 0.25)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.add, size: 14, color: _kInkText),
-                    const SizedBox(width: 4),
-                    Text(
-                      'ADD STAGE',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: _kInkText,
-                        letterSpacing: 0.5,
+        height: 34,
+        child: Row(
+          children: [
+            Expanded(
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (int i = 0; i < _stages.length; i++) _stageTab(i),
+                  if (_stages.length < _maxStages)
+                    TourTarget(
+                      id: 'funnel-add-stage',
+                      child: GestureDetector(
+                        onTap: _handleAddStageTap,
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: _kInk.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: _kInk.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.add, size: 14, color: _kInkText),
+                              const SizedBox(width: 4),
+                              Text(
+                                'ADD STAGE',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: _kInkText,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
+            // Save is anchored here so it is always reachable on every stage —
+            // the top bar can push its Save off-screen when Test Results +
+            // Navigator are also shown.
+            const SizedBox(width: 8),
+            TourTarget(
+              id: 'funnel-save-strategy',
+              child: _buildSaveButton(),
             ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 

@@ -16,6 +16,8 @@ const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
 const Color _kGold = Color(0xFFC9A44C);
 const Color _kGoldDark = Color(0xFF6B5220);
+// Darker bronze-gold for the "B" grade so it reads on the tan background.
+const Color _kGradeGold = Color(0xFF7A5C12);
 const Color _kPos = Color(0xFF16A34A);
 const Color _kNeg = Color(0xFFEF4444);
 
@@ -59,7 +61,7 @@ class _SimulationHistoryScreenState extends State<SimulationHistoryScreen> {
   ({String grade, String label, Color color}) _grade(SimulationResult r) {
     final roi = r.startingBankroll > 0 ? r.netProfit / r.startingBankroll : 0;
     if (roi >= 0.20) return (grade: 'A', label: 'Exceptional', color: _kPos);
-    if (roi > 0) return (grade: 'B', label: 'Good', color: _kGold);
+    if (roi > 0) return (grade: 'B', label: 'Good', color: _kGradeGold);
     if (roi >= -0.25) return (grade: 'C', label: 'Average', color: const Color(0xFF3B82F6));
     if (roi >= -0.60) return (grade: 'D', label: 'Below Average', color: const Color(0xFFEA580C));
     return (grade: 'E', label: 'Fail', color: _kNeg);

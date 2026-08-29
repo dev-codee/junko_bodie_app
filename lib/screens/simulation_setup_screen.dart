@@ -13,9 +13,11 @@ import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/screens/simulation_run_screen.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/services/strategy_prefs.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
 import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
+import 'package:junko_bodie/widgets/junko_tip_card.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
@@ -32,13 +34,13 @@ class SimulationSetupScreen extends StatefulWidget {
 
 class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   final StrategyService _service = StrategyService();
-  final _spinsController = TextEditingController(text: '25000');
+  final _spinsController = TextEditingController(text: '100');
   final _bankrollController = TextEditingController(text: '5000');
   final _missesController = TextEditingController(text: '1');
 
   List<BettingStrategy> _strategies = [];
   String _selectedId = '';
-  int _requestedSpins = 25000;
+  int _requestedSpins = 100;
   double _startingBankroll = 5000;
   bool _resetBankroll = false;
   String _entryTrigger = 'immediate';
@@ -66,12 +68,14 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   Future<void> _load() async {
     try {
       final list = await _service.fetchStrategies();
+      // Prefer the explicit query id, else the last created/active strategy.
+      final preferredId = widget.strategyId ?? await StrategyPrefs.preferredId();
       if (!mounted) return;
       setState(() {
         _strategies = list;
         if (list.isNotEmpty) {
-          final match = widget.strategyId != null
-              ? list.where((s) => s.id == widget.strategyId).toList()
+          final match = preferredId != null
+              ? list.where((s) => s.id == preferredId).toList()
               : <BettingStrategy>[];
           _selectedId = match.isNotEmpty ? match.first.id! : (list.first.id ?? '');
         }
@@ -133,6 +137,15 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
                     children: [
                       _buildTopBar(),
                       const SizedBox(height: 8),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: JunkoTipCard(
+                          title: 'Strategy Entry Advice',
+                          text:
+                              '"Strategy entry points are extremely important. The more misses your strategy has before you start your betting, the more time you have bought your system. In Roulette, time is everything. Be sure to consider this option carefully as you test your systems."',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Expanded(
                         child: SingleChildScrollView(
                           child: LayoutBuilder(builder: (context, c) {

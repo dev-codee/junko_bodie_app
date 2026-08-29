@@ -14,9 +14,11 @@ import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
+import 'package:junko_bodie/services/strategy_prefs.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
 import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
+import 'package:junko_bodie/widgets/junko_tip_card.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
 const Color _kInkText = Color(0xFF113626);
@@ -106,12 +108,8 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
     if (step == null || step.route != '/strategies/debug') return;
 
     if (step.id == 'debug_force_number') {
-      bool ok() => _forcedController.text.trim().isNotEmpty;
-      tour.setStepValidator(
-          () => ok()
-              ? ValidatorResult.ok
-              : ValidatorResult.fail(step.fallbackErrorMsg),
-          isCompleted: ok());
+      // Force spin result is optional — the user can enter a number or tap Next.
+      tour.setStepValidator(() => ValidatorResult.ok, isCompleted: true);
     } else {
       tour.setStepValidator(null);
     }
@@ -158,12 +156,14 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   Future<void> _load() async {
     try {
       final list = await _service.fetchStrategies();
+      // Prefer the explicit query id, else the last created/active strategy.
+      final preferredId = widget.strategyId ?? await StrategyPrefs.preferredId();
       if (!mounted) return;
       setState(() {
         _strategies = list;
         if (list.isNotEmpty) {
-          final match = widget.strategyId != null
-              ? list.where((s) => s.id == widget.strategyId).toList()
+          final match = preferredId != null
+              ? list.where((s) => s.id == preferredId).toList()
               : <BettingStrategy>[];
           _selectedId = match.isNotEmpty
               ? match.first.id!
@@ -172,6 +172,9 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         }
         _isLoading = false;
       });
+      if (_selectedId.isNotEmpty) {
+        await StrategyPrefs.setLastActive(_selectedId);
+      }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -198,18 +201,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
     setState(() {
       _engine = engine;
       _liveState = engine.getInternalState();
-      _log = [
-        _LogEntry(
-          id: 0,
-          spinNumber: 0,
-          result: '—',
-          netResult: 0,
-          stage: 1,
-          action: 'Session initialized — ready for first spin.',
-          bankroll: _startingBankroll,
-          type: 'info',
-        ),
-      ];
+      _log = [];
       _spinCounter = 0;
       _sessionStarted = true;
     });
@@ -366,6 +358,15 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                     children: [
                       _buildTopBar(),
                       const SizedBox(height: 8),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: JunkoTipCard(
+                          title: 'Navigator Pre-Test',
+                          text:
+                              '"I use this Navigator feature to do a quick test of 200 spins or so to make sure my New Strategy setup doesn\'t have any obvious flaws. Think of it as a pre-test before you submit to the Simulation Engine for grading and more thorough testing. If you are using the Web version of JBR, note that the spacebar also acts as a spin trigger for faster paced testing."',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Expanded(
                         child: SingleChildScrollView(
                           child: _sessionStarted
@@ -500,7 +501,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             children: [
               const Icon(Icons.tune, size: 18, color: _kInk),
               const SizedBox(width: 8),
-              Text('Configure Debugger Session',
+              Text('Configure Navigation Session',
                   style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -522,7 +523,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
               final fields = <Widget>[
                 TourTarget(
                     id: 'select-strategy',
-                    child: _field('Select Strategy to Debug',
+                    child: _field('Select Strategy to Navigate',
                         _strategyDropdown())),
                 TourTarget(
                     id: 'bankroll-config',
@@ -606,6 +607,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             _selectedId = v;
             _notesController.text = _selected?.strategyNotes ?? '';
           });
+          StrategyPrefs.setLastActive(v);
         },
       ),
     );
@@ -744,7 +746,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                   fontWeight: FontWeight.w800,
                   color: _kInk)),
           const SizedBox(height: 6),
-          _bullet('Select a strategy and tap Start Debug Session.'),
+          _bullet('Select a strategy and tap Start Navigation Session.'),
           _bullet('Tap SPIN to step through one spin at a time.'),
           _bullet(
               'Optionally enter a number in Force Result to test a specific outcome (e.g. 17).'),
@@ -795,7 +797,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             children: [
               const Icon(Icons.play_arrow, size: 18, color: _kGold),
               const SizedBox(width: 8),
-              Text('START DEBUG SESSION',
+              Text('START NAVIGATION SESSION',
                   style: GoogleFonts.inter(
                       color: _kGold,
                       fontSize: 13,
@@ -899,7 +901,54 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         }),
         const SizedBox(height: 12),
         TourTarget(id: 'spin-log', child: _spinLogCard()),
+        // SPIN button anchored directly below the results so the most recent
+        // spin (auto-scrolled to the bottom of the log) sits right above it —
+        // no scrolling back up to spin again on mobile.
+        const SizedBox(height: 10),
+        _spinButton(state),
       ],
+    );
+  }
+
+  Widget _spinButton(SimulationState s) {
+    final busted = s.activeBankroll <= 0;
+    return TourTarget(
+      id: 'funnel-spin-button',
+      child: GestureDetector(
+        onTap: busted ? null : _handleSpinTap,
+        child: Opacity(
+          opacity: busted ? 0.5 : 1,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: _kInk,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x4D0F2E21),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(busted ? Icons.block : Icons.play_arrow,
+                    size: 20, color: _kGold),
+                const SizedBox(width: 8),
+                Text(busted ? 'SESSION BUSTED (\$0)' : 'SPIN',
+                    style: GoogleFonts.inter(
+                        color: _kGold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -956,7 +1005,6 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   }
 
   Widget _controlsCard(SimulationState s, BettingStrategy strategy) {
-    final busted = s.activeBankroll <= 0;
     return _card([
       Row(
         children: [
@@ -996,37 +1044,6 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: _kGold, width: 1.5),
-            ),
-          ),
-        ),
-      ),
-      ),
-      const SizedBox(height: 12),
-      TourTarget(
-        id: 'funnel-spin-button',
-        child: GestureDetector(
-        onTap: busted ? null : _handleSpinTap,
-        child: Opacity(
-          opacity: busted ? 0.5 : 1,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: _kInk,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.play_arrow, size: 18, color: _kGold),
-                const SizedBox(width: 8),
-                Text(busted ? 'SESSION BUSTED (\$0)' : 'SPIN',
-                    style: GoogleFonts.inter(
-                        color: _kGold,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1)),
-              ],
             ),
           ),
         ),
@@ -1176,7 +1193,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                       fontWeight: FontWeight.w800,
                       color: _kGold)),
               const Spacer(),
-              Text('${_log.length - 1} spins',
+              Text('${_log.length} spin${_log.length != 1 ? 's' : ''}',
                   style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1186,11 +1203,22 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           const SizedBox(height: 8),
           SizedBox(
             height: 220,
-            child: ListView.builder(
-              controller: _logScroll,
-              itemCount: _log.length,
-              itemBuilder: (context, i) => _logRow(_log[i]),
-            ),
+            child: _log.isEmpty
+                ? Center(
+                    child: Text(
+                      'Session started. No spins executed yet — tap SPIN to begin.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white.withValues(alpha: 0.4)),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _logScroll,
+                    itemCount: _log.length,
+                    itemBuilder: (context, i) => _logRow(_log[i]),
+                  ),
           ),
         ],
       ),
