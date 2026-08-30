@@ -20,7 +20,6 @@ import 'package:junko_bodie/services/strategy_prefs.dart';
 import 'package:junko_bodie/widgets/betting_layout.dart';
 import 'package:junko_bodie/widgets/chip_tray.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
-import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
 
 // ─── Palette (matches the gold/cream builder page) ──
@@ -616,8 +615,6 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       child: Row(
         children: [
           _navPill('LIBRARY', Icons.arrow_back, () => context.go('/strategies')),
-          const SizedBox(width: 8),
-          const TourHelpButton(tourId: 'builder'),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

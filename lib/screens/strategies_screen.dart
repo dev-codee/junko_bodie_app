@@ -18,7 +18,6 @@ import 'package:provider/provider.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
-import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
 
 class StrategiesScreen extends StatefulWidget {
@@ -455,36 +454,56 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
           flex: 3,
           child: TourTarget(
           id: 'header-actions',
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Two fixed rows of three, so the header never spills into a third row.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const TourHelpButton(tourId: 'library'),
-              _buildShowHiddenToggle(),
-              _buildPillButton(
-                label: 'NAVIGATOR',
-                icon: Icons.insights,
-                onTap: () => _openNavigator(),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _buildPillButton(
+                    label: 'TUTORIAL',
+                    icon: Icons.help_outline,
+                    onTap: () => context.read<TourController>().startTour(),
+                  ),
+                  _buildShowHiddenToggle(),
+                  _buildPillButton(
+                    label: 'NAVIGATOR',
+                    icon: Icons.insights,
+                    onTap: () => _openNavigator(),
+                  ),
+                ],
               ),
-              _buildPillButton(
-                label: 'SIMULATE',
-                icon: Icons.play_arrow,
-                onTap: () => _openSimulate(),
-              ),
-              _buildPillButton(
-                label: _importing ? 'IMPORTING...' : 'IMPORT',
-                icon: Icons.upload_file,
-                onTap: _importing ? null : _handleImport,
-              ),
-              TourTarget(
-                id: 'funnel-new-strategy',
-                child: _buildPillButton(
-                  label: 'NEW STRATEGY',
-                  icon: Icons.add,
-                  onTap: _handleNewStrategyTap,
-                ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _buildPillButton(
+                    label: 'SIMULATE',
+                    icon: Icons.play_arrow,
+                    onTap: () => _openSimulate(),
+                  ),
+                  _buildPillButton(
+                    label: _importing ? 'IMPORTING...' : 'IMPORT',
+                    icon: Icons.upload_file,
+                    onTap: _importing ? null : _handleImport,
+                  ),
+                  TourTarget(
+                    id: 'funnel-new-strategy',
+                    child: _buildPillButton(
+                      label: 'NEW STRATEGY',
+                      icon: Icons.add,
+                      onTap: _handleNewStrategyTap,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -497,45 +516,70 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
         .slideY(begin: 0.05, end: 0, duration: 400.ms, delay: 100.ms);
   }
 
+  /// "Show Hidden" toggle — mirrors the web `.toggleBtn` (filled dark-green
+  /// pill, gold label) with the embedded `.slider` switch.
   Widget _buildShowHiddenToggle() {
     return GestureDetector(
       onTap: () => setState(() => _showHidden = !_showHidden),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'SHOW HIDDEN',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-              color: const Color(0xFF113626).withValues(alpha: 0.9),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F2E21),
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(color: const Color(0xFF0F2E21)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x660F2E21),
+              blurRadius: 12,
+              offset: Offset(0, 4),
             ),
-          ),
-          const SizedBox(width: 8),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 38,
-            height: 20,
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: _showHidden
-                  ? const Color(0xFF0F2E21)
-                  : const Color(0xFF113626).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(9999),
-            ),
-            alignment:
-                _showHidden ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'SHOW HIDDEN',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
                 color: Color(0xFFC9A44C),
-                shape: BoxShape.circle,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            // Switch track.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 36,
+              height: 20,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: _showHidden
+                    ? const Color(0xFFC9A44C)
+                    : Colors.black.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(
+                  color: _showHidden
+                      ? const Color(0xFFC9A44C)
+                      : Colors.black.withValues(alpha: 0.2),
+                ),
+              ),
+              alignment:
+                  _showHidden ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: _showHidden
+                      ? const Color(0xFF0F2E21)
+                      : Colors.white.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -551,7 +595,7 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFF0F2E21),
             borderRadius: BorderRadius.circular(9999),
@@ -566,15 +610,15 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: const Color(0xFFC9A44C)),
-              const SizedBox(width: 8),
+              Icon(icon, size: 15, color: const Color(0xFFC9A44C)),
+              const SizedBox(width: 7),
               Text(
                 label,
                 style: const TextStyle(
                   color: Color(0xFFC9A44C),
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],

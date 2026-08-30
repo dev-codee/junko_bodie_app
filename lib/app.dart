@@ -73,8 +73,16 @@ class _AppWithRouterState extends State<_AppWithRouter> {
       _tourHooksWired = true;
       final tour = context.read<TourController>();
       tour.navigator = (route) => _router?.go(route);
-      tour.routeGetter =
-          () => _router?.routerDelegate.currentConfiguration.uri.path ?? '';
+      // Report the TOP-MOST route path, including imperatively pushed routes.
+      // go_router's `RouteMatchList.uri` deliberately ignores ImperativeRouteMatch
+      // (context.push), so after a push it still returns the base location — which
+      // would make the funnel overlay think the step's route no longer matches and
+      // hide itself. `lastOrNull.matchedLocation` resolves the pushed leaf route
+      // (and strips query params, matching the funnel step route strings).
+      tour.routeGetter = () {
+        final config = _router?.routerDelegate.currentConfiguration;
+        return config?.lastOrNull?.matchedLocation ?? config?.uri.path ?? '';
+      };
     }
 
     return MaterialApp.router(

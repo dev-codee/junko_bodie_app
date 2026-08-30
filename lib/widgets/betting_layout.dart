@@ -1390,24 +1390,32 @@ class _BettingLayoutState extends State<BettingLayout> {
         ],
       ),
 
-      // Floating highlight overlay for targeting count
+      // Floating highlight overlay for targeting count. Pinned to the top and
+      // wrapped in IgnorePointer so it never overlaps or absorbs taps on the
+      // outside-bet chips at the bottom of the board (e.g. EVEN = 18 numbers).
       if (_hoveredBetId != null && _hoveredNumbers.isNotEmpty)
         Positioned(
-          left: 16,
-          bottom: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.85),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Targeting: ${_hoveredNumbers.length} numbers',
-              style: GoogleFonts.inter(
-                color: AppColors.gold,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+          top: 8,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.85),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Targeting: ${_hoveredNumbers.length} numbers',
+                  style: GoogleFonts.inter(
+                    color: AppColors.gold,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),

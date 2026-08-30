@@ -18,11 +18,12 @@ import 'package:junko_bodie/logic/simulation_engine.dart';
 import 'package:junko_bodie/models/strategy.dart';
 import 'package:junko_bodie/services/simulation_history_service.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
-import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
 import 'package:junko_bodie/widgets/junko_tip_card.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
+// Deep ink used by the web grade card / Junko tip surfaces (#0A2218).
+const Color _kGradeCardInk = Color(0xFF0A2218);
 const Color _kInkText = Color(0xFF113626);
 const Color _kGold = Color(0xFFC9A44C);
 // Darker bronze-gold used for the "B" grade so it stays legible on the tan
@@ -66,6 +67,10 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
   SimulationResult? _results;
   String _activeTab = 'overview';
   bool _cancelled = false;
+
+  /// Junko's Tip is collapsed by default (freed-up header space) and revealed
+  /// on demand via the header "TIP" button.
+  bool _showTip = false;
 
   TourController? _tour;
 
@@ -216,6 +221,22 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return (grade: 'E', label: 'Fail', color: _kNeg);
   }
 
+  /// Short descriptor shown under the grade label (mirrors the web).
+  String _gradeDesc(String grade) {
+    switch (grade) {
+      case 'A':
+        return 'Top-tier Profitability';
+      case 'B':
+        return 'Profitable Returns';
+      case 'C':
+        return 'Breakeven Range';
+      case 'D':
+        return 'Below Average';
+      default:
+        return 'Capital Risk / Loss';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -290,14 +311,16 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _dashboardHeader(r, g),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: JunkoTipCard(
-              title: _junkoTip().title,
-              text: _junkoTip().text,
+          if (_showTip) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: JunkoTipCard(
+                title: _junkoTip().title,
+                text: _junkoTip().text,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
@@ -322,44 +345,104 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Grade badge
+        // Grade badge — mirrors the web `.gradeBadgeContainer`.
         TourTarget(
           id: 'funnel-grade-card',
           child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: g.color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: g.color.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            children: [
-              Text(g.grade,
-                  style: GoogleFonts.inter(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                      color: g.color,
-                      height: 1)),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('SYSTEM RATING',
-                      style: GoogleFonts.inter(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                          color: _kGoldDark)),
-                  Text(g.label,
-                      style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: g.color)),
-                ],
-              ),
-            ],
-          ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _kGradeCardInk,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: _kGold.withValues(alpha: 0.35), width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x4D000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top row: gold "GRADE" pill + "System Rating".
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _kGold,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text('GRADE',
+                          style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                              color: _kGradeCardInk)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('System Rating',
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Inner box: big letter + label + description.
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: _kGold.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(g.grade,
+                          style: GoogleFonts.inter(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                              color: Colors.white,
+                              shadows: const [
+                                Shadow(
+                                    color: Color(0x80000000),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2)),
+                              ])),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(g.label.toUpperCase(),
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.6,
+                                  color: _kGold)),
+                          const SizedBox(height: 1),
+                          Text(_gradeDesc(g.grade),
+                              style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.7))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 14),
@@ -383,7 +466,12 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
             ],
           ),
         ),
-        const TourHelpButton(tourId: 'simulation-run'),
+        _headerBtn(
+          'TIP',
+          _showTip ? Icons.lightbulb : Icons.lightbulb_outline,
+          () => setState(() => _showTip = !_showTip),
+          filled: _showTip,
+        ),
         const SizedBox(width: 8),
         _headerBtn(
           widget.args.fromHistory ? 'HISTORY' : 'PARAMETERS',
@@ -415,32 +503,52 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     context.go('/strategies');
   }
 
+  /// Header pill. When [filled] it mirrors the web gold-gradient
+  /// `.returnLibBtn`; otherwise the dark-green gold-outline `.backBtn`.
   Widget _headerBtn(String label, IconData? icon, VoidCallback onTap,
       {bool filled = false}) {
+    final Color fg = filled ? _kGradeCardInk : _kGold;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: filled ? _kGold : _kInkText.withValues(alpha: 0.08),
+          color: filled ? null : _kGradeCardInk,
+          gradient: filled
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_kGold, Color(0xFFECD08C)],
+                )
+              : null,
           borderRadius: BorderRadius.circular(9999),
           border: filled
               ? null
-              : Border.all(color: _kInkText.withValues(alpha: 0.25)),
+              : Border.all(
+                  color: _kGold.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: filled
+                  ? _kGold.withValues(alpha: 0.35)
+                  : const Color(0x26000000),
+              blurRadius: filled ? 14 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 13, color: filled ? _kInk : _kInkText),
+              Icon(icon, size: 13, color: fg),
               const SizedBox(width: 6),
             ],
             Text(label,
                 style: GoogleFonts.inter(
                     fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: filled ? FontWeight.w900 : FontWeight.w800,
                     letterSpacing: 1,
-                    color: filled ? _kInk : _kInkText)),
+                    color: fg)),
           ],
         ),
       ),
@@ -450,8 +558,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
   Widget _topStats(SimulationResult r) {
     Widget stat(String title, String value, String sub, {Color? valueColor}) {
       return Container(
-        width: 200,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(14),
@@ -461,19 +568,27 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                    letterSpacing: 0.6,
                     color: _kGoldDark)),
             const SizedBox(height: 6),
-            Text(value,
-                style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: valueColor ?? _kInkText)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value,
+                  style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: valueColor ?? _kInkText)),
+            ),
             const SizedBox(height: 2),
             Text(sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -483,22 +598,38 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
       );
     }
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        stat(
-          'Net Profit/Loss',
-          '${r.netProfit >= 0 ? '+' : '-'}\$${_fmt(r.netProfit.abs())}',
-          'Overall Outcome',
-          valueColor: r.netProfit >= 0 ? _kPos : _kNeg,
+    // All four KPI cards on a single row (equal widths). IntrinsicHeight gives
+    // the row a bounded cross-axis extent so the cards can share equal heights
+    // without the unbounded-height error inside the vertical scroll view.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+        Expanded(
+          child: stat(
+            'Net Profit/Loss',
+            '${r.netProfit >= 0 ? '+' : '-'}\$${_fmt(r.netProfit.abs())}',
+            'Overall Outcome',
+            valueColor: r.netProfit >= 0 ? _kPos : _kNeg,
+          ),
         ),
-        stat('Final Bankroll', '\$${_fmt(r.endingBankroll)}',
-            'Starting: \$${_fmt(r.startingBankroll)}'),
-        stat('Sessions Executed', _fmt(r.totalSessions), 'Completed cycles'),
-        stat('Peak Bankroll', '\$${_fmt(r.highestBankroll)}',
-            'Highest recorded', valueColor: _kPos),
-      ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: stat('Final Bankroll', '\$${_fmt(r.endingBankroll)}',
+              'Starting: \$${_fmt(r.startingBankroll)}'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child:
+              stat('Sessions Executed', _fmt(r.totalSessions), 'Completed cycles'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: stat('Peak Bankroll', '\$${_fmt(r.highestBankroll)}',
+              'Highest recorded', valueColor: _kPos),
+        ),
+        ],
+      ),
     );
   }
 

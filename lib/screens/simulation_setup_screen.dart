@@ -15,11 +15,12 @@ import 'package:junko_bodie/screens/simulation_run_screen.dart';
 import 'package:junko_bodie/services/strategy_service.dart';
 import 'package:junko_bodie/services/strategy_prefs.dart';
 import 'package:junko_bodie/tour/tour_controller.dart';
-import 'package:junko_bodie/tour/tour_help_button.dart';
 import 'package:junko_bodie/tour/tour_registry.dart';
 import 'package:junko_bodie/widgets/junko_tip_card.dart';
 
 const Color _kInk = Color(0xFF0F2E21);
+// Deep ink used by the web grade card / dark header pills (#0A2218).
+const Color _kGradeCardInk = Color(0xFF0A2218);
 const Color _kInkText = Color(0xFF113626);
 const Color _kGold = Color(0xFFC9A44C);
 const Color _kGoldDark = Color(0xFF6B5220);
@@ -46,6 +47,9 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
   String _entryTrigger = 'immediate';
   int _missesRequired = 1;
   bool _isLoading = true;
+
+  /// Junko's Tip is collapsed by default and revealed via the header "TIP" pill.
+  bool _showTip = false;
 
   @override
   void initState() {
@@ -136,15 +140,17 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTopBar(),
-                      const SizedBox(height: 8),
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: JunkoTipCard(
-                          title: 'Strategy Entry Advice',
-                          text:
-                              '"Strategy entry points are extremely important. The more misses your strategy has before you start your betting, the more time you have bought your system. In Roulette, time is everything. Be sure to consider this option carefully as you test your systems."',
+                      if (_showTip) ...[
+                        const SizedBox(height: 8),
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: JunkoTipCard(
+                            title: 'Strategy Entry Advice',
+                            text:
+                                '"Strategy entry points are extremely important. The more misses your strategy has before you start your betting, the more time you have bought your system. In Roulette, time is everything. Be sure to consider this option carefully as you test your systems."',
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 12),
                       Expanded(
                         child: SingleChildScrollView(
@@ -188,7 +194,12 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
       children: [
         _navPill('STRATEGIES', Icons.arrow_back, () => context.go('/strategies')),
         const SizedBox(width: 8),
-        const TourHelpButton(tourId: 'simulation-setup'),
+        _navPill(
+          'TIP',
+          _showTip ? Icons.lightbulb : Icons.lightbulb_outline,
+          () => setState(() => _showTip = !_showTip),
+          active: _showTip,
+        ),
         const Spacer(),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -208,28 +219,50 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
     );
   }
 
-  Widget _navPill(String label, IconData icon, VoidCallback onTap) {
+  /// Header pill. When [active] it mirrors the web gold-gradient
+  /// `.returnLibBtn`; otherwise the dark-green gold-outline `.backBtn`.
+  Widget _navPill(String label, IconData icon, VoidCallback onTap,
+      {bool active = false}) {
+    final Color fg = active ? _kGradeCardInk : _kGold;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: _kInkText.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _kInkText.withValues(alpha: 0.25)),
+          color: active ? null : _kGradeCardInk,
+          gradient: active
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_kGold, Color(0xFFECD08C)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(9999),
+          border: active
+              ? null
+              : Border.all(color: _kGold.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: active
+                  ? _kGold.withValues(alpha: 0.35)
+                  : const Color(0x26000000),
+              blurRadius: active ? 14 : 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13, color: _kInkText),
+            Icon(icon, size: 13, color: fg),
             const SizedBox(width: 6),
             Text(label,
                 style: GoogleFonts.inter(
                     fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: active ? FontWeight.w900 : FontWeight.w800,
                     letterSpacing: 1,
-                    color: _kInkText)),
+                    color: fg)),
           ],
         ),
       ),
@@ -477,6 +510,11 @@ class _SimulationSetupScreenState extends State<SimulationSetupScreen> {
       controller: controller,
       keyboardType: TextInputType.number,
       onChanged: onChanged,
+      // The numeric keyboard has no return key on mobile, so give the user an
+      // explicit "done" action and dismiss the keyboard when they tap away.
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => FocusScope.of(context).unfocus(),
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
           color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
       decoration: InputDecoration(

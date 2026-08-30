@@ -168,14 +168,24 @@ const List<FunnelStep> kFunnelSteps = [
     id: 'builder_add_stage',
     targetId: 'funnel-add-stage',
     route: '/strategies/build',
-    title: 'Add a Second Stage',
+    title: 'Multi-Stage Strategies',
     text:
-        'Multi-stage strategies are where the real power lies. Each stage can have different bets, chip values, and rules. Tap "+ Add Stage" to create Stage 2!',
-    actionHint: 'Tap "+ Add Stage" in the stage tabs bar',
+        'Multi-stage progressions are where the real power lies. Strategies support up to 30 distinct stages — each with its own customized bets, chip sizes, and rules. Tap "+ Add Stage" to create Stage 2!',
+    actionHint: 'Tap "+ Add Stage" in the stage tabs bar to create Stage 2',
     fallbackErrorMsg: 'Please tap "+ Add Stage" to create a second stage.',
     requireAction: true,
     clickAdvances: true,
     hideNextButton: true,
+    side: 'left',
+  ),
+  FunnelStep(
+    id: 'builder_toolbar_info',
+    targetId: 'table-toolbar',
+    route: '/strategies/build',
+    title: 'Table Shortcuts & Repeat',
+    text:
+        'These 4 buttons are your table shortcuts: "Repeat" copies the prior stage\'s exact bets onto this stage. "2X" doubles all bet amounts. "Undo" reverses the last action. "Clear" wipes the board clean.',
+    actionHint: 'Review the toolbar shortcuts (Repeat, 2X, Undo, Clear), then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -184,21 +194,21 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/strategies/build',
     title: 'Place Stage 2 Bets',
     text:
-        'You\'re now on Stage 2. Place a different set of bets on the roulette board. Stage 2 activates when Stage 1 triggers its loss rule.',
-    actionHint: 'Tap the roulette table to place bets for Stage 2, then tap Next',
+        'You\'re now configuring Stage 2. Tags and stage rules allow the strategy to adjust bets logically between stages. Tap "Repeat" to instantly copy your Stage 1 bets, or select chips below and place custom bets on the table. When finished, tap Next.',
+    actionHint: 'Tap Repeat to copy bets or place chips on the table, then tap Next',
     fallbackErrorMsg:
-        'Please place at least one bet for Stage 2 before continuing.',
+        'Please place at least one bet for Stage 2 (or tap Repeat) before continuing.',
     requireAction: true,
     side: 'right',
   ),
   FunnelStep(
-    id: 'builder_toolbar_info',
-    targetId: 'table-toolbar',
+    id: 'builder_stage2_rules',
+    targetId: 'funnel-stage-rules',
     route: '/strategies/build',
-    title: 'Table Toolbar Shortcuts',
+    title: 'Stage Rules Configuration',
     text:
-        'These buttons are your table shortcuts: "Repeat" copies the prior stage\'s exact bets onto this stage. "2X" doubles all bet amounts. "Undo" reverses the last action. "Clear" wipes the board clean. Review them and tap Next.',
-    actionHint: 'Review the toolbar shortcuts, then tap Next',
+        'Every stage that is created will also require entries made to the rules section. Rules may vary from stage to stage depending upon player intentions and spin outcomes — for example, whether Stage 2 resets to Stage 1 on a win or escalates further on a loss.',
+    actionHint: 'Review or customize Stage 2 rules, then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -391,10 +401,10 @@ const List<FunnelStep> kFunnelSteps = [
     id: 'sim_spins_config',
     targetId: 'sim-spins-config',
     route: '/simulation/setup',
-    title: 'Target Sample Size',
+    title: 'Target Sample Size (100 Spins)',
     text:
-        'Set your requested spin limit (up to 25,000 spins). The engine runs full Monte Carlo passes across completed betting sessions.',
-    actionHint: 'Review requested spins (default 25,000), then tap Next',
+        'Set your requested spin limit (defaults to 100 spins). 100 spins simulates a focused "Hit and Run" session playing style. You can also test up to 25,000 spins anytime for deep long-term statistical stress-testing!',
+    actionHint: 'Review requested spins (default 100), then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -427,10 +437,10 @@ const List<FunnelStep> kFunnelSteps = [
     id: 'sim_grade',
     targetId: 'funnel-grade-card',
     route: '/simulation/run',
-    title: 'Casino Grade',
+    title: 'General Overview & System Grade',
     text:
-        'This is your Casino Grade — from A (Exceptional) to E (High Risk). It\'s calculated from your Win Rate, Max Drawdown, and Net Profit across all simulated sessions.',
-    actionHint: 'Review your strategy\'s Casino Grade, then tap Next',
+        'General Overview provides a grade for your system using the parameters you submitted. The less dips in bankroll trajectory the better your system. The system\'s P&L and number of sessions for your selected number of spins are also critical information. This screen provides a baseline for system success.',
+    actionHint: 'Review your strategy\'s Casino Grade and Junko\'s Tip, then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -439,18 +449,28 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/simulation/run',
     title: 'Profitability Dynamics',
     text:
-        'Open the Profitability Dynamics tab. Advanced players focus on Profit per Spin (total net profit divided by total spins) — a positive value here means every spin generates expected positive value!',
-    actionHint: 'Tap the "Profitability Dynamics" tab and review, then tap Next',
+        'Junko considers this to be the key screen when determining if a roulette system has potential. The Profitability Stats tell a story.',
+    actionHint: 'Tap the "Profitability Dynamics" tab and review the stats, then tap Next',
     side: 'left',
   ),
   FunnelStep(
     id: 'sim_chart',
-    targetId: 'funnel-bankroll-chart',
+    targetId: 'funnel-bankroll-stability',
     route: '/simulation/run',
-    title: 'Bankroll Trajectory Chart',
+    title: 'Bankroll Stability',
     text:
-        'This chart is your equity curve — it visualizes your bankroll growing or declining over thousands of spins. Peaks show ideal session exits; valleys show drawdown depths.',
-    actionHint: 'Review the Bankroll Chart, then tap Next',
+        'Bankroll management is the key to successful gaming. If your strategy has too many large dips, profitability will suffer. This is where you visualize your system\'s vulnerabilities or prove that it is ready for prime time.',
+    actionHint: 'Review Bankroll Stability and equity trajectory, then tap Next',
+    side: 'left',
+  ),
+  FunnelStep(
+    id: 'sim_stage_penetration',
+    targetId: 'funnel-stage-penetration',
+    route: '/simulation/run',
+    title: 'Stage Penetration',
+    text:
+        'Stage Penetration shows how deep your strategy progressed during the simulation. Review how often each stage was reached to see whether your system typically resolves early or frequently advances into its later stages. This can help you identify where the greatest pressure on your bankroll may occur.',
+    actionHint: 'Review Stage Penetration frequency, then tap Next',
     side: 'left',
   ),
   FunnelStep(

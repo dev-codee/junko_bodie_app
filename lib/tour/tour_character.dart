@@ -13,11 +13,16 @@ class TourGuideCharacter extends StatefulWidget {
   final String side; // 'left' | 'right'
   final double size;
 
+  /// When the user fails a step validation the guide switches to the serious
+  /// face; otherwise it shows the cheerful avatar throughout (mirrors web).
+  final bool hasError;
+
   const TourGuideCharacter({
     super.key,
     this.stepId = '',
     this.side = 'left',
     this.size = 96,
+    this.hasError = false,
   });
 
   @override
@@ -31,20 +36,13 @@ class _TourGuideCharacterState extends State<TourGuideCharacter>
         ..repeat(reverse: true);
 
   String get _imageAsset {
-    final id = widget.stepId;
-    if (id == 'lib_graduation' ||
-        id == 'sim_grade' ||
-        id.contains('success') ||
-        id.contains('complete')) {
-      return 'assets/images/character/guide_success.png';
+    // Match the web: the cheerful new avatar (guide_success) is shown for the
+    // whole walkthrough, and only swaps to the serious face on a validation
+    // error.
+    if (widget.hasError) {
+      return 'assets/images/character/guide_talking.png';
     }
-    if (id == 'lib_welcome' ||
-        id == 'sim_run' ||
-        id == 'debug_spin' ||
-        id.contains('spin')) {
-      return 'assets/images/character/guide_excited.png';
-    }
-    return 'assets/images/character/guide_talking.png';
+    return 'assets/images/character/guide_success.png';
   }
 
   @override

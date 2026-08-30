@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:junko_bodie/config/theme.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
 
@@ -428,7 +429,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
                                 // ── Footer (Contact Support) — slim pill ─────
                                 InkWell(
-                                  onTap: () {}, // TODO: Contact support
+                                  onTap: _openContactSupport,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -482,6 +483,32 @@ class _LobbyScreenState extends State<LobbyScreen> {
         content: Text('$feature — coming soon'),
         backgroundColor: const Color(0xFF0F2E21),
         duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Opens the web contact form (the same Web3Forms-backed channel the team
+  /// monitors) so support requests from the app land in the tracked inbox
+  /// rather than a device mail client that may not be configured.
+  Future<void> _openContactSupport() async {
+    final uri = Uri.parse('https://junkobodieroulette.com/contact');
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        _showContactFallback();
+      }
+    } catch (_) {
+      if (mounted) _showContactFallback();
+    }
+  }
+
+  void _showContactFallback() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Email us at support@junkobodieroulette.com'),
+        backgroundColor: Color(0xFF0F2E21),
+        duration: Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
       ),
     );

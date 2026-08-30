@@ -145,6 +145,7 @@ class _TourOverlayState extends State<TourOverlay>
 
     final Widget bubble;
     final String stepId;
+    final bool hasError = !pageMode && c.errorMessage != null;
     if (pageMode) {
       final step = c.currentPageStep!;
       stepId = step.id;
@@ -193,7 +194,8 @@ class _TourOverlayState extends State<TourOverlay>
             bubble,
             Transform.translate(
               offset: const Offset(0, -6),
-              child: TourGuideCharacter(stepId: stepId, side: side, size: 104),
+              child: TourGuideCharacter(
+                  stepId: stepId, side: side, size: 104, hasError: hasError),
             ),
           ],
         ),
