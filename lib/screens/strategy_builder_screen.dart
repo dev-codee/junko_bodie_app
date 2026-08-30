@@ -1008,6 +1008,9 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       keyboardType: keyboardType,
       onChanged: onChanged,
       onSubmitted: onSubmitted,
+      // Tapping anywhere outside the field (incl. the dimmed tour backdrop)
+      // dismisses the keyboard so the user never gets stuck behind it.
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
           color: _kInkText, fontSize: 13, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
@@ -1039,6 +1042,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     return TextFormField(
       initialValue: value?.toString() ?? '',
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.done,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
           color: _kInkText, fontSize: 13, fontWeight: FontWeight.w600),
       onChanged: (v) => onChanged(v.isEmpty ? null : num.tryParse(v)),

@@ -883,6 +883,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
       TextField(
         controller: _notesController,
         maxLines: 5,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         style: const TextStyle(
             color: _kInkText, fontSize: 13, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
@@ -1063,7 +1064,10 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         TextField(
           controller: _forcedController,
           keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
           onChanged: (_) => setState(() {}),
+          onSubmitted: (_) => FocusScope.of(context).unfocus(),
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           style: const TextStyle(
               color: _kInkText, fontSize: 13, fontWeight: FontWeight.w700),
           decoration: InputDecoration(

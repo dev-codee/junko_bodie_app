@@ -313,6 +313,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         hintText: 'Email address',
@@ -327,6 +329,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
+                        onTapOutside: (_) =>
+                            FocusManager.instance.primaryFocus?.unfocus(),
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: const InputDecoration(
                           hintText: 'Password',
@@ -341,6 +345,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           controller: _confirmPasswordController,
                           obscureText: true,
+                          onTapOutside: (_) =>
+                              FocusManager.instance.primaryFocus?.unfocus(),
                           style: const TextStyle(color: AppColors.textPrimary),
                           decoration: const InputDecoration(
                             hintText: 'Confirm password',

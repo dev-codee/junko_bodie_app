@@ -176,6 +176,8 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         hintText: 'New Password',
@@ -187,6 +189,8 @@ class _UpdatePasswordScreenState extends State<UpdatePasswordScreen> {
                     TextField(
                       controller: _confirmPasswordController,
                       obscureText: true,
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         hintText: 'Confirm New Password',

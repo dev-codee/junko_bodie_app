@@ -565,6 +565,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             controller: _nameController,
             textAlign: TextAlign.center,
             maxLength: 20,
+            onTapOutside: (_) =>
+                FocusManager.instance.primaryFocus?.unfocus(),
             style: const TextStyle(
               fontFamily: 'Georgia',
               fontSize: 28,
@@ -1234,6 +1236,8 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
             TextField(
               controller: _controller,
               autofocus: true,
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               style: TextStyle(color: widget.inkColor, fontSize: 14),
               decoration: InputDecoration(
                 filled: true,

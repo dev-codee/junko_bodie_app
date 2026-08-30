@@ -241,6 +241,8 @@ class _RankingsScreenState extends State<RankingsScreen> {
                   height: 34,
                   child: TextField(
                     onChanged: (v) => setState(() => _searchQuery = v),
+                    onTapOutside: (_) =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
                     style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                     decoration: InputDecoration(
                       isDense: true,
