@@ -125,7 +125,7 @@ const List<FunnelStep> kFunnelSteps = [
     fallbackErrorMsg:
         'Please place at least one bet on the roulette board before continuing.',
     requireAction: true,
-    side: 'right',
+    side: 'left',
   ),
 
   // ── PHASE 4 — Strategy Builder: Rules & Notes ──
@@ -295,8 +295,8 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/strategies/debug',
     title: 'Session Entry Rule',
     text:
-        'Session Entry determines when betting begins. "Start Betting Immediately" places bets on spin 1. "Wait for X Phantom Misses" observes the table until a streak of losses occurs before placing real chips.',
-    actionHint: 'Review or configure the Session Entry mode, then tap Next',
+        'Session Entry determines when betting begins. *Tap this dropdown* to choose a mode: "Start Betting Immediately" places bets on spin 1, while "Wait for X Phantom Misses" observes the table until a streak of losses occurs before placing real chips. Selecting the phantom-misses option reveals a new field just below where you set how many misses to wait for.',
+    actionHint: 'Tap the dropdown to pick an entry mode, then tap Next',
     side: 'right',
   ),
   FunnelStep(
@@ -317,13 +317,11 @@ const List<FunnelStep> kFunnelSteps = [
     id: 'debug_force_number',
     targetId: 'funnel-force-result',
     route: '/strategies/debug',
-    title: 'Force a Specific Result',
+    title: 'Force a Specific Result (Optional)',
     text:
-        'Type a wheel number (such as "17") in the "Force Spin Result" box. Forcing a number lets us test predictable payouts and stage transitions under exact math conditions. This is required!',
-    actionHint: 'Type "17" in the Force Spin Result field, then tap Next',
-    fallbackErrorMsg:
-        'Please enter a wheel outcome (such as 17) to test predictable engine logic.',
-    requireAction: true,
+        'This one is *optional* and seldom used. If you ever want to test an exact outcome, type a wheel number (such as "17") in the "Force Spin Result" box to force it. Otherwise just leave it blank for a random spin and tap Next.',
+    actionHint: 'Optionally force a number, or tap Next to use a random spin',
+    requireAction: false,
     side: 'left',
   ),
   FunnelStep(
@@ -332,7 +330,7 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/strategies/debug',
     title: 'Execute the Spin',
     text:
-        'Tap "SPIN" to execute the spin! The engine will process your forced result (17) through Stage 1 bets and calculate wins, losses, and stage transitions.',
+        'Tap "SPIN" to execute the spin! The engine will process the result through your Stage 1 bets and calculate wins, losses, and stage transitions.',
     actionHint: 'Tap "SPIN" to run the spin',
     fallbackErrorMsg: 'Please tap "SPIN" to execute the spin.',
     requireAction: true,
@@ -346,7 +344,7 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/strategies/debug',
     title: 'Read the Spin Log',
     text:
-        'Look at the Spin Log! Each row shows: spin number, result (17), net profit/loss on that spin, engine action (Win / Loss), and running bankroll. This is your strategy\'s math laid out spin by spin.',
+        'Look at the Spin Log! Each row shows: spin number, the result, net profit/loss on that spin, engine action (Win / Loss), and running bankroll. This is your strategy\'s math laid out spin by spin.',
     actionHint: 'Review the Spin Log output, then tap Next',
     side: 'left',
   ),
@@ -393,8 +391,8 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/simulation/setup',
     title: 'Session Entry Trigger',
     text:
-        'Choose whether sessions bet immediately on spin 1 or observe the wheel until a required number of phantom misses occur before betting.',
-    actionHint: 'Review entry trigger mode, then tap Next',
+        '*Tap this dropdown* to choose whether sessions bet immediately on spin 1, or wait and observe the wheel until a required number of phantom misses occur before betting. If you pick "Wait for Specific Misses", a field appears just below where you set the exact number of phantom misses to wait for.',
+    actionHint: 'Tap the dropdown to pick an entry trigger, then tap Next',
     side: 'right',
   ),
   FunnelStep(
@@ -459,8 +457,8 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/simulation/run',
     title: 'Bankroll Stability',
     text:
-        'Bankroll management is the key to successful gaming. If your strategy has too many large dips, profitability will suffer. This is where you visualize your system\'s vulnerabilities or prove that it is ready for prime time.',
-    actionHint: 'Review Bankroll Stability and equity trajectory, then tap Next',
+        'Bankroll management is the key to successful gaming. *Tap the "Bankroll Stability" tab* to view the equity trajectory. If your strategy has too many large dips, profitability will suffer. This is where you visualize your system\'s vulnerabilities or prove that it is ready for prime time.',
+    actionHint: 'Tap the "Bankroll Stability" tab to view the chart, then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -469,8 +467,8 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/simulation/run',
     title: 'Stage Penetration',
     text:
-        'Stage Penetration shows how deep your strategy progressed during the simulation. Review how often each stage was reached to see whether your system typically resolves early or frequently advances into its later stages. This can help you identify where the greatest pressure on your bankroll may occur.',
-    actionHint: 'Review Stage Penetration frequency, then tap Next',
+        '*Tap the "Stage Penetration" tab* to open this breakdown. It shows how deep your strategy progressed during the simulation — how often each stage was reached, so you can see whether your system typically resolves early or frequently advances into its later stages. The deeper it penetrates, the greater the pressure on your bankroll.',
+    actionHint: 'Tap the "Stage Penetration" tab to view the breakdown, then tap Next',
     side: 'left',
   ),
   FunnelStep(

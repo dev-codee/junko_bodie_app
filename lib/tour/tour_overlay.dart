@@ -28,6 +28,14 @@ class _TourOverlayState extends State<TourOverlay>
   String? _activeTargetId;
   Duration _missingSince = Duration.zero;
 
+  // ── Manual drag ──
+  /// When the user drags the guide, this holds its top-left in global coords
+  /// and overrides the automatic corner docking. Reset to null on each new
+  /// step so every step starts from a sensible auto position.
+  final GlobalKey _dockKey = GlobalKey();
+  Offset? _dragPos;
+  Size? _dockSize;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +55,8 @@ class _TourOverlayState extends State<TourOverlay>
     if (targetId != _activeTargetId) {
       _activeTargetId = targetId;
       _missingSince = elapsed;
+      // A new step gets a fresh auto position (discard any manual drag).
+      _dragPos = null;
       // Bring the new target into view on the next frame.
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(targetId));
     }
@@ -112,36 +122,40 @@ class _TourOverlayState extends State<TourOverlay>
     if (!pageMode && !funnelMode) return const SizedBox.shrink();
 
     final size = MediaQuery.of(context).size;
-    final String side = _dockSide(c, pageMode, size);
+    final String side = _horizontalSide(c, pageMode);
+    final String vSide = _dockVertical(size);
 
     return Stack(
       children: [
         TourHighlightRing(targetRect: _rect),
-        _buildDock(c, pageMode, side),
+        _buildDock(c, pageMode, side, vSide, size),
       ],
     );
   }
 
-  String _dockSide(TourController c, bool pageMode, Size size) {
+  String _horizontalSide(TourController c, bool pageMode) {
     final String? prefer =
         pageMode ? (c.currentPageStep?.side ?? c.pageTourSide) : c.currentStep?.side;
-
-    final rect = _rect;
-    if (rect != null) {
-      // Avoid docking over the target: if it's in a bottom corner, use the
-      // opposite side (mirrors the web dynamic dock logic, simplified).
-      final centerX = (rect.left + rect.right) / 2;
-      final nearBottom = rect.bottom > size.height * 0.35;
-      if (nearBottom) {
-        if (centerX < size.width * 0.48) return 'right';
-        if (centerX > size.width * 0.52) return 'left';
-      }
-    }
     return prefer ?? 'left';
   }
 
-  Widget _buildDock(TourController c, bool pageMode, String side) {
+  /// Chooses whether to dock the bubble at the top or bottom of the screen.
+  /// Picks the band with the most clearance from the highlighted target so the
+  /// guide never sits on top of the element it is describing — this is the
+  /// mobile fix for the bubble covering rules dropdowns, the spin log, metrics,
+  /// sim config rows, grade cards, etc.
+  String _dockVertical(Size size) {
+    final rect = _rect;
+    if (rect == null) return 'bottom';
+    final spaceAbove = rect.top;
+    final spaceBelow = size.height - rect.bottom;
+    return spaceAbove > spaceBelow ? 'top' : 'bottom';
+  }
+
+  Widget _buildDock(
+      TourController c, bool pageMode, String side, String vSide, Size size) {
     final bool isLeft = side == 'left';
+    final bool atTop = vSide == 'top';
 
     final Widget bubble;
     final String stepId;
@@ -180,26 +194,102 @@ class _TourOverlayState extends State<TourOverlay>
       );
     }
 
+    final mq = MediaQuery.of(context);
+    // A smaller mascot on mobile so the guide takes up less of the screen.
+    final character = Transform.translate(
+      offset: Offset(0, atTop ? 6 : -6),
+      child: TourGuideCharacter(
+          stepId: stepId, side: side, size: 82, hasError: hasError),
+    );
+
+    // Grab handle — drag the whole guide anywhere (left/right/top/bottom).
+    final bubbleWithHandle = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment:
+          isLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [_dragHandle(), bubble],
+    );
+
+    // Keep the mascot on the outer edge (nearest the screen edge) so the
+    // bubble body sits toward the screen interior.
+    final children =
+        atTop ? [character, bubbleWithHandle] : [bubbleWithHandle, character];
+
+    final bool dragging = _dragPos != null;
+
     return Positioned(
-      bottom: 16,
-      left: isLeft ? 20 : null,
-      right: isLeft ? null : 20,
+      top: dragging ? _dragPos!.dy : (atTop ? mq.padding.top + 8 : null),
+      bottom: dragging ? null : (atTop ? null : mq.padding.bottom + 16),
+      left: dragging ? _dragPos!.dx : (isLeft ? 20 : null),
+      right: dragging ? null : (isLeft ? null : 20),
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 40),
+        key: _dockKey,
+        constraints: BoxConstraints(maxWidth: size.width - 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment:
               isLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  /// Small draggable pill above the bubble. Dragging it repositions the whole
+  /// guide; a double-tap snaps back to the automatic position.
+  Widget _dragHandle() {
+    return GestureDetector(
+      onPanStart: _onDragStart,
+      onPanUpdate: _onDragUpdate,
+      onDoubleTap: () => setState(() => _dragPos = null),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xF20F2E21),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFC9A44C), width: 1),
+          boxShadow: const [
+            BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            bubble,
-            Transform.translate(
-              offset: const Offset(0, -6),
-              child: TourGuideCharacter(
-                  stepId: stepId, side: side, size: 104, hasError: hasError),
-            ),
+            Icon(Icons.open_with, size: 13, color: Color(0xFFF7EAD0)),
+            SizedBox(width: 5),
+            Text('Drag to move',
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: Color(0xFFF7EAD0))),
           ],
         ),
       ),
     );
+  }
+
+  void _onDragStart(DragStartDetails d) {
+    final box = _dockKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    setState(() {
+      _dockSize = box.size;
+      _dragPos = box.localToGlobal(Offset.zero);
+    });
+  }
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    final screen = MediaQuery.of(context).size;
+    final sz = _dockSize ?? Size.zero;
+    final cur = _dragPos ?? Offset.zero;
+    final maxX = (screen.width - sz.width).clamp(0.0, screen.width);
+    final maxY = (screen.height - sz.height).clamp(0.0, screen.height);
+    setState(() {
+      _dragPos = Offset(
+        (cur.dx + d.delta.dx).clamp(0.0, maxX),
+        (cur.dy + d.delta.dy).clamp(0.0, maxY),
+      );
+    });
   }
 }

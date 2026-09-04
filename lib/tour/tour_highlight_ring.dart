@@ -38,13 +38,13 @@ class _TourHighlightRingState extends State<TourHighlightRing>
     final size = MediaQuery.of(context).size;
     final rect = widget.targetRect;
 
-    // No target yet → full absorbing dim (blocks all interaction).
+    // The spotlight is purely visual — it NEVER blocks pointers. Blocking taps
+    // outside the hole trapped dropdown menus (they open outside the spotlight)
+    // and prevented the user from scrolling the page to follow the target.
     if (rect == null) {
-      return Positioned.fill(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {},
-          child: const ColoredBox(color: Color(0xAD000000)),
+      return const Positioned.fill(
+        child: IgnorePointer(
+          child: ColoredBox(color: Color(0xAD000000)),
         ),
       );
     }
@@ -57,60 +57,31 @@ class _TourHighlightRingState extends State<TourHighlightRing>
     );
 
     return Positioned.fill(
-      child: Stack(
-        children: [
-          // Dim + rounded cutout (visual only, lets pointers through).
-          IgnorePointer(
-            child: CustomPaint(
+      child: IgnorePointer(
+        child: Stack(
+          children: [
+            // Dim + rounded cutout.
+            CustomPaint(
               size: size,
               painter: _DimPainter(hole),
             ),
-          ),
-          // Four absorbing rects around the hole so only the hole is tappable.
-          ..._barrierRects(hole, size),
-          // Pulsing gold ring. The glow is clipped to the OUTSIDE of the hole
-          // so it never washes over the target's interior text (mirrors the
-          // web's outset CSS box-shadow, which never paints under the element).
-          AnimatedBuilder(
-            animation: _pulse,
-            builder: (context, _) {
-              final t = Curves.easeInOut.transform(_pulse.value);
-              return Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _RingPainter(hole, t),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+            // Pulsing gold ring. The glow is clipped to the OUTSIDE of the hole
+            // so it never washes over the target's interior text (mirrors the
+            // web's outset CSS box-shadow, which never paints under the element).
+            AnimatedBuilder(
+              animation: _pulse,
+              builder: (context, _) {
+                final t = Curves.easeInOut.transform(_pulse.value);
+                return CustomPaint(
+                  size: size,
+                  painter: _RingPainter(hole, t),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  List<Widget> _barrierRects(Rect hole, Size size) {
-    Widget block(double l, double t, double w, double h) {
-      if (w <= 0 || h <= 0) return const SizedBox.shrink();
-      return Positioned(
-        left: l,
-        top: t,
-        width: w,
-        height: h,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {},
-          child: const SizedBox.expand(),
-        ),
-      );
-    }
-
-    return [
-      block(0, 0, size.width, hole.top), // top
-      block(0, hole.bottom, size.width, size.height - hole.bottom), // bottom
-      block(0, hole.top, hole.left, hole.height), // left
-      block(hole.right, hole.top, size.width - hole.right, hole.height), // right
-    ];
   }
 }
 

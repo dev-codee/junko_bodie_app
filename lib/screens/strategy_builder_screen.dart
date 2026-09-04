@@ -588,9 +588,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            TourTarget(
-                                id: 'funnel-stage-rules',
-                                child: _buildStageRulesCard()),
+                            _buildStageRulesCard(),
                             const SizedBox(height: 16),
                             _buildDynamicRulesCard(),
                             const SizedBox(height: 16),
@@ -1369,38 +1367,54 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   Widget _tableBtn(String label, IconData? icon, VoidCallback? onTap,
       {String? leadingText}) {
     final bool enabled = onTap != null;
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.4,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _kInkText.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (leadingText != null)
-                Text(leadingText,
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: _kInkText,
-                        height: 1))
-              else if (icon != null)
-                Icon(icon, size: 14, color: _kInkText),
-              const SizedBox(width: 5),
-              Text(label,
+    // Enabled buttons read as solid, high-contrast pills; disabled ones are
+    // clearly faded (light + muted text) instead of the old 0.4-opacity smear
+    // that made dark ink look muddy/"dark" on the tan felt.
+    final Color fg =
+        enabled ? _kInkText : _kInkText.withValues(alpha: 0.32);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: enabled
+              ? Colors.white.withValues(alpha: 0.92)
+              : Colors.white.withValues(alpha: 0.30),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+              color: enabled
+                  ? _kGoldDark.withValues(alpha: 0.55)
+                  : _kInkText.withValues(alpha: 0.14),
+              width: 1.2),
+          boxShadow: enabled
+              ? const [
+                  BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1)),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (leadingText != null)
+              Text(leadingText,
                   style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: _kInkText,
-                      letterSpacing: 0.5)),
-            ],
-          ),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: fg,
+                      height: 1))
+            else if (icon != null)
+              Icon(icon, size: 14, color: fg),
+            const SizedBox(width: 5),
+            Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: fg,
+                    letterSpacing: 0.5)),
+          ],
         ),
       ),
     );
@@ -1578,55 +1592,61 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       icon: Icons.settings,
       title: 'Stage ${stage.stageNumber} Rules',
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('IF SPIN LOSES',
-                      style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _kLoss,
-                          letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  _dropdown<String>(
-                    value: actionOptions.containsKey(stage.onLoss)
-                        ? stage.onLoss
-                        : 'next',
-                    items: actionOptions,
-                    accent: _kLoss,
-                    onChanged: (v) => setState(() => stage.onLoss = v),
-                  ),
-                ],
+        // Only the win/loss dropdowns carry the tour spotlight — keeping the
+        // target compact and near the top so the guide bubble docks below it
+        // instead of covering the dropdowns (see mobile-tour-ux-rules).
+        TourTarget(
+          id: 'funnel-stage-rules',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('IF SPIN LOSES',
+                        style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: _kLoss,
+                            letterSpacing: 1)),
+                    const SizedBox(height: 4),
+                    _dropdown<String>(
+                      value: actionOptions.containsKey(stage.onLoss)
+                          ? stage.onLoss
+                          : 'next',
+                      items: actionOptions,
+                      accent: _kLoss,
+                      onChanged: (v) => setState(() => stage.onLoss = v),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('IF SPIN WINS',
-                      style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _kInk,
-                          letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  _dropdown<String>(
-                    value: actionOptions.containsKey(stage.onWin)
-                        ? stage.onWin
-                        : 'reset',
-                    items: actionOptions,
-                    accent: _kInk,
-                    onChanged: (v) => setState(() => stage.onWin = v),
-                  ),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('IF SPIN WINS',
+                        style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: _kInk,
+                            letterSpacing: 1)),
+                    const SizedBox(height: 4),
+                    _dropdown<String>(
+                      value: actionOptions.containsKey(stage.onWin)
+                          ? stage.onWin
+                          : 'reset',
+                      items: actionOptions,
+                      accent: _kInk,
+                      onChanged: (v) => setState(() => stage.onWin = v),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Text('OPTIONAL SAFETY & PROFIT RULES',
