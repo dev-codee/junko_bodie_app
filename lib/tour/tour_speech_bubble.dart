@@ -23,6 +23,11 @@ class TourSpeechBubble extends StatefulWidget {
   final VoidCallback onSkip;
   final String side; // 'left' | 'right'
 
+  /// Caps the card height so it never overflows the viewport. The speech text
+  /// scrolls internally while the footer (Skip/Back/Next) stays pinned, so the
+  /// NEXT button is always reachable without scrolling the page.
+  final double maxHeight;
+
   const TourSpeechBubble({
     super.key,
     required this.text,
@@ -36,6 +41,7 @@ class TourSpeechBubble extends StatefulWidget {
     required this.onBack,
     required this.onSkip,
     this.side = 'left',
+    this.maxHeight = double.infinity,
   });
 
   @override
@@ -111,7 +117,7 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
           Flexible(
             child: Text(widget.errorMessage!,
                 style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: Color(0xFF991B1B),
                     fontWeight: FontWeight.w700)),
           ),
@@ -126,7 +132,7 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
           SizedBox(width: 6),
           Text('Ready! Tap Next to proceed',
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   color: Color(0xFF065F46),
                   fontWeight: FontWeight.w800)),
         ]),
@@ -147,7 +153,7 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
           Flexible(
             child: Text(widget.actionHint,
                 style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: Color(0xFF735312),
                     fontWeight: FontWeight.w700)),
           ),
@@ -155,9 +161,11 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
       );
     }
 
-    final bubble = Container(
-      width: 300,
-      padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+    final bubble = ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: widget.maxHeight),
+      child: Container(
+      width: 262,
+      padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -183,9 +191,9 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
               children: [
                 const Text('JUNKO BODIE GUIDE',
                     style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.1,
                         color: Color(0xFF8C6D23))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -196,35 +204,46 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
                   ),
                   child: Text('${widget.stepIndex + 1} / ${widget.totalSteps}',
                       style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.w800,
                           color: _kDarkGreen)),
                 ),
               ],
             ),
           ),
-          // Speech text
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 13,
-                  height: 1.42,
-                  fontWeight: FontWeight.w600,
-                  color: _kDarkGreen,
-                ),
+          // Speech text + action pill scroll together when the card is taller
+          // than the viewport, so the footer below stays pinned and reachable.
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const TextSpan(text: '"'),
-                  ..._formatted(widget.text),
-                  const TextSpan(text: '"'),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 11,
+                          height: 1.34,
+                          fontWeight: FontWeight.w600,
+                          color: _kDarkGreen,
+                        ),
+                        children: [
+                          const TextSpan(text: '"'),
+                          ..._formatted(widget.text),
+                          const TextSpan(text: '"'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  pill,
                 ],
               ),
             ),
           ),
-          pill,
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           // Footer
           Row(
             children: [
@@ -251,6 +270,7 @@ class _TourSpeechBubbleState extends State<TourSpeechBubble>
             ],
           ),
         ],
+      ),
       ),
     );
 

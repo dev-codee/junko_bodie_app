@@ -3,6 +3,7 @@
 /// real widget beneath stays tappable, and frames it with a pulsing gold ring.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 const _kGold = Color(0xFFC9A44C);
@@ -14,7 +15,12 @@ class TourHighlightRing extends StatefulWidget {
   /// Target rect in global coords, or null while the target is being measured.
   final Rect? targetRect;
 
-  const TourHighlightRing({super.key, required this.targetRect});
+  /// Extra rects to spotlight alongside [targetRect] (e.g. the toolbar buttons
+  /// referenced by a "place your bets" step). Each gets its own cutout + ring.
+  final List<Rect> extraRects;
+
+  const TourHighlightRing(
+      {super.key, required this.targetRect, this.extraRects = const []});
 
   @override
   State<TourHighlightRing> createState() => _TourHighlightRingState();
@@ -49,32 +55,34 @@ class _TourHighlightRingState extends State<TourHighlightRing>
       );
     }
 
-    final hole = Rect.fromLTWH(
-      (rect.left - _kPad).clamp(0.0, size.width),
-      (rect.top - _kPad).clamp(0.0, size.height),
-      rect.width + _kPad * 2,
-      rect.height + _kPad * 2,
-    );
+    Rect padHole(Rect r) => Rect.fromLTWH(
+          (r.left - _kPad).clamp(0.0, size.width),
+          (r.top - _kPad).clamp(0.0, size.height),
+          r.width + _kPad * 2,
+          r.height + _kPad * 2,
+        );
+
+    final holes = <Rect>[padHole(rect), for (final r in widget.extraRects) padHole(r)];
 
     return Positioned.fill(
       child: IgnorePointer(
         child: Stack(
           children: [
-            // Dim + rounded cutout.
+            // Dim + rounded cutouts.
             CustomPaint(
               size: size,
-              painter: _DimPainter(hole),
+              painter: _DimPainter(holes),
             ),
-            // Pulsing gold ring. The glow is clipped to the OUTSIDE of the hole
-            // so it never washes over the target's interior text (mirrors the
-            // web's outset CSS box-shadow, which never paints under the element).
+            // Pulsing gold rings. The glow is clipped to the OUTSIDE of the
+            // holes so it never washes over the targets' interior text (mirrors
+            // the web's outset CSS box-shadow, which never paints under it).
             AnimatedBuilder(
               animation: _pulse,
               builder: (context, _) {
                 final t = Curves.easeInOut.transform(_pulse.value);
                 return CustomPaint(
                   size: size,
-                  painter: _RingPainter(hole, t),
+                  painter: _RingPainter(holes, t),
                 );
               },
             ),
@@ -86,59 +94,72 @@ class _TourHighlightRingState extends State<TourHighlightRing>
 }
 
 class _DimPainter extends CustomPainter {
-  final Rect hole;
-  _DimPainter(this.hole);
+  final List<Rect> holes;
+  _DimPainter(this.holes);
 
   @override
   void paint(Canvas canvas, Size size) {
+    final cut = Path();
+    for (final hole in holes) {
+      cut.addRRect(
+          RRect.fromRectAndRadius(hole, const Radius.circular(_kRadius)));
+    }
     final full = Path()..addRect(Offset.zero & size);
-    final cut = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          hole, const Radius.circular(_kRadius)));
     final dimmed = Path.combine(PathOperation.difference, full, cut);
     canvas.drawPath(dimmed, Paint()..color = const Color(0xAD000000));
   }
 
   @override
-  bool shouldRepaint(_DimPainter old) => old.hole != hole;
+  bool shouldRepaint(_DimPainter old) => !listEquals(old.holes, holes);
 }
 
 /// Paints the gold focus ring: a crisp border on the hole edge plus an outer
 /// glow that is clipped to the region OUTSIDE the hole, so the target's own
 /// content beneath (button label, etc.) is never dimmed or washed out.
 class _RingPainter extends CustomPainter {
-  final Rect hole;
+  final List<Rect> holes;
   final double t;
-  _RingPainter(this.hole, this.t);
+  _RingPainter(this.holes, this.t);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rrect =
-        RRect.fromRectAndRadius(hole, const Radius.circular(_kRadius));
-
-    // Outer glow — restrict painting to everything OUTSIDE the rounded hole.
+    // Outer glow — restrict painting to everything OUTSIDE all rounded holes.
+    final allHoles = Path();
+    for (final hole in holes) {
+      allHoles
+          .addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(_kRadius)));
+    }
     canvas.save();
     final outside = Path.combine(
       PathOperation.difference,
       Path()..addRect(Offset.zero & size),
-      Path()..addRRect(rrect),
+      allHoles,
     );
     canvas.clipPath(outside);
     final glowPaint = Paint()
       ..color = Color.lerp(
           const Color(0xB3C9A44C), const Color(0xF2FFD700), t)!
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + 5 * t);
-    canvas.drawRRect(rrect, glowPaint);
+    for (final hole in holes) {
+      canvas.drawRRect(
+          RRect.fromRectAndRadius(hole, const Radius.circular(_kRadius)),
+          glowPaint);
+    }
     canvas.restore();
 
-    // Crisp gold border framing the element.
+    // Crisp gold border framing each element.
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3 + 1.5 * t
       ..color = Color.lerp(_kGold, _kGoldBright, t)!;
-    canvas.drawRRect(rrect, borderPaint);
+    for (final hole in holes) {
+      canvas.drawRRect(
+          RRect.fromRectAndRadius(hole, const Radius.circular(_kRadius)),
+          borderPaint);
+    }
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) => old.hole != hole || old.t != t;
+  bool shouldRepaint(_RingPainter old) =>
+      old.t != t || !listEquals(old.holes, holes);
 }

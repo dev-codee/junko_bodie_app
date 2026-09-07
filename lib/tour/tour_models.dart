@@ -24,6 +24,20 @@ class FunnelStep {
   final bool hideNextButton;
   final String side; // 'left' | 'right'
 
+  /// When false (default) the card auto-docks on the side OPPOSITE the
+  /// highlighted target so it never covers what it's demonstrating. Set true to
+  /// force [side] regardless of the target position.
+  final bool pinSide;
+
+  /// Forces the vertical dock ('top' | 'bottom') for this step, overriding the
+  /// automatic clearance-based choice. Null = auto.
+  final String? dock;
+
+  /// Additional registry ids to spotlight alongside [targetId]. Used when a
+  /// step's instructions reference nearby controls (e.g. the Repeat/2X toolbar
+  /// buttons) that would otherwise stay dimmed by the scrim.
+  final List<String> alsoHighlight;
+
   const FunnelStep({
     required this.id,
     required this.targetId,
@@ -36,6 +50,9 @@ class FunnelStep {
     this.clickAdvances = false,
     this.hideNextButton = false,
     this.side = 'left',
+    this.pinSide = false,
+    this.dock,
+    this.alsoHighlight = const [],
   });
 }
 
@@ -200,6 +217,7 @@ const List<FunnelStep> kFunnelSteps = [
         'Please place at least one bet for Stage 2 (or tap Repeat) before continuing.',
     requireAction: true,
     side: 'right',
+    alsoHighlight: ['table-toolbar'],
   ),
   FunnelStep(
     id: 'builder_stage2_rules',
@@ -237,6 +255,7 @@ const List<FunnelStep> kFunnelSteps = [
         'Please place at least one bet for Stage 3 before continuing.',
     requireAction: true,
     side: 'right',
+    alsoHighlight: ['table-toolbar'],
   ),
 
   // ── PHASE 6 — Save & Navigate to Debugger ──
@@ -297,7 +316,9 @@ const List<FunnelStep> kFunnelSteps = [
     text:
         'Session Entry determines when betting begins. *Tap this dropdown* to choose a mode: "Start Betting Immediately" places bets on spin 1, while "Wait for X Phantom Misses" observes the table until a streak of losses occurs before placing real chips. Selecting the phantom-misses option reveals a new field just below where you set how many misses to wait for.',
     actionHint: 'Tap the dropdown to pick an entry mode, then tap Next',
-    side: 'right',
+    side: 'left',
+    pinSide: true,
+    dock: 'bottom',
   ),
   FunnelStep(
     id: 'debug_start',

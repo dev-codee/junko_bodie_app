@@ -85,6 +85,11 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   bool _sessionStarted = false;
   SimulationEngine? _engine;
   SimulationState? _liveState;
+
+  /// The strategy captured when the session started. Used for the live view so
+  /// the results (KPIs, bets, spin log) never blank out if the dropdown
+  /// selection (`_selected`) later fails to resolve from the strategy list.
+  BettingStrategy? _activeStrategy;
   List<_LogEntry> _log = [];
   int _spinCounter = 0;
 
@@ -204,6 +209,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
     final engine = SimulationEngine(strategy, config);
     setState(() {
       _engine = engine;
+      _activeStrategy = strategy;
       _liveState = engine.getInternalState();
       _log = [];
       _spinCounter = 0;
@@ -299,6 +305,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   void _reset() {
     setState(() {
       _engine = null;
+      _activeStrategy = null;
       _liveState = null;
       _log = [];
       _spinCounter = 0;
@@ -399,13 +406,17 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           () => setState(() => _showTip = !_showTip),
           active: _showTip,
         ),
-        const Spacer(),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
+        // Flexible title so it shrinks/ellipsizes and the action buttons on the
+        // right always stay fully on-screen and tappable (was a fixed-width
+        // title after a Spacer, which overflowed and clipped END SESSION).
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
               'Strategy Navigator',
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -413,10 +424,9 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                 color: _kInkText,
               ),
             ),
-          ],
+          ),
         ),
         if (_sessionStarted) ...[
-          const SizedBox(width: 16),
           TourTarget(
             id: 'funnel-simulate-btn',
             child: GestureDetector(
@@ -910,7 +920,9 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
   // ── Live session ────────────────────────────────────────────────────────────
   Widget _buildLiveSession() {
     final state = _liveState;
-    final strategy = _selected;
+    // Prefer the strategy captured at session start; fall back to the current
+    // dropdown selection. Only bail if we genuinely have no engine state.
+    final strategy = _activeStrategy ?? _selected;
     if (state == null || strategy == null) return const SizedBox.shrink();
 
     return Column(
@@ -1244,7 +1256,10 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 220,
+            // Grow the log with the viewport so it uses the whole screen
+            // instead of a cramped fixed box, but keep sane min/max bounds.
+            height: (MediaQuery.of(context).size.height * 0.5)
+                .clamp(240.0, 560.0),
             child: _log.isEmpty
                 ? Center(
                     child: Text(
@@ -1256,10 +1271,20 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                           color: Colors.white.withValues(alpha: 0.4)),
                     ),
                   )
-                : ListView.builder(
+                : RawScrollbar(
                     controller: _logScroll,
-                    itemCount: _log.length,
-                    itemBuilder: (context, i) => _logRow(_log[i]),
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    thumbColor: _kGold.withValues(alpha: 0.7),
+                    trackColor: Colors.white.withValues(alpha: 0.08),
+                    thickness: 5,
+                    radius: const Radius.circular(4),
+                    child: ListView.builder(
+                      controller: _logScroll,
+                      padding: const EdgeInsets.only(right: 8),
+                      itemCount: _log.length,
+                      itemBuilder: (context, i) => _logRow(_log[i]),
+                    ),
                   ),
           ),
         ],
