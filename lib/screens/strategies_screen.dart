@@ -35,7 +35,13 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
   bool _showHidden = false;
   bool _importing = false;
   bool _isLoading = true;
+  bool _panelOpen = false;
   String? _error;
+
+  void _openPanel() => setState(() => _panelOpen = true);
+  void _closePanel() {
+    if (_panelOpen) setState(() => _panelOpen = false);
+  }
 
   @override
   void initState() {
@@ -344,6 +350,7 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
                         )
                       : _buildContent(),
             ),
+            _buildSidePanel(),
           ],
         ),
       ),
@@ -408,32 +415,41 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 2,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBackButton(),
-              const SizedBox(height: 10),
-              TourTarget(
-                id: 'funnel-graduation-card',
-                child: Text(
-                  'Strategy Library',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    fontStyle: FontStyle.italic,
-                    letterSpacing: 1,
-                    color: const Color(0xFF113626),
-                    height: 1,
-                    shadows: [
-                      Shadow(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        blurRadius: 8,
+              // Back button and title share one row.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildBackButton(),
+                  const SizedBox(width: 14),
+                  Flexible(
+                    child: TourTarget(
+                      id: 'funnel-graduation-card',
+                      child: Text(
+                        'Strategy Library',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          fontStyle: FontStyle.italic,
+                          letterSpacing: 1,
+                          color: const Color(0xFF113626),
+                          height: 1,
+                          shadows: [
+                            Shadow(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 8),
               const Text(
@@ -449,71 +465,232 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        // Header actions
-        Flexible(
-          flex: 3,
-          child: TourTarget(
-          id: 'header-actions',
-          // Two fixed rows of three, so the header never spills into a third row.
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _buildPillButton(
-                    label: 'TUTORIAL',
-                    icon: Icons.help_outline,
-                    onTap: () => context.read<TourController>().startTour(),
-                  ),
-                  _buildShowHiddenToggle(),
-                  _buildPillButton(
-                    label: 'NAVIGATOR',
-                    icon: Icons.insights,
-                    onTap: () => _openNavigator(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _buildPillButton(
-                    label: 'SIMULATE',
-                    icon: Icons.play_arrow,
-                    onTap: () => _openSimulate(),
-                  ),
-                  _buildPillButton(
-                    label: _importing ? 'IMPORTING...' : 'IMPORT',
-                    icon: Icons.upload_file,
-                    onTap: _importing ? null : _handleImport,
-                  ),
-                  TourTarget(
-                    id: 'funnel-new-strategy',
-                    child: _buildPillButton(
-                      label: 'NEW STRATEGY',
-                      icon: Icons.add,
-                      onTap: _handleNewStrategyTap,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          ),
-        ),
+        // Header actions collapse into a slide-out side panel.
+        _buildMenuButton(),
       ],
     )
         .animate()
         .fadeIn(duration: 400.ms, delay: 100.ms)
         .slideY(begin: 0.05, end: 0, duration: 400.ms, delay: 100.ms);
+  }
+
+  /// Three-bar button that opens the actions side panel. Carries the
+  /// `header-actions` tour anchor.
+  Widget _buildMenuButton() {
+    return TourTarget(
+      id: 'header-actions',
+      child: GestureDetector(
+        onTap: _openPanel,
+        child: Container(
+          height: 44,
+          width: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F2E21),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x660F2E21),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.menu, size: 22, color: Color(0xFFC9A44C)),
+        ),
+      ),
+    );
+  }
+
+  /// Slide-out panel (from the right) holding every header action. Auto-opens
+  /// when the onboarding funnel needs the "+ New Strategy" button visible.
+  Widget _buildSidePanel() {
+    const panelWidth = 280.0;
+    // Keep the funnel "+ New Strategy" step's target on screen.
+    final forced =
+        context.watch<TourController>().currentStep?.id == 'lib_welcome';
+    final open = _panelOpen || forced;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: !open,
+        child: Stack(
+          children: [
+            // Scrim — tap to dismiss (disabled while the funnel forces it open).
+            GestureDetector(
+              onTap: forced ? null : _closePanel,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: open ? 1 : 0,
+                child: Container(color: Colors.black.withValues(alpha: 0.4)),
+              ),
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              top: 0,
+              bottom: 0,
+              right: open ? 0 : -(panelWidth + 24),
+              width: panelWidth,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF6E8CC),
+                    border: Border(
+                      left: BorderSide(
+                        color: const Color(0xFF0F2E21).withValues(alpha: 0.15),
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 30,
+                        offset: const Offset(-8, 0),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    left: false,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'ACTIONS',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2,
+                                  color: Color(0xFF113626),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _closePanel,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0F2E21)
+                                        .withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                    color: Color(0xFF113626),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TourTarget(
+                            id: 'funnel-new-strategy',
+                            child: _buildPanelButton(
+                              label: 'NEW STRATEGY',
+                              icon: Icons.add,
+                              onTap: () {
+                                _closePanel();
+                                _handleNewStrategyTap();
+                              },
+                            ),
+                          ),
+                          _buildPanelButton(
+                            label: 'SIMULATE',
+                            icon: Icons.play_arrow,
+                            onTap: () {
+                              _closePanel();
+                              _openSimulate();
+                            },
+                          ),
+                          _buildPanelButton(
+                            label: 'NAVIGATOR',
+                            icon: Icons.insights,
+                            onTap: () {
+                              _closePanel();
+                              _openNavigator();
+                            },
+                          ),
+                          _buildPanelButton(
+                            label: _importing ? 'IMPORTING...' : 'IMPORT',
+                            icon: Icons.upload_file,
+                            onTap: _importing
+                                ? null
+                                : () {
+                                    _closePanel();
+                                    _handleImport();
+                                  },
+                          ),
+                          _buildPanelButton(
+                            label: 'TUTORIAL',
+                            icon: Icons.help_outline,
+                            onTap: () {
+                              _closePanel();
+                              context.read<TourController>().startTour();
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                          _buildShowHiddenToggle(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Full-width action row used inside the side panel.
+  Widget _buildPanelButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onTap,
+  }) {
+    final bool enabled = onTap != null;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F2E21),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x660F2E21),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFFC9A44C)),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFC9A44C),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// "Show Hidden" toggle — mirrors the web `.toggleBtn` (filled dark-green
@@ -522,32 +699,40 @@ class _StrategiesScreenState extends State<StrategiesScreen> {
     return GestureDetector(
       onTap: () => setState(() => _showHidden = !_showHidden),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
           color: const Color(0xFF0F2E21),
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFF0F2E21)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x660F2E21),
-              blurRadius: 12,
+              blurRadius: 10,
               offset: Offset(0, 4),
             ),
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'SHOW HIDDEN',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-                color: Color(0xFFC9A44C),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.visibility_outlined,
+                    size: 16, color: Color(0xFFC9A44C)),
+                SizedBox(width: 12),
+                Text(
+                  'SHOW HIDDEN',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: Color(0xFFC9A44C),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
             // Switch track.
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),

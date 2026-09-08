@@ -41,6 +41,33 @@ class _TourOverlayState extends State<TourOverlay>
   /// Tapping the face toggles it. Reset on each new step.
   bool _bubbleHidden = false;
 
+  /// Measures the guide face so collapsing the card can freeze Junko exactly
+  /// where he already was instead of letting the dock re-flow him elsewhere.
+  final GlobalKey _faceKey = GlobalKey();
+
+  /// Global top-left the collapsed face is pinned to (captured the instant the
+  /// user hides the card). Null while the card is showing.
+  Offset? _faceAnchor;
+
+  /// Collapse / expand the speech card. When collapsing, snapshot Junko's
+  /// current on-screen position first so he stays put (mirrors the user's
+  /// expectation that hiding the card should not teleport the guide).
+  void _toggleBubble() {
+    if (!_bubbleHidden) {
+      final box = _faceKey.currentContext?.findRenderObject() as RenderBox?;
+      final anchor = box?.localToGlobal(Offset.zero);
+      setState(() {
+        _faceAnchor = anchor;
+        _bubbleHidden = true;
+      });
+    } else {
+      setState(() {
+        _faceAnchor = null;
+        _bubbleHidden = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +91,7 @@ class _TourOverlayState extends State<TourOverlay>
       // re-shows the card if the user had collapsed it on the previous step.
       _dragPos = null;
       _bubbleHidden = false;
+      _faceAnchor = null;
       // Bring the new target into view on the next frame.
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(targetId));
     }
@@ -260,7 +288,8 @@ class _TourOverlayState extends State<TourOverlay>
     // Tapping the face collapses the card so nothing on screen is covered;
     // tapping again brings it back. A small eye badge signals it's tappable.
     final character = GestureDetector(
-      onTap: () => setState(() => _bubbleHidden = !_bubbleHidden),
+      key: _faceKey,
+      onTap: _toggleBubble,
       behavior: HitTestBehavior.opaque,
       child: Transform.translate(
         offset: Offset(0, atTop ? 6 : -6),
@@ -296,6 +325,16 @@ class _TourOverlayState extends State<TourOverlay>
         : atTop
             ? [character, bubbleWithHandle]
             : [bubbleWithHandle, character];
+
+    // Collapsed: freeze the face exactly where it was so hiding the card never
+    // relocates the guide.
+    if (_bubbleHidden && _faceAnchor != null) {
+      return Positioned(
+        left: _faceAnchor!.dx,
+        top: _faceAnchor!.dy,
+        child: character,
+      );
+    }
 
     final bool dragging = _dragPos != null;
 

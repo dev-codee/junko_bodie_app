@@ -61,7 +61,7 @@ class StrategyBuilderScreen extends StatefulWidget {
 class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
   final StrategyService _service = StrategyService();
 
-  final _nameController = TextEditingController(text: 'New Strategy');
+  final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _notesController = TextEditingController();
   final _maxStagesController = TextEditingController(text: '30');
