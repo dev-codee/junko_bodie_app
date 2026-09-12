@@ -272,29 +272,23 @@ class TournamentRouletteTable extends StatelessWidget {
                                             opacity: isSpinning ? 0.3 : 1.0,
                                             child: IgnorePointer(
                                               ignoring: !canBet,
-                                              child: SingleChildScrollView(
-                                                scrollDirection: Axis.vertical,
-                                                child: SizedBox(
-                                                  height: 300,
-                                                  child: BettingLayout(
-                                                    bets: mergedBets,
-                                                    onPlaceBet:
-                                                        provider.placeBet,
-                                                    onRemoveBet:
-                                                        provider.removeBet,
-                                                    disabled: !canBet,
-                                                    winningResult:
-                                                        currentSpinResult,
-                                                    showWinHighlight: isResult,
-                                                    phase: provider.phase,
-                                                    deleteMode:
-                                                        provider.deleteMode,
-                                                    onClearZone:
-                                                        provider.clearZone,
-                                                    wheelType: wheelTypeEnum,
-                                                    myBets: provider.bets,
-                                                  ),
-                                                ),
+                                              child: BettingLayout(
+                                                bets: mergedBets,
+                                                onPlaceBet:
+                                                    provider.placeBet,
+                                                onRemoveBet:
+                                                    provider.removeBet,
+                                                disabled: !canBet,
+                                                winningResult:
+                                                    currentSpinResult,
+                                                showWinHighlight: isResult,
+                                                phase: provider.phase,
+                                                deleteMode:
+                                                    provider.deleteMode,
+                                                onClearZone:
+                                                    provider.clearZone,
+                                                wheelType: wheelTypeEnum,
+                                                myBets: provider.bets,
                                               ),
                                             ),
                                           ),

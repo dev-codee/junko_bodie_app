@@ -64,7 +64,7 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/strategies',
     title: 'Welcome to Junko Bodie',
     text:
-        'Welcome! I\'m your guide for this walkthrough. We\'re going to build a complete roulette strategy from scratch, debug it live, and run a full simulation. Tap "+ New Strategy" to begin!',
+        'Welcome! I\'m your guide for this walkthrough. We\'re going to build a complete roulette strategy from scratch, debug it live, and run a full simulation.\n\n*Quick tip: if I\'m ever in the way, tap my face to hide this card — tap again to bring it back!*\n\nTap "+ New Strategy" to begin!',
     actionHint: 'Tap the "+ New Strategy" button to open the Strategy Builder',
     fallbackErrorMsg: 'Please tap "+ New Strategy" to proceed to the Builder.',
     requireAction: true,
@@ -133,7 +133,7 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'builder_place_bet',
-    targetId: 'funnel-betting-board',
+    targetId: 'funnel-table-area',
     route: '/strategies/build',
     title: 'Place Your First Bet',
     text:
@@ -148,7 +148,7 @@ const List<FunnelStep> kFunnelSteps = [
   // ── PHASE 4 — Strategy Builder: Rules & Notes ──
   FunnelStep(
     id: 'builder_rules',
-    targetId: 'funnel-stage-rules',
+    targetId: 'stage-rules-card',
     route: '/strategies/build',
     title: 'Stage Progression Rules',
     text:
@@ -197,17 +197,18 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'builder_toolbar_info',
-    targetId: 'table-toolbar',
+    targetId: 'table-card',
     route: '/strategies/build',
     title: 'Table Shortcuts & Repeat',
     text:
         'These 4 buttons are your table shortcuts: "Repeat" copies the prior stage\'s exact bets onto this stage. "2X" doubles all bet amounts. "Undo" reverses the last action. "Clear" wipes the board clean.',
     actionHint: 'Review the toolbar shortcuts (Repeat, 2X, Undo, Clear), then tap Next',
     side: 'left',
+    alsoHighlight: ['table-toolbar'],
   ),
   FunnelStep(
     id: 'builder_stage2_bet',
-    targetId: 'funnel-betting-board',
+    targetId: 'table-card',
     route: '/strategies/build',
     title: 'Place Stage 2 Bets',
     text:
@@ -217,7 +218,7 @@ const List<FunnelStep> kFunnelSteps = [
         'Please place at least one bet for Stage 2 (or tap Repeat) before continuing.',
     requireAction: true,
     side: 'right',
-    alsoHighlight: ['table-toolbar'],
+    alsoHighlight: ['table-toolbar', 'funnel-betting-board'],
   ),
   FunnelStep(
     id: 'builder_stage2_rules',
@@ -464,7 +465,7 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'sim_profitability',
-    targetId: 'funnel-profit-dynamics',
+    targetId: 'results-section',
     route: '/simulation/run',
     title: 'Profitability Dynamics',
     text:
@@ -474,7 +475,7 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'sim_chart',
-    targetId: 'funnel-bankroll-stability',
+    targetId: 'results-section',
     route: '/simulation/run',
     title: 'Bankroll Stability',
     text:
@@ -484,7 +485,7 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'sim_stage_penetration',
-    targetId: 'funnel-stage-penetration',
+    targetId: 'results-section',
     route: '/simulation/run',
     title: 'Stage Penetration',
     text:

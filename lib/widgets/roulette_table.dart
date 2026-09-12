@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:junko_bodie/config/theme.dart';
-import 'package:junko_bodie/logic/bets.dart';
 import 'package:junko_bodie/logic/rng.dart';
 import 'package:junko_bodie/logic/game_phases.dart';
 import 'package:junko_bodie/providers/game_provider.dart';
@@ -30,25 +28,6 @@ class _RouletteTableState extends State<RouletteTable> {
   // Stable key so the wheel keeps its spin physics while it reparents between
   // the inline slot and the centered spinning overlay.
   final GlobalKey _wheelKey = GlobalKey();
-  
-  final ScrollController _scrollController = ScrollController();
-  bool _hasScrolled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(() {
-      if (!_hasScrolled && _scrollController.offset > 20) {
-        setState(() => _hasScrolled = true);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,75 +282,33 @@ class _RouletteTableState extends State<RouletteTable> {
                                             opacity: isSpinning ? 0.3 : 1.0,
                                             child: IgnorePointer(
                                               ignoring: !canBet,
-                                              child: SingleChildScrollView(
-                                                controller: _scrollController,
-                                                scrollDirection: Axis.vertical,
-                                                child: SizedBox(
-                                                  height: 300,
-                                                  child: BettingLayout(
-                                                    bets: provider.bets,
-                                                    onPlaceBet: (betId) {
-                                                      widget.onInteract?.call();
-                                                      provider.placeBet(betId);
-                                                    },
-                                                    onRemoveBet:
-                                                        provider.removeBet,
-                                                    disabled: !canBet,
-                                                    winningResult:
-                                                        provider.currentResult,
-                                                    payoutResult:
-                                                        provider.lastPayout,
-                                                    showWinHighlight: isResult,
-                                                    phase: provider.phase.name,
-                                                    deleteMode:
-                                                        provider.deleteMode,
-                                                    onPopLastChip:
-                                                        provider.popLastChip,
-                                                    onClearZone:
-                                                        provider.clearZone,
-                                                    wheelType:
-                                                        provider.wheelType,
-                                                  ),
-                                                ),
+                                              child: BettingLayout(
+                                                bets: provider.bets,
+                                                onPlaceBet: (betId) {
+                                                  widget.onInteract?.call();
+                                                  provider.placeBet(betId);
+                                                },
+                                                onRemoveBet:
+                                                    provider.removeBet,
+                                                disabled: !canBet,
+                                                winningResult:
+                                                    provider.currentResult,
+                                                payoutResult:
+                                                    provider.lastPayout,
+                                                showWinHighlight: isResult,
+                                                phase: provider.phase.name,
+                                                deleteMode:
+                                                    provider.deleteMode,
+                                                onPopLastChip:
+                                                    provider.popLastChip,
+                                                onClearZone:
+                                                    provider.clearZone,
+                                                wheelType:
+                                                    provider.wheelType,
                                               ),
                                             ),
                                           ),
                                         ),
-                                        // Scroll Hint Overlay
-                                        if (!_hasScrolled && canBet && !tournamentMode)
-                                          Positioned(
-                                            bottom: 16,
-                                            right: 16,
-                                            child: IgnorePointer(
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withOpacity(0.75),
-                                                  borderRadius: BorderRadius.circular(20),
-                                                  border: Border.all(color: const Color(0xFFC9A44C).withOpacity(0.5)),
-                                                  boxShadow: const [
-                                                    BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
-                                                  ],
-                                                ),
-                                                child: const Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      'SCROLL',
-                                                      style: TextStyle(
-                                                        color: Color(0xFFC9A44C),
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w900,
-                                                        letterSpacing: 1.0,
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 4),
-                                                    Icon(Icons.keyboard_arrow_down, color: Color(0xFFC9A44C), size: 14),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
                                         // BETS CLOSED overlay
                                         if (isLocked || isSpinning)
                                           Positioned.fill(

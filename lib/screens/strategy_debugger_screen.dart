@@ -387,6 +387,10 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                               : _buildSetup(),
                         ),
                       ),
+                      if (_sessionStarted && _liveState != null) ...[
+                        const SizedBox(height: 8),
+                        _spinButton(_liveState!),
+                      ],
                     ],
                   ),
                 ),
@@ -952,11 +956,6 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
         }),
         const SizedBox(height: 12),
         TourTarget(id: 'spin-log', child: _spinLogCard()),
-        // SPIN button anchored directly below the results so the most recent
-        // spin (auto-scrolled to the bottom of the log) sits right above it —
-        // no scrolling back up to spin again on mobile.
-        const SizedBox(height: 10),
-        _spinButton(state),
       ],
     );
   }
@@ -971,7 +970,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
           opacity: busted ? 0.5 : 1,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
               color: _kInk,
               borderRadius: BorderRadius.circular(12),

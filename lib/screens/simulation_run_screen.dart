@@ -109,16 +109,19 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
     return null;
   }
 
-  /// The bankroll chart lives in the "bankroll" tab, so force that tab active
-  /// whenever the tour needs to spotlight it.
+  /// Force the active tab to match whichever results step the tour is
+  /// currently spotlighting, so the correct content is visible.
   void _syncTour() {
     if (!mounted) return;
-    final target = _activeTourTarget();
-    if (target == 'funnel-bankroll-chart' && _activeTab != 'bankroll') {
-      setState(() => _activeTab = 'bankroll');
-    } else if (target == 'funnel-profit-dynamics' &&
-        _activeTab != 'profitability') {
+    final c = _tour;
+    if (c == null) return;
+    final stepId = c.currentStep?.id;
+    if (stepId == 'sim_profitability' && _activeTab != 'profitability') {
       setState(() => _activeTab = 'profitability');
+    } else if (stepId == 'sim_chart' && _activeTab != 'bankroll') {
+      setState(() => _activeTab = 'bankroll');
+    } else if (stepId == 'sim_stage_penetration' && _activeTab != 'stages') {
+      setState(() => _activeTab = 'stages');
     }
   }
 
@@ -329,9 +332,17 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
                 children: [
                   _topStats(r),
                   const SizedBox(height: 12),
-                  _tabs(),
-                  const SizedBox(height: 12),
-                  _tabContent(r),
+                  TourTarget(
+                    id: 'results-section',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _tabs(),
+                        const SizedBox(height: 12),
+                        _tabContent(r),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

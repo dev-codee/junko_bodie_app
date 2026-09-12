@@ -55,12 +55,7 @@ class _TourHighlightRingState extends State<TourHighlightRing>
       );
     }
 
-    Rect padHole(Rect r) => Rect.fromLTWH(
-          (r.left - _kPad).clamp(0.0, size.width),
-          (r.top - _kPad).clamp(0.0, size.height),
-          r.width + _kPad * 2,
-          r.height + _kPad * 2,
-        );
+    Rect padHole(Rect r) => r.inflate(_kPad);
 
     final holes = <Rect>[padHole(rect), for (final r in widget.extraRects) padHole(r)];
 

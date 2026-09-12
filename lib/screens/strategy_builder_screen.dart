@@ -588,7 +588,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildStageRulesCard(),
+                            TourTarget(id: 'stage-rules-card', child: _buildStageRulesCard()),
                             const SizedBox(height: 16),
                             _buildDynamicRulesCard(),
                             const SizedBox(height: 16),
@@ -1161,7 +1161,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       children: [
         _buildStageTabs(),
         const SizedBox(height: 8),
-        _buildTableCard(),
+        TourTarget(id: 'table-card', child: _buildTableCard()),
       ],
     );
   }
@@ -1278,42 +1278,50 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
       ),
       child: Column(
         children: [
-          TourTarget(id: 'table-toolbar', child: _buildTableHeader()),
-          const SizedBox(height: 6),
           TourTarget(
-            id: 'funnel-betting-board',
-            child: SizedBox(
-              height: 360,
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  // Widen the felt so number cells and the split/corner tap
-                  // zones between them are comfortably large; scroll if the
-                  // panel is narrower than that target width.
-                  final boardWidth =
-                      c.maxWidth > 760 ? c.maxWidth : 760.0;
-                  return Scrollbar(
-                    controller: _boardScroll,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      controller: _boardScroll,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SizedBox(
-                        width: boardWidth,
-                        child: BettingLayout(
-                          bets: _currentBetsMap,
-                          onPlaceBet: _placeBet,
-                          onRemoveBet: _removeBet,
-                          disabled: false,
-                          showWinHighlight: false,
-                          phase: 'betting',
-                          wheelType: _wheelEnum,
-                        ),
-                      ),
+            id: 'funnel-table-area',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TourTarget(id: 'table-toolbar', child: _buildTableHeader()),
+                const SizedBox(height: 6),
+                TourTarget(
+                  id: 'funnel-betting-board',
+                  child: SizedBox(
+                    height: 360,
+                    child: LayoutBuilder(
+                      builder: (context, c) {
+                        // Widen the felt so number cells and the split/corner tap
+                        // zones between them are comfortably large; scroll if the
+                        // panel is narrower than that target width.
+                        final boardWidth =
+                            c.maxWidth > 760 ? c.maxWidth : 760.0;
+                        return Scrollbar(
+                          controller: _boardScroll,
+                          thumbVisibility: true,
+                          child: SingleChildScrollView(
+                            controller: _boardScroll,
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: SizedBox(
+                              width: boardWidth,
+                              child: BettingLayout(
+                                bets: _currentBetsMap,
+                                onPlaceBet: _placeBet,
+                                onRemoveBet: _removeBet,
+                                disabled: false,
+                                showWinHighlight: false,
+                                phase: 'betting',
+                                wheelType: _wheelEnum,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
