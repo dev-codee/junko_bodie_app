@@ -712,7 +712,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                 child: Checkbox(
                   value: _resetBankroll,
                   onChanged: (v) => setState(() => _resetBankroll = v ?? false),
-                  activeColor: _kInk,
+                  activeColor: _kGold,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -724,7 +724,7 @@ class _StrategyDebuggerScreenState extends State<StrategyDebuggerScreen> {
                   style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: _kGoldDark),
+                      color: _kInk),
                 ),
               ),
             ],

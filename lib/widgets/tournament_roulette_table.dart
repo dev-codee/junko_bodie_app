@@ -23,6 +23,12 @@ class TournamentRouletteTable extends StatelessWidget {
         // Build combined bets map for visual display (my bets + bot bets)
         final mergedBets = <String, PlacedBet>{};
 
+        // Derive my initial from my username (first 1–2 chars, upper-cased).
+        final String myUsername = provider.me?.username ?? '';
+        final String myInitial = myUsername.isNotEmpty
+            ? myUsername.substring(0, math.min(2, myUsername.length)).toUpperCase()
+            : 'Me';
+
         // Add human player bets
         provider.bets.forEach((betId, b) {
           mergedBets[betId] = PlacedBet(
@@ -30,7 +36,7 @@ class TournamentRouletteTable extends StatelessWidget {
             amount: b.amount,
             chips: b.chips,
             customColor: '#c9a44c',
-            playerInitial: 'Me',
+            playerInitial: myInitial,
           );
         });
 
@@ -53,15 +59,15 @@ class TournamentRouletteTable extends StatelessWidget {
 
           final existing = mergedBets[betId];
           if (existing != null) {
+            // Human bet already occupies this square — keep the human's visual
+            // identity (initial + gold colour) and just add the bot's chips to
+            // the stack so the total amount is correct.
             mergedBets[betId] = PlacedBet(
               betId: betId,
               amount: existing.amount + amount,
               chips: [...existing.chips, ...chips],
-              customColor: colorHex,
-              playerInitial: username.substring(
-                0,
-                math.min(2, username.length),
-              ),
+              customColor: existing.customColor,
+              playerInitial: existing.playerInitial,
             );
           } else {
             mergedBets[betId] = PlacedBet(

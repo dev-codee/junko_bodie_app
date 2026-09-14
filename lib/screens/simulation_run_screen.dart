@@ -65,7 +65,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
   int _spinsExecuted = 0;
   int _targetSpins = 1000;
   SimulationResult? _results;
-  String _activeTab = 'overview';
+  String _activeTab = 'profitability';
   bool _cancelled = false;
 
   /// Junko's Tip is collapsed by default (freed-up header space) and revealed
@@ -208,9 +208,9 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
         );
       default:
         return (
-          title: 'Simulation Advice',
+          title: 'Profitability Metric',
           text:
-              '"Almost all Roulette systems receive low grades at 25,000 spins. To better evaluate your system, adjust the number of spins, or your bankroll, and/or your entry points for better results. Experiment with Simulation. Try different parameters until you achieve success."',
+              '"A key metric for me is that the success ratio of any system I use be at least 96% (or more). I also want my average profit per spin to exceed \$2."',
         );
     }
   }
@@ -646,8 +646,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
 
   Widget _tabs() {
     final tabs = {
-      'overview': 'General Overview',
-      'profitability': 'Profitability',
+      'profitability': 'Profitability Dynamics',
       'bankroll': 'Bankroll Stability',
       'stages': 'Stage Penetration',
     };
@@ -693,18 +692,56 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
       case 'profitability':
         final breakEven =
             r.totalSessions - r.winningSessions - r.losingSessions;
-        return _dataList('Session Profitability', [
-          _row('System Success Ratio', '${r.systemSuccessRatio}%', color: _kPos),
-          _row('Average Profit per Session',
-              '${r.averageProfitPerSession >= 0 ? '+' : '-'}\$${_fmt(r.averageProfitPerSession.abs())}',
-              color: r.averageProfitPerSession >= 0 ? _kPos : _kNeg),
-          _row('Average Profit per Spin',
-              '${r.averageProfitPerSpin >= 0 ? '+' : '-'}\$${_fmt(r.averageProfitPerSpin.abs())}',
-              color: r.averageProfitPerSpin >= 0 ? _kPos : _kNeg),
-          _row('Winning Sessions', _fmt(r.winningSessions), color: _kPos),
-          _row('Losing Sessions', _fmt(r.losingSessions), color: _kNeg),
-          _row('Break-even / Ghost Sessions', _fmt(breakEven)),
-        ]);
+        return LayoutBuilder(builder: (context, c) {
+          final profitCard = _dataList('Session Profitability', [
+            _row('System Success Ratio', '${r.systemSuccessRatio}%', color: _kPos),
+            _row('Average Profit per Session',
+                '${r.averageProfitPerSession >= 0 ? '+' : '-'}\$${_fmt(r.averageProfitPerSession.abs())}',
+                color: r.averageProfitPerSession >= 0 ? _kPos : _kNeg),
+            _row('Average Profit per Spin',
+                '${r.averageProfitPerSpin >= 0 ? '+' : '-'}\$${_fmt(r.averageProfitPerSpin.abs())}',
+                color: r.averageProfitPerSpin >= 0 ? _kPos : _kNeg),
+            _row('Winning Sessions', _fmt(r.winningSessions), color: _kPos),
+            _row('Losing Sessions', _fmt(r.losingSessions), color: _kNeg),
+            _row('Break-even / Ghost Sessions', _fmt(breakEven)),
+          ]);
+          final metaCard = _dataList('Simulation Metadata', [
+            _row('Requested Spins', _fmt(r.totalSpinsRequested)),
+            _row('Actual Spins', _fmt(r.totalSpinsExecuted)),
+            _row('Avg Spins per Session', _fmt(r.averageSpinsPerSession)),
+          ]);
+          final streaksCard = _dataList('Global Streaks', [
+            _row('Max Win Streak', '${r.maxWinStreak} Sessions', color: _kPos),
+            _row('Max Loss Streak', '${r.maxLossStreak} Sessions', color: _kNeg),
+          ]);
+          if (c.maxWidth < 640) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                profitCard,
+                const SizedBox(height: 12),
+                metaCard,
+                const SizedBox(height: 12),
+                streaksCard,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              profitCard,
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: metaCard),
+                  const SizedBox(width: 12),
+                  Expanded(child: streaksCard),
+                ],
+              ),
+            ],
+          );
+        });
       case 'bankroll':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,39 +767,7 @@ class _SimulationRunScreenState extends State<SimulationRunScreen> {
                 _row('${e.key} entered', '${_fmt(e.value)} times', color: _kPos)),
         ]);
       default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(builder: (context, c) {
-              final meta = _dataList('Simulation Metadata', [
-                _row('Requested Spins', _fmt(r.totalSpinsRequested)),
-                _row('Actual Spins', _fmt(r.totalSpinsExecuted)),
-                _row('Avg Spins per Session', _fmt(r.averageSpinsPerSession)),
-              ]);
-              final streaks = _dataList('Global Streaks', [
-                _row('Max Win Streak', '${r.maxWinStreak} Sessions',
-                    color: _kPos),
-                _row('Max Loss Streak', '${r.maxLossStreak} Sessions',
-                    color: _kNeg),
-              ]);
-              if (c.maxWidth < 640) {
-                return Column(children: [
-                  meta,
-                  const SizedBox(height: 12),
-                  streaks
-                ]);
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: meta),
-                  const SizedBox(width: 12),
-                  Expanded(child: streaks),
-                ],
-              );
-            }),
-          ],
-        );
+        return const SizedBox.shrink();
     }
   }
 

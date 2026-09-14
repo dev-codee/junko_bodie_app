@@ -158,7 +158,7 @@ const List<FunnelStep> kFunnelSteps = [
   ),
   FunnelStep(
     id: 'builder_dynamic_rule',
-    targetId: 'funnel-dynamic-rules-btn',
+    targetId: 'dynamic-rules-card',
     route: '/strategies/build',
     title: 'Add a Dynamic Rule',
     text:
@@ -425,7 +425,7 @@ const List<FunnelStep> kFunnelSteps = [
     text:
         'Set your requested spin limit (defaults to 100 spins). 100 spins simulates a focused "Hit and Run" session playing style. You can also test up to 25,000 spins anytime for deep long-term statistical stress-testing!',
     actionHint: 'Review requested spins (default 100), then tap Next',
-    side: 'left',
+    side: 'right',
   ),
   FunnelStep(
     id: 'sim_bankroll_config',
@@ -435,7 +435,7 @@ const List<FunnelStep> kFunnelSteps = [
     text:
         'Configure your starting bankroll (\$5,000) and choose whether profits compound continuously across all spins or reset per session.',
     actionHint: 'Review bankroll configuration, then tap Next',
-    side: 'left',
+    side: 'right',
   ),
   FunnelStep(
     id: 'sim_run',
@@ -449,7 +449,7 @@ const List<FunnelStep> kFunnelSteps = [
     requireAction: true,
     clickAdvances: true,
     hideNextButton: true,
-    side: 'left',
+    side: 'right',
   ),
 
   // ── PHASE 9 — Simulation Results Dashboard ──
@@ -457,10 +457,10 @@ const List<FunnelStep> kFunnelSteps = [
     id: 'sim_grade',
     targetId: 'funnel-grade-card',
     route: '/simulation/run',
-    title: 'General Overview & System Grade',
+    title: 'System Grade',
     text:
-        'General Overview provides a grade for your system using the parameters you submitted. The less dips in bankroll trajectory the better your system. The system\'s P&L and number of sessions for your selected number of spins are also critical information. This screen provides a baseline for system success.',
-    actionHint: 'Review your strategy\'s Casino Grade and Junko\'s Tip, then tap Next',
+        'The grade badge gives you an instant letter rating for your system based on risk-adjusted ROI. Review your grade, then explore the Profitability Dynamics tab below for the full breakdown.',
+    actionHint: 'Review your strategy\'s System Grade, then tap Next',
     side: 'left',
   ),
   FunnelStep(
@@ -469,8 +469,8 @@ const List<FunnelStep> kFunnelSteps = [
     route: '/simulation/run',
     title: 'Profitability Dynamics',
     text:
-        'Junko considers this to be the key screen when determining if a roulette system has potential. The Profitability Stats tell a story.',
-    actionHint: 'Tap the "Profitability Dynamics" tab and review the stats, then tap Next',
+        'Junko considers this to be the key screen when determining if a roulette system has potential. The Profitability Stats — including session metadata and streak data — tell the full story.',
+    actionHint: 'Review the Profitability Dynamics tab, then tap Next',
     side: 'left',
   ),
   FunnelStep(

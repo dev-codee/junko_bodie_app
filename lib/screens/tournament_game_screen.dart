@@ -257,7 +257,8 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 right: 0,
                 top: 0,
                 bottom: 0,
-                child: Center(
+                child: Align(
+                  alignment: const Alignment(0, 0.6),
                   child: Builder(
                     builder: (ctx) => GestureDetector(
                       onTap: () {

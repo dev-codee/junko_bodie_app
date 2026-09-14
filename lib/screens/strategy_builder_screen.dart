@@ -590,7 +590,7 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                             const SizedBox(height: 16),
                             TourTarget(id: 'stage-rules-card', child: _buildStageRulesCard()),
                             const SizedBox(height: 16),
-                            _buildDynamicRulesCard(),
+                            TourTarget(id: 'dynamic-rules-card', child: _buildDynamicRulesCard()),
                             const SizedBox(height: 16),
                             TourTarget(
                                 id: 'strategy-notes',
