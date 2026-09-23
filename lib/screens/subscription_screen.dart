@@ -88,7 +88,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          // Show the exact RevenueCat debug string for 6 seconds so the user can read it
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result),
@@ -105,6 +104,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Premium Access'),
+        leading: IconButton(
+          tooltip: 'Sign out',
+          icon: const Icon(Icons.logout),
+          onPressed: () => context.read<AuthProvider>().signOut(),
+        ),
         actions: [
           TextButton(
             onPressed: _restorePurchases,
@@ -117,6 +121,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           : _isSubscribed
               ? _buildActiveSubscriptionView()
               : _buildPackagesView(),
+      bottomNavigationBar: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => context.push('/terms'),
+              child: const Text('Terms of Service'),
+            ),
+            TextButton(
+              onPressed: () => context.push('/privacy-policy'),
+              child: const Text('Privacy Policy'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -148,7 +167,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       itemCount: _packages.length,
       itemBuilder: (context, index) {
         final package = _packages[index];
-        final isMonthly = package.packageType == PackageType.monthly;
 
         return Card(
           elevation: 4,
@@ -175,9 +193,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           package.storeProduct.priceString,
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
-                        if (isMonthly)
+                        if (package.storeProduct.introductoryPrice != null)
                           const Text(
-                            '7 Days Free Trial!',
+                            'Free Trial Available!',
                             style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                           ),
                       ],

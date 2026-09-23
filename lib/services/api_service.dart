@@ -18,6 +18,7 @@ class ApiException implements Exception {
 /// Injects Supabase auth tokens automatically.
 class ApiService {
   final String baseUrl = apiBaseUrl;
+  static const Duration _timeout = Duration(seconds: 20);
   final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Build request headers, injecting the Supabase user's JWT if available.
@@ -52,7 +53,7 @@ class ApiService {
   Future<dynamic> get(String path) async {
     try {
       final uri = Uri.parse('$baseUrl$path');
-      final response = await http.get(uri, headers: _getHeaders());
+      final response = await http.get(uri, headers: _getHeaders()).timeout(_timeout);
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -68,7 +69,7 @@ class ApiService {
         uri,
         headers: _getHeaders(),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(_timeout);
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -84,7 +85,7 @@ class ApiService {
         uri,
         headers: _getHeaders(),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(_timeout);
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -100,7 +101,7 @@ class ApiService {
         uri,
         headers: _getHeaders(),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(_timeout);
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -116,7 +117,7 @@ class ApiService {
         uri,
         headers: _getHeaders(),
         body: body != null ? jsonEncode(body) : null,
-      );
+      ).timeout(_timeout);
       return _processResponse(response);
     } catch (e) {
       if (e is ApiException) rethrow;

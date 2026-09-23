@@ -57,8 +57,8 @@ class GameSession {
         startingBankroll: _d(j['starting_bankroll']),
         endingBankroll: j['ending_bankroll'] != null ? _d(j['ending_bankroll']) : null,
         currentBankroll: j['current_bankroll'] != null ? _d(j['current_bankroll']) : null,
-        totalSpins: (j['total_spins'] ?? 0) as int,
-        totalWins: (j['total_wins'] ?? 0) as int,
+        totalSpins: ((j['total_spins'] ?? 0) as num).toInt(),
+        totalWins: ((j['total_wins'] ?? 0) as num).toInt(),
         profitLoss: j['profit_loss'] != null ? _d(j['profit_loss']) : null,
         winPercentage: j['win_percentage'] != null ? _d(j['win_percentage']) : null,
         highestBankroll: _d(j['highest_bankroll']),
@@ -100,9 +100,9 @@ class LifetimeStats {
   static double _d(dynamic v) => (v ?? 0).toDouble();
 
   factory LifetimeStats.fromJson(Map<String, dynamic> j) => LifetimeStats(
-        totalSessions: (j['total_sessions'] ?? 0) as int,
-        totalSpins: (j['total_spins'] ?? 0) as int,
-        totalWins: (j['total_wins'] ?? 0) as int,
+        totalSessions: ((j['total_sessions'] ?? 0) as num).toInt(),
+        totalSpins: ((j['total_spins'] ?? 0) as num).toInt(),
+        totalWins: ((j['total_wins'] ?? 0) as num).toInt(),
         totalProfitLoss: _d(j['total_profit_loss']),
         bestSessionProfit: _d(j['best_session_profit']),
         worstSessionLoss: _d(j['worst_session_loss']),

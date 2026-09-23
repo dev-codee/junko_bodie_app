@@ -10,7 +10,7 @@ class PurchasesService {
 
   PurchasesService._internal();
 
-  // TODO: Replace with your actual RevenueCat API keys
+  // RevenueCat public SDK keys (safe to ship in the client).
   static const String _appleApiKey = 'appl_BmkBhcPKGxMJSUXTmeFNGqaUBnM';
   static const String _googleApiKey = 'goog_BjtgBCStEkOwVWJbhtciNrUqOrz';
 
@@ -20,7 +20,7 @@ class PurchasesService {
   Future<void> init() async {
     if (_isConfigured) return;
 
-    await Purchases.setLogLevel(LogLevel.debug);
+    await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.warn);
 
     PurchasesConfiguration? configuration;
 
@@ -106,11 +106,11 @@ class PurchasesService {
       if (activeEntitlements.isNotEmpty) {
         return 'success';
       } else {
-        return 'Active entitlements found: $activeEntitlements. Expected: [Junko Bodie Roulette Premium]. If empty, RevenueCat is rejecting your receipt. Did you upload the Google Play Service Account JSON?';
+        return 'No active subscription was found to restore.';
       }
     } catch (e) {
       debugPrint('Error restoring purchases: $e');
-      return 'Error: $e';
+      return 'Could not restore purchases. Please try again later.';
     }
   }
 

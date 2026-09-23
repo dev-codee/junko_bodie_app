@@ -41,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Check subscription when user signs in
       if (_user != null) {
+        await PurchasesService().login(_user!.id);
         await checkSubscription();
       } else {
         _hasSubscription = false;
@@ -55,6 +56,7 @@ class AuthProvider extends ChangeNotifier {
     _user = session?.user;
     
     if (_user != null) {
+      await PurchasesService().login(_user!.id);
       await checkSubscription();
     }
 
@@ -158,6 +160,7 @@ class AuthProvider extends ChangeNotifier {
   /// Sign out.
   Future<void> signOut() async {
     await _supabase.auth.signOut();
+    await PurchasesService().logout();
     _user = null;
     _hasSubscription = false;
     notifyListeners();

@@ -7,6 +7,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:junko_bodie/providers/auth_provider.dart';
 import 'package:junko_bodie/screens/landing_screen.dart';
 import 'package:junko_bodie/screens/login_screen.dart';
 import 'package:junko_bodie/screens/update_password_screen.dart';
@@ -30,18 +31,19 @@ import 'package:junko_bodie/screens/subscription_screen.dart';
 
 /// Creates the app router.
 ///
-/// [isAuthenticated] and [hasSubscription] are passed from the auth provider
-/// so the router can redirect based on auth state.
-GoRouter buildRouter({
-  required bool isAuthenticated,
-  required bool hasSubscription,
-  required bool isLoading,
-  required bool needsPasswordReset,
-}) {
+/// Built once per app; [auth] is used as the refresh listenable so redirects
+/// re-run whenever auth state changes, without resetting the navigation stack.
+GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: kDebugMode,
+    refreshListenable: auth,
     redirect: (context, state) {
+      final isAuthenticated = auth.isAuthenticated;
+      final hasSubscription = auth.hasSubscription;
+      final isLoading = auth.isLoading;
+      final needsPasswordReset = auth.needsPasswordReset;
+
       // While loading auth, don't redirect anywhere
       if (isLoading) return null;
 
@@ -68,6 +70,8 @@ GoRouter buildRouter({
       if (!hasSubscription) {
         if (isOnSubscribe ||
             state.uri.path == '/account/billing' ||
+            state.uri.path == '/terms' ||
+            state.uri.path == '/privacy-policy' ||
             isOnLanding) {
           return null;
         }

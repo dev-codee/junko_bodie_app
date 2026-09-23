@@ -89,10 +89,8 @@ class GameProvider extends ChangeNotifier {
       _isTimerEnabled = profile.isTimerEnabled;
     } catch (e) {
       debugPrint('GameProvider: Error loading profile balance: $e');
-      // Fallback balance so development/testing is not blocked by 401 Unauthorized
-      if (_balance == 0.0) {
-        _balance = 10000.0;
-      }
+      // Keep the last known balance; never invent chips the server doesn't have.
+      triggerFundError('Could not load your balance. Check your connection.');
     } finally {
       _loading = false;
       notifyListeners();
@@ -419,6 +417,10 @@ class GameProvider extends ChangeNotifier {
   /// Spins even when no bets are placed (the auto-timeout path always spins,
   /// matching the web app — an empty-bet spin just yields a $0 payout).
   Future<SpinResult?> executeSpin() async {
+    // Only one spin per round: ignore repeated taps / timer races once the
+    // wheel is already spinning, so the bet is never deducted twice.
+    if (_phase != GamePhase.betting && _phase != GamePhase.locked) return null;
+
     // Archive current bets for Rebet
     _lastSpinBets = Map.from(_bets).map(
       (key, value) => MapEntry(

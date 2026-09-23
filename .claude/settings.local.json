@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(grep -rln \"MEMBER REGISTRY\\\\|OFFICIAL PROTOCOL\\\\|Member Profile\\\\|IDENTITY NAME\" \"C:/Users/Faizan/Desktop/junko_bodie/src\" 2>/dev/null | head)",
+      "PowerShell(flutter analyze *)",
+      "Bash(xargs grep -ln \"class ChipStackWidget\")",
+      "Bash(flutter pub *)",
+      "Read(//c/Users/Faizan/AppData/Local/Temp/claude/E--junko-bodie-app/cdac0dbf-23a6-4898-8ecd-d188819e535a/tasks/**)",
+      "Bash(grep -iv \"//\")",
+      "Bash(awk '/\\\\.gradeBadgeContainer|\\\\.gradeBadgeTopRow|\\\\.gradeAdminPill|\\\\.gradeSystemTitle|\\\\.gradeInnerBox|\\\\.gradeBigLetter|\\\\.gradeLabelBlock|\\\\.gradeLabelTitle|\\\\.gradeLabelDesc|\\\\.backBtn|\\\\.returnLibBtn|\\\\.topNavRow|\\\\.strategyName|\\\\.subtitle|\\\\.headerHero|\\\\.headerLeft|\\\\.headerCardsRow/{f=1} f{print} /^}/{if\\(f\\)f=0}' src/app/simulation/run/page.module.css)",
+      "Bash(grep -n \"_kInk\\\\b\\\\|_kGold\\\\b\\\\|_kGoldDark\\\\|_kInkText\\\\|_kInk =\\\\|_kGold =\\\\|const Color\\\\|\\({String grade, String label, Color color}\\) _grade\\\\|_grade\\(\" lib/screens/simulation_run_screen.dart)",
+      "Bash(awk '/\\\\.toggleBtn|\\\\.switch|\\\\.slider/{f=1} f{print} /^}/{if\\(f\\)f=0}' src/app/homepage.module.css src/app/strategies/*.module.css)",
+      "Bash(git checkout *)",
+      "Bash(flutter devices *)",
+      "Skill(run)"
+    ]
+  }
+}

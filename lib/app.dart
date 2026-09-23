@@ -41,8 +41,14 @@ class _AppWithRouter extends StatefulWidget {
 
 class _AppWithRouterState extends State<_AppWithRouter> {
   bool _ageGateChecked = false;
-  GoRouter? _router;
+  late final GoRouter _router = buildRouter(context.read<AuthProvider>());
   bool _tourHooksWired = false;
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -57,22 +63,12 @@ class _AppWithRouterState extends State<_AppWithRouter> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-
-    final router = buildRouter(
-      isAuthenticated: auth.isAuthenticated,
-      hasSubscription: auth.hasSubscription,
-      isLoading: auth.isLoading,
-      needsPasswordReset: auth.needsPasswordReset,
-    );
-    _router = router;
-
     // Wire the tour controller to go_router for cross-screen navigation and
-    // current-route awareness (done once; closures read the latest _router).
+    // current-route awareness (done once).
     if (!_tourHooksWired) {
       _tourHooksWired = true;
       final tour = context.read<TourController>();
-      tour.navigator = (route) => _router?.go(route);
+      tour.navigator = (route) => _router.go(route);
       // Report the TOP-MOST route path, including imperatively pushed routes.
       // go_router's `RouteMatchList.uri` deliberately ignores ImperativeRouteMatch
       // (context.push), so after a push it still returns the base location — which
@@ -80,8 +76,8 @@ class _AppWithRouterState extends State<_AppWithRouter> {
       // hide itself. `lastOrNull.matchedLocation` resolves the pushed leaf route
       // (and strips query params, matching the funnel step route strings).
       tour.routeGetter = () {
-        final config = _router?.routerDelegate.currentConfiguration;
-        return config?.lastOrNull?.matchedLocation ?? config?.uri.path ?? '';
+        final config = _router.routerDelegate.currentConfiguration;
+        return config.lastOrNull?.matchedLocation ?? config.uri.path;
       };
     }
 
@@ -89,7 +85,7 @@ class _AppWithRouterState extends State<_AppWithRouter> {
       title: 'Junko Bodie Roulette Tournament',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      routerConfig: router,
+      routerConfig: _router,
       builder: (context, child) {
         return Stack(
           children: [
