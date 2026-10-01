@@ -41,7 +41,7 @@ class _RouletteTableState extends State<RouletteTable> {
 
         final hasBets = provider.bets.isNotEmpty;
         final spinEnabled =
-            canBet && hasBets; // Require bets to spin in solo game
+            canBet; // Allow spin even without bets (test spins), matching web behaviour
 
         return LayoutBuilder(
           builder: (context, constraints) {
