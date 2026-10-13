@@ -305,6 +305,8 @@ class _RouletteTableState extends State<RouletteTable> {
                                                     provider.clearZone,
                                                 wheelType:
                                                     provider.wheelType,
+                                                tableAppearance:
+                                                    provider.tableAppearance,
                                               ),
                                             ),
                                           ),

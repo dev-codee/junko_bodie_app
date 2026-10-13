@@ -28,6 +28,7 @@ class SettingsModal extends StatefulWidget {
 class _SettingsModalState extends State<SettingsModal> {
   final UserService _userService = UserService();
   final SubscriptionService _subService = SubscriptionService();
+  final TextEditingController _customBankrollController = TextEditingController();
 
   bool _isLoading = true;
   String? _error;
@@ -38,6 +39,7 @@ class _SettingsModalState extends State<SettingsModal> {
   bool _isTimerEnabled = true;
   bool _isPopupEnabled = true;
   double _startingBalance = 1000.0;
+  String _tableAppearance = 'classic';
   SubscriptionStatus? _subStatus;
 
   // Actions state
@@ -63,6 +65,8 @@ class _SettingsModalState extends State<SettingsModal> {
           _isTimerEnabled = profile.isTimerEnabled;
           _isPopupEnabled = profile.isPopupEnabled;
           _startingBalance = profile.startingBalance;
+          _tableAppearance = profile.tableAppearance;
+          _customBankrollController.text = profile.startingBalance.toStringAsFixed(0);
           _subStatus = sub;
           _isLoading = false;
         });
@@ -75,6 +79,12 @@ class _SettingsModalState extends State<SettingsModal> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _customBankrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _toggleSetting(String key, bool value) async {
@@ -133,6 +143,17 @@ class _SettingsModalState extends State<SettingsModal> {
         return false;
       }),
     );
+  }
+
+  void _changeTableAppearance(String appearance) {
+    soundEngine.playClick();
+    setState(() => _tableAppearance = appearance);
+    try {
+      Provider.of<GameProvider>(context, listen: false)
+          .setTableAppearance(appearance);
+    } catch (_) {
+      unawaited(_userService.updateProfile(tableAppearance: appearance));
+    }
   }
 
   Future<void> _handleResetBalance() async {
@@ -355,6 +376,11 @@ class _SettingsModalState extends State<SettingsModal> {
                               ),
                               const SizedBox(height: 8),
                               _buildSegmentedControl(),
+                              const SizedBox(height: 10),
+                              _buildCustomBankrollControl(),
+                              const SizedBox(height: 24),
+
+                              _buildTableAppearanceControl(),
                               const SizedBox(height: 24),
 
                               // Reset Account Balance Action
@@ -527,40 +553,173 @@ class _SettingsModalState extends State<SettingsModal> {
   }
 
   Widget _buildSegmentedControl() {
-    final amounts = [500.0, 1000.0, 2000.0, 5000.0];
-    return Row(
+    final amounts = [100.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0];
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
       children: amounts.map((amount) {
         final isSelected = _startingBalance == amount;
-        final label = amount < 1000 ? '\$${amount.toInt()}' : '\$${(amount / 1000).toInt()}k';
+        final label = amount >= 1000 ? '\$${(amount / 1000).toInt()}k' : '\$${amount.toInt()}';
 
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: GestureDetector(
-              onTap: () => _changeStartingBalance(amount),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.1),
-                  ),
+        return SizedBox(
+          width: 72,
+          child: GestureDetector(
+            onTap: () {
+              _customBankrollController.text = amount.toInt().toString();
+              _changeStartingBalance(amount);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.1),
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                    color: isSelected ? AppColors.black : Colors.white,
-                  ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  color: isSelected ? AppColors.black : Colors.white,
                 ),
               ),
             ),
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildCustomBankrollControl() {
+    return Row(
+      children: [
+        Text('Custom \$', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 120,
+          child: TextField(
+            controller: _customBankrollController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _applyCustomBankroll(),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.35)),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(onPressed: _applyCustomBankroll, child: const Text('Apply')),
+      ],
+    );
+  }
+
+  void _applyCustomBankroll() {
+    final amount = int.tryParse(_customBankrollController.text.trim());
+    if (amount != null && amount > 0) _changeStartingBalance(amount.toDouble());
+  }
+
+  Widget _buildTableAppearanceControl() {
+    const options = [
+      ('classic', 'Classic', 'Round · Serif'),
+      ('modern', 'Modern', 'Soft square · Sans'),
+      ('minimal', 'Minimal', 'No badge · Clean'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TABLE APPEARANCE',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppColors.gold,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Change number colors and type style. Bet areas work the same.',
+          style: GoogleFonts.inter(fontSize: 11, color: Colors.white54),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - 16) / 3;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: options.map((option) {
+                final selected = _tableAppearance == option.$1;
+                return InkWell(
+                  onTap: () => _changeTableAppearance(option.$1),
+                  borderRadius: BorderRadius.circular(9),
+                  child: Container(
+                    width: itemWidth,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.gold.withOpacity(0.12) : Colors.white.withOpacity(0.035),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: selected ? AppColors.gold : Colors.white.withOpacity(0.12),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: ['17', '8', '0'].asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final text = entry.value;
+                            final isMinimal = option.$1 == 'minimal';
+                            final isClassic = option.$1 == 'classic';
+                            return Container(
+                              width: isMinimal ? 20 : 23,
+                              height: isMinimal ? 20 : 23,
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isMinimal
+                                    ? Colors.transparent
+                                    : [const Color(0xFF9F3438), const Color(0xFF20252B), const Color(0xFF17634E)][index],
+                                borderRadius: BorderRadius.circular(isClassic ? 50 : option.$1 == 'modern' ? 6 : 0),
+                              ),
+                              child: Text(
+                                text,
+                                style: TextStyle(
+                                  fontFamily: isClassic ? 'Georgia' : 'Arial',
+                                  color: isMinimal
+                                      ? [const Color(0xFFFFAAA6), Colors.white, const Color(0xFF7FE3A1)][index]
+                                      : Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(option.$2, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                        const SizedBox(height: 2),
+                        Text(option.$3, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 9, color: Colors.white54)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 

@@ -55,6 +55,7 @@ class NumberCell extends StatefulWidget {
   final ValueChanged<String>? onClearZone;
   final bool isMine;
   final bool isCompact;
+  final String tableAppearance;
 
   const NumberCell({
     super.key,
@@ -74,6 +75,7 @@ class NumberCell extends StatefulWidget {
     this.onClearZone,
     this.isMine = true,
     this.isCompact = false,
+    this.tableAppearance = 'classic',
   });
 
   @override
@@ -200,12 +202,30 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                     // circle so the grid reads like the web reference.
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      width: widget.isCompact ? 30 : 44,
-                      height: widget.isCompact ? 22 : 34,
+                      width: widget.tableAppearance == 'minimal'
+                          ? (widget.isCompact ? 22 : 34)
+                          : (widget.isCompact ? 30 : 44),
+                      height: widget.tableAppearance == 'minimal'
+                          ? (widget.isCompact ? 18 : 28)
+                          : (widget.isCompact ? 22 : 34),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(100),
-                        color: getCellBg(widget.num),
-                        border: Border.all(
+                        borderRadius: BorderRadius.circular(
+                          widget.tableAppearance == 'classic'
+                              ? 100
+                              : widget.tableAppearance == 'modern' ? 7 : 0,
+                        ),
+                        color: widget.tableAppearance == 'minimal'
+                            ? Colors.transparent
+                            : widget.tableAppearance == 'modern'
+                                ? (RNG.getNumberColor(widget.num) == 'red'
+                                    ? const Color(0xFFA83D42)
+                                    : RNG.getNumberColor(widget.num) == 'green'
+                                        ? const Color(0xFF17634E)
+                                        : const Color(0xFF27313B))
+                                : getCellBg(widget.num),
+                        border: widget.tableAppearance == 'minimal'
+                            ? Border.all(color: Colors.transparent)
+                            : Border.all(
                           color: widget.isWinner
                               ? AppColors.gold
                               : Colors.white.withOpacity(0.12),
@@ -224,11 +244,24 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                         fit: BoxFit.scaleDown,
                         child: Text(
                           RNG.getDisplayNumber(widget.num),
-                          style: playfairDisplay(
-                            fontSize: widget.isCompact ? 12 : 16,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ).copyWith(height: 1.0),
+                          style: (widget.tableAppearance == 'classic'
+                                  ? playfairDisplay(
+                                      fontSize: widget.isCompact ? 12 : 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.inter(
+                                      fontSize: widget.isCompact ? 12 : 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: widget.tableAppearance != 'minimal'
+                                          ? Colors.white
+                                          : RNG.getNumberColor(widget.num) == 'red'
+                                              ? const Color(0xFFFFAAA6)
+                                              : RNG.getNumberColor(widget.num) == 'green'
+                                                  ? const Color(0xFF7FE3A1)
+                                                  : Colors.white,
+                                    ))
+                              .copyWith(height: 1.0),
                         ),
                       ),
                     ),
@@ -704,6 +737,7 @@ class BettingLayout extends StatefulWidget {
   final WheelType wheelType;
   final Map<String, PlacedBet>? myBets;
   final bool isCompact;
+  final String tableAppearance;
 
   const BettingLayout({
     super.key,
@@ -721,6 +755,7 @@ class BettingLayout extends StatefulWidget {
     required this.wheelType,
     this.myBets,
     this.isCompact = false,
+    this.tableAppearance = 'classic',
   });
 
   @override
@@ -1284,6 +1319,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                                                   onClearZone: widget.onClearZone,
                                                                   isMine: widget.myBets?.containsKey('straight-00') ?? true,
                                                                   isCompact: widget.isCompact,
+                                                                  tableAppearance: widget.tableAppearance,
                                                                 ),
                                                                 NumberCell(
                                                                   num: 0,
@@ -1301,6 +1337,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                                                   onClearZone: widget.onClearZone,
                                                                   isMine: widget.myBets?.containsKey('straight-0') ?? true,
                                                                   isCompact: widget.isCompact,
+                                                                  tableAppearance: widget.tableAppearance,
                                                                 ),
                                                               ],
                                                             ),
@@ -1347,6 +1384,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                                           onClearZone: widget.onClearZone,
                                                           isMine: widget.myBets?.containsKey('straight-0') ?? true,
                                                           isCompact: widget.isCompact,
+                                                          tableAppearance: widget.tableAppearance,
                                                         ),
                                                       ],
                                                     ),
@@ -1380,6 +1418,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                                             onClearZone: widget.onClearZone,
                                                             isMine: widget.myBets?.containsKey(betId) ?? true,
                                                             isCompact: widget.isCompact,
+                                                            tableAppearance: widget.tableAppearance,
                                                           );
                                                         }).toList(),
                                                       ),

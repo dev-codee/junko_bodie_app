@@ -133,6 +133,7 @@ class Player {
   final String avatarUrl;
   final double balance;
   final double startingBalance;
+  final String tableAppearance;
   final bool isSoundEnabled;
   final bool isTimerEnabled;
   final bool isPopupEnabled;
@@ -154,6 +155,7 @@ class Player {
     required this.avatarUrl,
     required this.balance,
     required this.startingBalance,
+    this.tableAppearance = 'classic',
     required this.isSoundEnabled,
     required this.isTimerEnabled,
     required this.isPopupEnabled,
@@ -176,6 +178,9 @@ class Player {
         avatarUrl: json['avatar_url'] ?? '',
         balance: (json['balance'] ?? 0).toDouble(),
         startingBalance: (json['starting_balance'] ?? 0).toDouble(),
+        tableAppearance: ['classic', 'modern', 'minimal'].contains(json['table_appearance'])
+            ? json['table_appearance']
+            : 'classic',
         isSoundEnabled: json['is_sound_enabled'] ?? true,
         isTimerEnabled: json['is_timer_enabled'] ?? true,
         isPopupEnabled: json['is_popup_enabled'] ?? true,
@@ -205,6 +210,7 @@ class Player {
         'avatar_url': avatarUrl,
         'balance': balance,
         'starting_balance': startingBalance,
+        'table_appearance': tableAppearance,
         'is_sound_enabled': isSoundEnabled,
         'is_timer_enabled': isTimerEnabled,
         'is_popup_enabled': isPopupEnabled,

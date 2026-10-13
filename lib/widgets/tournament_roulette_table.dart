@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:junko_bodie/logic/bets.dart';
 import 'package:junko_bodie/logic/rng.dart' as rng;
 import 'package:junko_bodie/providers/tournament_provider.dart';
+import 'package:junko_bodie/providers/game_provider.dart';
 import 'package:junko_bodie/widgets/betting_layout.dart';
 import 'package:junko_bodie/widgets/roulette_wheel.dart';
 
@@ -13,6 +14,7 @@ class TournamentRouletteTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tableAppearance = context.watch<GameProvider>().tableAppearance;
     return Consumer<TournamentProvider>(
       builder: (context, provider, child) {
         final bool canBet = provider.phase == 'betting';
@@ -295,6 +297,7 @@ class TournamentRouletteTable extends StatelessWidget {
                                                     provider.clearZone,
                                                 wheelType: wheelTypeEnum,
                                                 myBets: provider.bets,
+                                                tableAppearance: tableAppearance,
                                               ),
                                             ),
                                           ),

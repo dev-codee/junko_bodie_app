@@ -19,6 +19,7 @@ class UserService {
     bool? isTimerEnabled,
     bool? isPopupEnabled,
     double? startingBalance,
+    String? tableAppearance,
     bool? hasSeenWelcomeVideo,
   }) async {
     final body = <String, dynamic>{};
@@ -28,6 +29,7 @@ class UserService {
     if (isTimerEnabled != null) body['is_timer_enabled'] = isTimerEnabled;
     if (isPopupEnabled != null) body['is_popup_enabled'] = isPopupEnabled;
     if (startingBalance != null) body['starting_balance'] = startingBalance;
+    if (tableAppearance != null) body['table_appearance'] = tableAppearance;
     if (hasSeenWelcomeVideo != null) {
       body['has_seen_welcome_video'] = hasSeenWelcomeVideo;
     }

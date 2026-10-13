@@ -39,6 +39,7 @@ class GameProvider extends ChangeNotifier {
   Timer? _fundErrorTimer;
   bool _loading = false;
   bool _isTimerEnabled = true;
+  String _tableAppearance = 'classic';
 
   final Map<String, double> _sessionStats = {
     'lastBet': 0.0,
@@ -66,6 +67,7 @@ class GameProvider extends ChangeNotifier {
   String? get fundError => _fundError;
   bool get loading => _loading;
   bool get isTimerEnabled => _isTimerEnabled;
+  String get tableAppearance => _tableAppearance;
   Map<String, double> get sessionStats => _sessionStats;
 
   // Staged betting getters
@@ -77,6 +79,20 @@ class GameProvider extends ChangeNotifier {
 
   GameProvider() {
     _loadHistory();
+    _loadTableAppearance();
+  }
+
+  Future<void> _loadTableAppearance() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('table_appearance');
+      if (saved != null && const ['classic', 'modern', 'minimal'].contains(saved)) {
+        _tableAppearance = saved;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('GameProvider: Could not load table appearance: $e');
+    }
   }
 
   /// Initialize and fetch the user's latest balance from the backend.
@@ -87,6 +103,7 @@ class GameProvider extends ChangeNotifier {
       final profile = await _userService.getProfile();
       _balance = profile.balance;
       _isTimerEnabled = profile.isTimerEnabled;
+      _tableAppearance = profile.tableAppearance;
     } catch (e) {
       debugPrint('GameProvider: Error loading profile balance: $e');
       // Keep the last known balance; never invent chips the server doesn't have.
@@ -94,6 +111,19 @@ class GameProvider extends ChangeNotifier {
     } finally {
       _loading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> setTableAppearance(String appearance) async {
+    if (!const ['classic', 'modern', 'minimal'].contains(appearance)) return;
+    _tableAppearance = appearance;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('table_appearance', appearance);
+      await _userService.updateProfile(tableAppearance: appearance);
+    } catch (e) {
+      debugPrint('GameProvider: Could not save table appearance: $e');
     }
   }
 
