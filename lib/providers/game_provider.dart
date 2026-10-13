@@ -40,6 +40,8 @@ class GameProvider extends ChangeNotifier {
   bool _loading = false;
   bool _isTimerEnabled = true;
   String _tableAppearance = 'classic';
+  bool _profileAppearanceLoaded = false;
+  bool _appearanceManuallyChanged = false;
 
   final Map<String, double> _sessionStats = {
     'lastBet': 0.0,
@@ -86,7 +88,8 @@ class GameProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('table_appearance');
-      if (saved != null && const ['classic', 'modern', 'minimal'].contains(saved)) {
+      if (!_profileAppearanceLoaded && !_appearanceManuallyChanged && saved != null &&
+          const ['classic', 'modern', 'minimal'].contains(saved)) {
         _tableAppearance = saved;
         notifyListeners();
       }
@@ -104,6 +107,7 @@ class GameProvider extends ChangeNotifier {
       _balance = profile.balance;
       _isTimerEnabled = profile.isTimerEnabled;
       _tableAppearance = profile.tableAppearance;
+      _profileAppearanceLoaded = true;
     } catch (e) {
       debugPrint('GameProvider: Error loading profile balance: $e');
       // Keep the last known balance; never invent chips the server doesn't have.
@@ -116,6 +120,7 @@ class GameProvider extends ChangeNotifier {
 
   Future<void> setTableAppearance(String appearance) async {
     if (!const ['classic', 'modern', 'minimal'].contains(appearance)) return;
+    _appearanceManuallyChanged = true;
     _tableAppearance = appearance;
     notifyListeners();
     try {
@@ -125,6 +130,17 @@ class GameProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('GameProvider: Could not save table appearance: $e');
     }
+  }
+
+  void syncTableAppearanceFromProfile(String appearance) {
+    if (!const ['classic', 'modern', 'minimal'].contains(appearance)) return;
+    _profileAppearanceLoaded = true;
+    if (_tableAppearance == appearance) return;
+    _tableAppearance = appearance;
+    notifyListeners();
+    unawaited(SharedPreferences.getInstance().then<void>((prefs) async {
+      await prefs.setString('table_appearance', appearance);
+    }));
   }
 
   // ── Session-history recording ───────────────────────────────────────────

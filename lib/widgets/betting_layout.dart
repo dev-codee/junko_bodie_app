@@ -250,6 +250,12 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
                                     )
+                                  : widget.tableAppearance == 'modern'
+                                      ? GoogleFonts.robotoCondensed(
+                                          fontSize: widget.isCompact ? 12 : 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        )
                                   : GoogleFonts.inter(
                                       fontSize: widget.isCompact ? 12 : 16,
                                       fontWeight: FontWeight.w800,

@@ -59,6 +59,8 @@ class _SettingsModalState extends State<SettingsModal> {
       final profile = await _userService.getProfile();
       final sub = await _subService.getStatus();
       if (mounted) {
+        Provider.of<GameProvider>(context, listen: false)
+            .syncTableAppearanceFromProfile(profile.tableAppearance);
         setState(() {
           _isSoundEnabled = profile.isSoundEnabled;
           _isMusicEnabled = soundEngine.isMusicEnabled;
@@ -631,7 +633,7 @@ class _SettingsModalState extends State<SettingsModal> {
   Widget _buildTableAppearanceControl() {
     const options = [
       ('classic', 'Classic', 'Round · Serif'),
-      ('modern', 'Modern', 'Soft square · Sans'),
+      ('modern', 'Modern', 'Soft square · Condensed'),
       ('minimal', 'Minimal', 'No badge · Clean'),
     ];
     return Column(
@@ -696,7 +698,11 @@ class _SettingsModalState extends State<SettingsModal> {
                               child: Text(
                                 text,
                                 style: TextStyle(
-                                  fontFamily: isClassic ? 'Georgia' : 'Arial',
+                                  fontFamily: isClassic
+                                      ? 'Georgia'
+                                      : option.$1 == 'modern'
+                                          ? 'Roboto Condensed'
+                                          : 'Arial',
                                   color: isMinimal
                                       ? [const Color(0xFFFFAAA6), Colors.white, const Color(0xFF7FE3A1)][index]
                                       : Colors.white,
