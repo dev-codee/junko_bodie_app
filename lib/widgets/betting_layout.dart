@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -218,10 +219,10 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                             ? Colors.transparent
                             : widget.tableAppearance == 'modern'
                                 ? (RNG.getNumberColor(widget.num) == 'red'
-                                    ? const Color(0xFFA83D42)
+                                    ? const Color(0xFFC9474E)
                                     : RNG.getNumberColor(widget.num) == 'green'
-                                        ? const Color(0xFF17634E)
-                                        : const Color(0xFF27313B))
+                                        ? const Color(0xFF217C60)
+                                        : const Color(0xFF354350))
                                 : getCellBg(widget.num),
                         border: widget.tableAppearance == 'minimal'
                             ? Border.all(color: Colors.transparent)
@@ -257,14 +258,14 @@ class _NumberCellState extends State<NumberCell> with SingleTickerProviderStateM
                                           color: Colors.white,
                                         )
                                   : GoogleFonts.inter(
-                                      fontSize: widget.isCompact ? 12 : 16,
+                                      fontSize: widget.isCompact ? 14 : 18,
                                       fontWeight: FontWeight.w800,
                                       color: widget.tableAppearance != 'minimal'
                                           ? Colors.white
                                           : RNG.getNumberColor(widget.num) == 'red'
-                                              ? const Color(0xFFFFAAA6)
+                                              ? const Color(0xFFFFC4C0)
                                               : RNG.getNumberColor(widget.num) == 'green'
-                                                  ? const Color(0xFF7FE3A1)
+                                                  ? const Color(0xFFA3FFC4)
                                                   : Colors.white,
                                     ))
                               .copyWith(height: 1.0),
@@ -530,6 +531,7 @@ class _DropZoneState extends State<DropZone> {
 /// Representing outside bet blocks (Dozens, Columns, Odd/Even, etc.)
 class OutsideBetCell extends StatefulWidget {
   final String label;
+  final String tableAppearance;
   final PlacedBet? bet;
   final VoidCallback onPlace;
   final VoidCallback onRemove;
@@ -552,6 +554,7 @@ class OutsideBetCell extends StatefulWidget {
   const OutsideBetCell({
     super.key,
     required this.label,
+    this.tableAppearance = 'classic',
     this.bet,
     required this.onPlace,
     required this.onRemove,
@@ -577,6 +580,31 @@ class OutsideBetCell extends StatefulWidget {
 }
 
 class _OutsideBetCellState extends State<OutsideBetCell> {
+  Widget _buildDozenLabel() {
+    final size = widget.isCompact ? 12.0 : 16.0;
+    final style = (widget.tableAppearance == 'classic'
+        ? playfairDisplay(fontSize: size, fontWeight: FontWeight.w900)
+        : widget.tableAppearance == 'modern'
+            ? GoogleFonts.robotoCondensed(fontSize: size, fontWeight: FontWeight.w800)
+            : GoogleFonts.inter(fontSize: size, fontWeight: FontWeight.w800))
+        .copyWith(color: Colors.white, height: 1, letterSpacing: 0,
+          fontFeatures: const [FontFeature.liningFigures(), FontFeature.tabularFigures()]);
+    return Semantics(
+      label: widget.label,
+      child: ExcludeSemantics(child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.label.substring(0, 1), style: style),
+          Padding(padding: EdgeInsets.only(top: size * .04),
+            child: Text(widget.label.substring(1, 3).toUpperCase(), style: style.copyWith(fontSize: size * .55))),
+          SizedBox(width: size * .22),
+          Text('12', style: style),
+        ],
+      )),
+    );
+  }
+
   bool _isHovered = false;
 
   void _handleTap() {
@@ -673,7 +701,9 @@ class _OutsideBetCellState extends State<OutsideBetCell> {
               clipBehavior: Clip.none,
               children: [
                 // Label text
-                Text(
+                if (widget.betId.startsWith('dozen-'))
+                  _buildDozenLabel()
+                else Text(
                   widget.label,
                   textAlign: TextAlign.center,
                   style: widget.textStyle ??
@@ -1709,6 +1739,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                     children: [
                                       OutsideBetCell(
                                         label: '1st 12',
+                                        tableAppearance: widget.tableAppearance,
                                         betId: 'dozen-1st',
                                         border: const Border(
                                           right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
@@ -1730,6 +1761,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                       ),
                                       OutsideBetCell(
                                         label: '2nd 12',
+                                        tableAppearance: widget.tableAppearance,
                                         betId: 'dozen-2nd',
                                         border: const Border(
                                           right: BorderSide(color: Color(0xFF5EA896), width: 1.5),
@@ -1751,6 +1783,7 @@ class _BettingLayoutState extends State<BettingLayout> {
                                       ),
                                       OutsideBetCell(
                                         label: '3rd 12',
+                                        tableAppearance: widget.tableAppearance,
                                         betId: 'dozen-3rd',
                                         border: const Border(),
                                         bet: widget.bets['dozen-3rd'],

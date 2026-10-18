@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:junko_bodie/logic/game_phases.dart';
+import 'package:junko_bodie/widgets/bankroll_apply_button.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:junko_bodie/config/theme.dart';
@@ -560,7 +562,7 @@ class _SettingsModalState extends State<SettingsModal> {
       spacing: 6,
       runSpacing: 6,
       children: amounts.map((amount) {
-        final isSelected = _startingBalance == amount;
+        final isSelected = double.tryParse(_customBankrollController.text) == amount;
         final label = amount >= 1000 ? '\$${(amount / 1000).toInt()}k' : '\$${amount.toInt()}';
 
         return SizedBox(
@@ -568,7 +570,7 @@ class _SettingsModalState extends State<SettingsModal> {
           child: GestureDetector(
             onTap: () {
               _customBankrollController.text = amount.toInt().toString();
-              _changeStartingBalance(amount);
+              setState(() {});
             },
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -600,12 +602,14 @@ class _SettingsModalState extends State<SettingsModal> {
       children: [
         Text('Custom \$', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
         const SizedBox(width: 10),
-        SizedBox(
+        Flexible(
+          child: SizedBox(
           width: 120,
           child: TextField(
             controller: _customBankrollController,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _applyCustomBankroll(),
             style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
             decoration: InputDecoration(
@@ -619,15 +623,27 @@ class _SettingsModalState extends State<SettingsModal> {
             ),
           ),
         ),
+        ),
         const SizedBox(width: 8),
-        TextButton(onPressed: _applyCustomBankroll, child: const Text('Apply')),
+        BankrollApplyButton(
+          controller: _customBankrollController,
+          startingBalance: _startingBalance,
+          balance: context.watch<GameProvider>().balance,
+          enabled: !widget.tournamentMode && context.watch<GameProvider>().phase == GamePhase.betting,
+          onApply: (_) => _applyCustomBankroll(),
+        ),
       ],
     );
   }
 
   void _applyCustomBankroll() {
     final amount = int.tryParse(_customBankrollController.text.trim());
-    if (amount != null && amount > 0) _changeStartingBalance(amount.toDouble());
+    final game = context.read<GameProvider>();
+    if (widget.tournamentMode || game.phase != GamePhase.betting ||
+        amount == null || amount <= 0 || amount > 9007199254740991 ||
+        (amount == _startingBalance && amount == game.balance)) return;
+    _changeStartingBalance(amount.toDouble());
+    game.applyBankroll(amount.toDouble());
   }
 
   Widget _buildTableAppearanceControl() {
@@ -692,7 +708,9 @@ class _SettingsModalState extends State<SettingsModal> {
                               decoration: BoxDecoration(
                                 color: isMinimal
                                     ? Colors.transparent
-                                    : [const Color(0xFF9F3438), const Color(0xFF20252B), const Color(0xFF17634E)][index],
+                                    : option.$1 == 'modern'
+                                        ? [const Color(0xFFC9474E), const Color(0xFF354350), const Color(0xFF217C60)][index]
+                                        : [const Color(0xFF9F3438), const Color(0xFF20252B), const Color(0xFF17634E)][index],
                                 borderRadius: BorderRadius.circular(isClassic ? 50 : option.$1 == 'modern' ? 6 : 0),
                               ),
                               child: Text(
@@ -704,10 +722,10 @@ class _SettingsModalState extends State<SettingsModal> {
                                           ? 'Roboto Condensed'
                                           : 'Arial',
                                   color: isMinimal
-                                      ? [const Color(0xFFFFAAA6), Colors.white, const Color(0xFF7FE3A1)][index]
+                                      ? [const Color(0xFFFFC4C0), Colors.white, const Color(0xFFA3FFC4)][index]
                                       : Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: isMinimal ? 12 : 11,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             );

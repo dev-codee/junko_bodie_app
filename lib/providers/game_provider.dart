@@ -579,6 +579,18 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Apply a bankroll without counting the adjustment as session winnings.
+  void applyBankroll(double amount) {
+    if (_phase != GamePhase.betting || !amount.isFinite || amount <= 0 ||
+        amount > 9007199254740991 || amount != amount.truncateToDouble()) return;
+    final hadSession = _sessionId != null;
+    // endGameSession captures the old balance before its first await.
+    final ending = hadSession ? endGameSession() : Future<void>.value();
+    setBalance(amount);
+    resetSessionStats();
+    if (hadSession) unawaited(ending.then((_) => startGameSession()));
+  }
+
   /// Set the live game balance directly and sync it to the server.
   /// Mirrors the web app's `setBalance` — used by the settings modal's
   /// "Reset Account Balance" action so the player's chips update immediately.
