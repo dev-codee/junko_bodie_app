@@ -248,3 +248,26 @@ class Bets {
     return betMap.values.where((bet) => bet.numbers.contains(num)).toList();
   }
 }
+
+/// Adjusts each chip without mutating the original bets; removes zero chips.
+Map<String, PlacedBet> adjustBetChips(Map<String, PlacedBet> bets, int delta) {
+  if (delta != 1 && delta != -1) {
+    throw ArgumentError.value(delta, 'delta', 'Must be +1 or -1');
+  }
+  final next = <String, PlacedBet>{};
+  for (final entry in bets.entries) {
+    final bet = entry.value;
+    final chips = bet.chips.map((chip) => chip + delta)
+        .where((chip) => chip > 0).toList();
+    if (chips.isNotEmpty) {
+      next[entry.key] = PlacedBet(
+        betId: bet.betId,
+        amount: chips.fold(0.0, (sum, chip) => sum + chip),
+        chips: chips,
+        customColor: bet.customColor,
+        playerInitial: bet.playerInitial,
+      );
+    }
+  }
+  return next;
+}

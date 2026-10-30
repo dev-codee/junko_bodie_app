@@ -318,6 +318,32 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Whether every placed chip can be increased by one.
+  bool get canIncrementAllChips => _phase == GamePhase.betting && _bets.isNotEmpty &&
+      totalBet + _bets.values.fold<int>(0, (sum, bet) => sum + bet.chips.length)
+          <= (_balance);
+
+  /// Adjust every chip and preserve Undo's placement order.
+  bool adjustAllChips(int delta) {
+    if ((delta != 1 && delta != -1) || (_phase != GamePhase.betting) || _bets.isEmpty) return false;
+    final next = adjustBetChips(_bets, delta);
+    final nextTotal = next.values.fold(0.0, (sum, bet) => sum + bet.amount);
+    if (delta == 1 && nextTotal > (_balance)) {
+      triggerFundError();
+      return false;
+    }
+    _bets = next;
+    for (final entry in _betPlacementHistory) {
+      entry['amount'] = (entry['amount'] as double) + delta;
+    }
+    _betPlacementHistory.removeWhere((entry) => (entry['amount'] as double) <= 0);
+    if (_bets.isEmpty) _deleteMode = false;
+    _deleteModeTarget = null;
+    soundEngine.playSwoosh();
+    notifyListeners();
+    return true;
+  }
+
   /// Double all bets.
   /// Returns false if insufficient funds.
   bool doubleAllBets() {

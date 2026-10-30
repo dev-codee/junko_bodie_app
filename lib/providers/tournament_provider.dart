@@ -277,6 +277,35 @@ class TournamentProvider extends ChangeNotifier {
     _syncBetsDebounced();
   }
 
+  /// Whether every placed chip can be increased by one.
+  bool get canIncrementAllChips => (phase == 'betting' || phase == 'waiting') && bets.isNotEmpty &&
+      totalBet + bets.values.fold<int>(0, (sum, bet) => sum + bet.chips.length)
+          <= (me?.currentChips ?? 0);
+
+  /// Adjust every chip and preserve Undo's placement order.
+  bool adjustAllChips(int delta) {
+    if ((delta != 1 && delta != -1) || (phase != 'betting' && phase != 'waiting') || bets.isEmpty) return false;
+    final next = adjustBetChips(bets, delta);
+    final nextTotal = next.values.fold(0.0, (sum, bet) => sum + bet.amount);
+    if (delta == 1 && nextTotal > (me?.currentChips ?? 0)) {
+      fundError = 'Insufficient chips to increase bets';
+      soundEngine.playDeniedSound();
+      notifyListeners();
+      return false;
+    }
+    bets = next;
+    for (final entry in _betPlacementHistory) {
+      entry['amount'] = (entry['amount'] as double) + delta;
+    }
+    _betPlacementHistory.removeWhere((entry) => (entry['amount'] as double) <= 0);
+    if (bets.isEmpty) deleteMode = false;
+    fundError = null;
+    soundEngine.playSwoosh();
+    notifyListeners();
+    _syncBetsDebounced();
+    return true;
+  }
+
   void doubleAllBets() {
     if (phase != 'betting' && phase != 'waiting') return;
 
@@ -299,7 +328,7 @@ class TournamentProvider extends ChangeNotifier {
       newBets[betId] = PlacedBet(
         betId: betId,
         amount: existing.amount * 2,
-        chips: [...existing.chips, ...existing.chips],
+        chips: existing.chips.map((chip) => chip * 2).toList(),
       );
       // Broadcast the added amount to the live feed (mirrors the web).
       _addEvent({
@@ -311,6 +340,9 @@ class TournamentProvider extends ChangeNotifier {
       });
     });
     bets = newBets;
+    for (final entry in _betPlacementHistory) {
+      entry['amount'] = (entry['amount'] as double) * 2;
+    }
     fundError = null;
     notifyListeners();
     _syncBetsDebounced();

@@ -496,7 +496,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     final bool canRebet = canBet && provider.lastSpinBets.isNotEmpty;
 
     return Container(
-      height: 58,
+      constraints: const BoxConstraints(minHeight: 58),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF4A2F1F), Color(0xFF26170F)],
@@ -536,36 +536,48 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             flex: 6,
             child: Align(
               alignment: Alignment.centerRight,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
                     _footerPill('TOTAL BET', '\$${totalBet.toStringAsFixed(0)}'),
-                    const SizedBox(width: 8),
+
                     _footerButton('REBET', canRebet, () {
                       soundEngine.playRebetSound();
                       provider.rebet();
                     }),
-                    const SizedBox(width: 6),
+
                     _footerButton('UNDO', canBet && hasBets, () {
                       soundEngine.playSwoosh();
                       provider.undo();
                     }),
-                    const SizedBox(width: 6),
+
                     _footerButton('CLEAR', canBet && hasBets, () {
                       soundEngine.playSwoosh();
                       provider.clearBets();
                     }),
-                    const SizedBox(width: 6),
-                    _footerButton('2X', canBet && hasBets, () {
+
+                    Tooltip(
+                      message: 'Add 1 to every placed chip',
+                      child: _footerButton('+1', canBet && provider.canIncrementAllChips,
+                          () => provider.adjustAllChips(1)),
+                    ),
+                    Tooltip(
+                      message: 'Subtract 1 from every chip; remove chips at zero',
+                      child: _footerButton('−1', canBet && hasBets,
+                          () => provider.adjustAllChips(-1)),
+                    ),
+                    _footerButton('2X', canBet && hasBets && balance >= totalBet * 2, () {
                       soundEngine.playClick();
                       provider.doubleAllBets();
                     }),
-                    const SizedBox(width: 6),
+
                     _footerDeleteButton(canBet, provider.deleteMode, provider.toggleDeleteMode),
-                    const SizedBox(width: 8),
+
                     _footerPill('BALANCE', '\$${balance.toStringAsFixed(0)}'),
                   ],
                 ),

@@ -404,30 +404,44 @@ class _RouletteTableState extends State<RouletteTable> {
                                     ),
                                   ),
                                   const SizedBox(height: 0),
-                                  // Control Buttons Row — FittedBox(scaleDown) keeps
-                                  // the (variable) button set within the row width so
-                                  // the SPIN button never overflows on the right.
+                                  // Wrap controls at their natural size on smaller screens.
                                   Align(
                                     alignment: Alignment.centerRight,
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerRight,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      child: Wrap(
+                                        alignment: WrapAlignment.end,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 8,
                                         children: [
-                                          // 2X Double and Delete Toggle (visible when bets are present)
+                                          // Chip adjustments, double, and delete controls
                                           if (canBet && hasBets) ...[
+                                            Tooltip(
+                                              message: 'Add 1 to every placed chip',
+                                              child: CasinoButton(
+                                                label: '+1',
+                                                onTap: () => provider.adjustAllChips(1),
+                                                enabled: provider.canIncrementAllChips,
+                                              ),
+                                            ),
+                                            Tooltip(
+                                              message: 'Subtract 1 from every chip; remove chips at zero',
+                                              child: CasinoButton(
+                                                label: '−1',
+                                                onTap: () => provider.adjustAllChips(-1),
+                                                enabled: canBet,
+                                              ),
+                                            ),
                                             CasinoButton(
                                               label: '2X',
                                               onTap: () {
                                                 soundEngine.playClick();
                                                 provider.doubleAllBets();
                                               },
-                                              enabled: canBet,
+                                              enabled: canBet && provider.balance >= provider.totalBet * 2,
                                             ),
-                                            const SizedBox(width: 8),
+
                                             CasinoButton(
                                               label: provider.deleteMode
                                                   ? 'X OFF'
@@ -438,7 +452,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                               },
                                               enabled: canBet,
                                             ),
-                                            const SizedBox(width: 12),
+
                                             // Vertical Separator
                                             Container(
                                               width: 1.5,
@@ -447,7 +461,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                                 0xFF5EA896,
                                               ).withOpacity(0.3),
                                             ),
-                                            const SizedBox(width: 12),
+
                                           ],
                                           // Rebet, Clear, Undo
                                           CasinoButton(
@@ -459,7 +473,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                             enabled:
                                                 canBet && provider.hasLastSpin,
                                           ),
-                                          const SizedBox(width: 8),
+
                                           CasinoButton(
                                             label: 'Clear',
                                             onTap: () {
@@ -468,7 +482,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                             },
                                             enabled: canBet && hasBets,
                                           ),
-                                          const SizedBox(width: 8),
+
                                           CasinoButton(
                                             label: 'Undo',
                                             onTap: () {
@@ -477,7 +491,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                             },
                                             enabled: canBet && hasBets,
                                           ),
-                                          const SizedBox(width: 16),
+
                                           // Spin button
                                           SpinButton(
                                             onTap: () => _handleSpin(provider),
