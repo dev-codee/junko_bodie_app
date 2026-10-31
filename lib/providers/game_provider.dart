@@ -318,14 +318,16 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Whether every placed chip can be increased by one.
-  bool get canIncrementAllChips => _phase == GamePhase.betting && _bets.isNotEmpty &&
-      totalBet + _bets.values.fold<int>(0, (sum, bet) => sum + bet.chips.length)
+  bool get hasInsideChips => _bets.values.any((bet) => isInsideBet(bet.betId) && bet.chips.isNotEmpty);
+
+  /// Whether every inside chip can be increased by one.
+  bool get canIncrementAllChips => _phase == GamePhase.betting && hasInsideChips &&
+      totalBet + _bets.values.where((bet) => isInsideBet(bet.betId)).fold<int>(0, (sum, bet) => sum + bet.chips.length)
           <= (_balance);
 
   /// Adjust every chip and preserve Undo's placement order.
   bool adjustAllChips(int delta) {
-    if ((delta != 1 && delta != -1) || (_phase != GamePhase.betting) || _bets.isEmpty) return false;
+    if ((delta != 1 && delta != -1) || (_phase != GamePhase.betting) || !hasInsideChips) return false;
     final next = adjustBetChips(_bets, delta);
     final nextTotal = next.values.fold(0.0, (sum, bet) => sum + bet.amount);
     if (delta == 1 && nextTotal > (_balance)) {
@@ -334,7 +336,9 @@ class GameProvider extends ChangeNotifier {
     }
     _bets = next;
     for (final entry in _betPlacementHistory) {
-      entry['amount'] = (entry['amount'] as double) + delta;
+      if (isInsideBet(entry['betId'] as String)) {
+        entry['amount'] = (entry['amount'] as double) + delta;
+      }
     }
     _betPlacementHistory.removeWhere((entry) => (entry['amount'] as double) <= 0);
     if (_bets.isEmpty) _deleteMode = false;

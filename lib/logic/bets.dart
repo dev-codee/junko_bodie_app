@@ -249,7 +249,13 @@ class Bets {
   }
 }
 
-/// Adjusts each chip without mutating the original bets; removes zero chips.
+/// Only bets within the numbered grid respond to chip adjustments.
+bool isInsideBet(String betId) => const {
+  BetType.straight, BetType.split, BetType.street, BetType.corner,
+  BetType.sixline, BetType.trio, BetType.basket,
+}.contains(Bets.betMap[betId]?.type);
+
+/// Adjusts inside chips without mutating original bets; removes zero chips.
 Map<String, PlacedBet> adjustBetChips(Map<String, PlacedBet> bets, int delta) {
   if (delta != 1 && delta != -1) {
     throw ArgumentError.value(delta, 'delta', 'Must be +1 or -1');
@@ -257,6 +263,10 @@ Map<String, PlacedBet> adjustBetChips(Map<String, PlacedBet> bets, int delta) {
   final next = <String, PlacedBet>{};
   for (final entry in bets.entries) {
     final bet = entry.value;
+    if (!isInsideBet(entry.key)) {
+      next[entry.key] = bet;
+      continue;
+    }
     final chips = bet.chips.map((chip) => chip + delta)
         .where((chip) => chip > 0).toList();
     if (chips.isNotEmpty) {

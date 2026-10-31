@@ -562,13 +562,13 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                     }),
 
                     Tooltip(
-                      message: 'Add 1 to every placed chip',
+                      message: 'Add 1 to every inside bet chip',
                       child: _footerButton('+1', canBet && provider.canIncrementAllChips,
                           () => provider.adjustAllChips(1)),
                     ),
                     Tooltip(
-                      message: 'Subtract 1 from every chip; remove chips at zero',
-                      child: _footerButton('−1', canBet && hasBets,
+                      message: 'Subtract 1 from every inside bet chip; remove chips at zero',
+                      child: _footerButton('−1', canBet && provider.hasInsideChips,
                           () => provider.adjustAllChips(-1)),
                     ),
                     _footerButton('2X', canBet && hasBets && balance >= totalBet * 2, () {

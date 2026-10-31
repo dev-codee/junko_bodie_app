@@ -418,7 +418,7 @@ class _RouletteTableState extends State<RouletteTable> {
                                           // Chip adjustments, double, and delete controls
                                           if (canBet && hasBets) ...[
                                             Tooltip(
-                                              message: 'Add 1 to every placed chip',
+                                              message: 'Add 1 to every inside bet chip',
                                               child: CasinoButton(
                                                 label: '+1',
                                                 onTap: () => provider.adjustAllChips(1),
@@ -426,11 +426,11 @@ class _RouletteTableState extends State<RouletteTable> {
                                               ),
                                             ),
                                             Tooltip(
-                                              message: 'Subtract 1 from every chip; remove chips at zero',
+                                              message: 'Subtract 1 from every inside bet chip; remove chips at zero',
                                               child: CasinoButton(
                                                 label: '−1',
                                                 onTap: () => provider.adjustAllChips(-1),
-                                                enabled: canBet,
+                                                enabled: canBet && provider.hasInsideChips,
                                               ),
                                             ),
                                             CasinoButton(
