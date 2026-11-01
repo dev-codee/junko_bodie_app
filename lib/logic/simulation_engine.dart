@@ -232,6 +232,12 @@ class SimulationEngine {
   // Active bets memory (mutated dynamically by rules)
   List<StageBet> _currentActiveBets = [];
   final Set<String> _sessionRemovedGroupIds = {};
+  final Set<String> _sessionRemovedPositions = {};
+  final Map<String, int> _sessionGroupWinCounts = {};
+  final Map<int, int> _sessionDozenWinCounts = {};
+
+  static String _cleanGroup(String? group) =>
+      (group ?? '').replaceFirst(RegExp(r'^Group\s+'), '').trim();
 
   // Debugger trackers
   SpinResult? lastSpinResult;
@@ -369,6 +375,9 @@ class SimulationEngine {
     }
 
     _sessionRemovedGroupIds.clear();
+    _sessionRemovedPositions.clear();
+    _sessionGroupWinCounts.clear();
+    _sessionDozenWinCounts.clear();
     _isSessionActive = true;
     _isEndgameRecoveryActive = false;
     _currentStageIndex = 0;
@@ -417,7 +426,9 @@ class SimulationEngine {
 
     _currentActiveBets = stage.bets
         .where((b) =>
-            b.groupId == null || !_sessionRemovedGroupIds.contains(b.groupId))
+            !_sessionRemovedPositions.contains(b.position) &&
+            (b.groupId == null ||
+                !_sessionRemovedGroupIds.contains(_cleanGroup(b.groupId))))
         .map((b) => b.clone())
         .toList();
 
@@ -483,7 +494,8 @@ class SimulationEngine {
       return;
     }
 
-    if (_activeBankroll > _peakBankroll) _peakBankroll = _activeBankroll;
+    final reachedNewHigh = _activeBankroll > _peakBankroll;
+    if (reachedNewHigh) _peakBankroll = _activeBankroll;
     if (_activeBankroll < _valleyBankroll) _valleyBankroll = _activeBankroll;
 
     final currentDrawdown = _peakBankroll - _activeBankroll;
@@ -502,7 +514,25 @@ class SimulationEngine {
       return;
     }
 
-    final isWin = payout.netResult > 0;
+    final isWin = payout.outcomes.any((o) => o.isWin);
+    final winningPositions = payout.outcomes
+        .where((o) => o.isWin).map((o) => o.betId).toSet();
+    final winningGroups = _currentActiveBets
+        .where((b) => winningPositions.contains(b.position))
+        .map((b) => _cleanGroup(b.groupId))
+        .where((g) => g.isNotEmpty).toSet();
+    final winningDozen = spinResult.number >= 1 && spinResult.number <= 36
+        ? (spinResult.number - 1) ~/ 12 + 1 : null;
+    if (isWin) {
+      for (final group in winningGroups) {
+        _sessionGroupWinCounts.update(group, (count) => count + 1,
+            ifAbsent: () => 1);
+      }
+      if (winningDozen != null) {
+        _sessionDozenWinCounts.update(winningDozen, (count) => count + 1,
+            ifAbsent: () => 1);
+      }
+    }
     var baselineAction = isWin ? stage.onWin : stage.onLoss;
 
     final rules = stage.optionalRules;
@@ -512,7 +542,7 @@ class SimulationEngine {
         baselineAction = 'reset';
       }
       if ((rules.resetOnNewSessionHigh ?? false) &&
-          _activeBankroll >= _peakBankroll) {
+          reachedNewHigh) {
         baselineAction = 'reset';
       }
       if (rules.resetOnProfitGoal != null &&
@@ -526,9 +556,16 @@ class SimulationEngine {
     }
 
     if (stage.dynamicRules != null && stage.dynamicRules!.isNotEmpty) {
-      _processDynamicRules(stage.dynamicRules!, isWin, payout);
+      _processDynamicRules(stage.dynamicRules!, isWin, payout,
+          winningDozen, winningGroups);
     }
 
+    // Resolve immediately, without consuming another spin on an empty board.
+    if (_currentActiveBets.isEmpty &&
+        ((rules?.resetOnEmptyBoard ?? false) || baselineAction == 'repeat') &&
+        baselineAction != 'stop' && baselineAction != 'manual') {
+      baselineAction = 'reset';
+    }
     lastBaselineAction = baselineAction;
 
     if (baselineAction == 'next') {
@@ -557,7 +594,8 @@ class SimulationEngine {
   }
 
   void _processDynamicRules(
-      List<DynamicRule> rules, bool isWin, PayoutResult payout) {
+      List<DynamicRule> rules, bool isWin, PayoutResult payout,
+      int? winningDozen, Set<String> winningGroups) {
     for (final rule in rules) {
       var conditionMet = false;
       final anyBetWon = payout.outcomes.any((o) => o.isWin);
@@ -591,6 +629,26 @@ class SimulationEngine {
         if (uniqueGroups.length == 1 && _sessionProfit < 0) conditionMet = true;
       }
 
+      if (rule.condition == RuleCondition.winSessionProfit &&
+          isWinCond && _sessionProfit >= 0) {
+        conditionMet = true;
+      }
+      if (rule.condition == RuleCondition.lossSessionProfit &&
+          !isWinCond && _sessionProfit >= 0) {
+        conditionMet = true;
+      }
+      if (rule.condition == RuleCondition.dozenReaches2Wins) {
+        conditionMet = isWinCond && winningDozen != null &&
+            (_sessionDozenWinCounts[winningDozen] ?? 0) >=
+                max(1, rule.winCountThreshold ?? 2);
+      }
+      if (rule.condition == RuleCondition.groupWinThreshold) {
+        final target = _cleanGroup(rule.targetGroup);
+        final threshold = max(1, rule.winCountThreshold ?? 2);
+        conditionMet = isWinCond && winningGroups.any((group) =>
+            (target.isEmpty || target == group) &&
+            (_sessionGroupWinCounts[group] ?? 0) >= threshold);
+      }
       if (!conditionMet) continue;
 
       // Identify targets.
@@ -607,16 +665,36 @@ class SimulationEngine {
             .where((b) => payout.outcomes
                 .any((o) => o.betId == b.position && !o.isWin))
             .toList();
-      } else if (rule.target == RuleTarget.winningGroup) {
-        final winningGroups = _currentActiveBets
-            .where((b) =>
-                payout.outcomes.any((o) => o.betId == b.position && o.isWin))
-            .map((b) => b.groupId)
-            .where((g) => g != null)
-            .toSet();
-        affectedBets = _currentActiveBets
-            .where((b) => b.groupId != null && winningGroups.contains(b.groupId))
-            .toList();
+      } else if (rule.target == RuleTarget.winningGroup ||
+          rule.target == RuleTarget.winningGroupExcept) {
+        final exempt = _cleanGroup(rule.exemptGroup);
+        affectedBets = _currentActiveBets.where((b) {
+          final group = _cleanGroup(b.groupId);
+          return group.isNotEmpty && winningGroups.contains(group) &&
+              (rule.target != RuleTarget.winningGroupExcept || group != exempt) &&
+              (_sessionGroupWinCounts[group] ?? 0) >=
+                  max(1, rule.winCountThreshold ?? 1);
+        }).toList();
+      } else if (rule.target == RuleTarget.specificGroup) {
+        final target = _cleanGroup(rule.targetGroup);
+        final winCondition = {
+          RuleCondition.win, RuleCondition.winSessionLoss,
+          RuleCondition.winSessionProfit, RuleCondition.winSessionHighNotReached,
+          RuleCondition.groupWinThreshold,
+        }.contains(rule.condition);
+        if (target.isNotEmpty &&
+            (!winCondition || winningGroups.contains(target)) &&
+            (_sessionGroupWinCounts[target] ?? 0) >=
+                max(1, rule.winCountThreshold ?? 1)) {
+          affectedBets = _currentActiveBets
+              .where((b) => _cleanGroup(b.groupId) == target).toList();
+        }
+      } else if (rule.target == RuleTarget.winningDozenBets) {
+        final dozen = rule.dozenNumber ?? winningDozen;
+        if (dozen != null) {
+          affectedBets = _currentActiveBets
+              .where((b) => getBetDozen(b.position) == dozen).toList();
+        }
       } else if (rule.target == RuleTarget.losingGroup) {
         final losingGroups = _currentActiveBets
             .where((b) =>
@@ -631,9 +709,13 @@ class SimulationEngine {
 
       // Apply action.
       if (rule.action == RuleActionType.remove) {
-        for (final b in affectedBets) {
-          if (b.groupId != null) _sessionRemovedGroupIds.add(b.groupId!);
+        // Bet targets retire positions; group targets retire the whole tag.
+        if ({RuleTarget.winningGroup, RuleTarget.winningGroupExcept,
+             RuleTarget.specificGroup, RuleTarget.losingGroup}.contains(rule.target)) {
+          _sessionRemovedGroupIds.addAll(affectedBets
+              .map((b) => _cleanGroup(b.groupId)).where((g) => g.isNotEmpty));
         }
+        _sessionRemovedPositions.addAll(affectedBets.map((b) => b.position));
         final affectedPositions = affectedBets.map((b) => b.position).toSet();
         _currentActiveBets = _currentActiveBets
             .where((b) => !affectedPositions.contains(b.position))

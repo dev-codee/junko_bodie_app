@@ -281,3 +281,15 @@ Map<String, PlacedBet> adjustBetChips(Map<String, PlacedBet> bets, int delta) {
   }
   return next;
 }
+
+/// Returns null for zero, double zero, unknown bets and bets crossing dozens.
+int? getBetDozen(String position) {
+  final numbers = Bets.betMap[position]?.numbers;
+  if (numbers == null || numbers.isEmpty) return null;
+  for (var dozen = 1; dozen <= 3; dozen++) {
+    if (numbers.every((n) => n >= (dozen - 1) * 12 + 1 && n <= dozen * 12)) {
+      return dozen;
+    }
+  }
+  return null;
+}

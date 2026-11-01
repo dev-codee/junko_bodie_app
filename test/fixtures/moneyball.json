@@ -1,0 +1,1402 @@
+{
+  "name": "Moneyball",
+  "wheel_type": "American",
+  "is_active": true,
+  "is_global": true,
+  "max_stages": 12,
+  "default_mode": "Manual",
+  "stages": [
+    {
+      "stage_number": 1,
+      "total_wager": 26,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 1,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 1,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 1,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 1,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 1,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 1,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 1,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 1,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 1,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 1,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 1,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 1,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 1,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 1,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 1,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 1,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-0",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-0",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 2,
+      "total_wager": 42,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 2,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 2,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 2,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 2,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 2,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 2,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 2,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 2,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 2,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 2,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 2,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 2,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 2,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 2,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 2,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 2,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-1",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-1",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 3,
+      "total_wager": 58,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 3,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 3,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 3,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 3,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 3,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 3,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 3,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 3,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 3,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 3,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 3,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 3,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 3,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 3,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 3,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 3,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-2",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-2",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 4,
+      "total_wager": 74,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 4,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 4,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 4,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 4,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 4,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 4,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 4,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 4,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 4,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 4,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 4,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 4,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 4,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 4,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 4,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 4,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-3",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-3",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 5,
+      "total_wager": 106,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 6,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 6,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 6,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 6,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 6,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 6,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 6,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 6,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 6,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 6,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 6,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 6,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 6,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 6,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 6,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 6,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-4",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-4",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 6,
+      "total_wager": 138,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 8,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 8,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 8,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 8,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 8,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 8,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 8,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 8,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 8,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 8,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 8,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 8,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 8,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 8,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 8,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 8,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-5",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-5",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 7,
+      "total_wager": 170,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 10,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 10,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 10,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 10,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 10,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 10,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 10,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 10,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 10,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 10,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 10,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 10,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 10,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 10,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 10,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 10,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-6",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-6",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 8,
+      "total_wager": 250,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 15,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 15,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 15,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 15,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 15,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 15,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 15,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 15,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 15,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 15,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 15,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 15,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 15,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 15,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 15,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 15,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-7",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-7",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 9,
+      "total_wager": 330,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 20,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 20,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 20,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 20,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 20,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 20,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 20,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 20,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 20,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 20,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 20,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 20,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 20,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 20,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 20,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 20,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-8",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-8",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 10,
+      "total_wager": 410,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 25,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 25,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 25,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 25,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 25,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 25,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 25,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 25,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 25,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 25,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 25,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 25,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 25,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 25,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 25,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 25,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-9",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-9",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 11,
+      "total_wager": 490,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 30,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 30,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 30,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 30,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 30,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 30,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 30,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 30,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 30,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 30,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 30,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 30,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 30,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 30,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 30,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 30,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-10",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-10",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    },
+    {
+      "stage_number": 12,
+      "total_wager": 650,
+      "on_win": "repeat",
+      "on_loss": "reset",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "straight-1",
+          "amount": 40,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-4",
+          "amount": 40,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-7",
+          "amount": 40,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-10",
+          "amount": 40,
+          "groupId": "A"
+        },
+        {
+          "position": "straight-3",
+          "amount": 40,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-6",
+          "amount": 40,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-9",
+          "amount": 40,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-12",
+          "amount": 40,
+          "groupId": "B"
+        },
+        {
+          "position": "straight-27",
+          "amount": 40,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-30",
+          "amount": 40,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-33",
+          "amount": 40,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-36",
+          "amount": 40,
+          "groupId": "C"
+        },
+        {
+          "position": "straight-25",
+          "amount": 40,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-28",
+          "amount": 40,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-31",
+          "amount": 40,
+          "groupId": "D"
+        },
+        {
+          "position": "straight-34",
+          "amount": 40,
+          "groupId": "D"
+        },
+        {
+          "position": "dozen-2nd",
+          "amount": 10,
+          "groupId": "E"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "mb1-11",
+          "condition": "win",
+          "target": "winning_group_except",
+          "exempt_group": "E",
+          "win_count_threshold": 1,
+          "action": "remove"
+        },
+        {
+          "id": "mb2-11",
+          "condition": "win",
+          "target": "specific_group",
+          "target_group": "E",
+          "win_count_threshold": 3,
+          "action": "remove"
+        }
+      ]
+    }
+  ]
+}

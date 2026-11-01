@@ -1,0 +1,1126 @@
+{
+  "name": "Spin 2 Win",
+  "wheel_type": "American",
+  "is_active": true,
+  "is_global": true,
+  "max_stages": 12,
+  "default_mode": "Manual",
+  "stages": [
+    {
+      "stage_number": 1,
+      "total_wager": 13,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 1,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 1,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 1,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 1,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 1,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 1,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 1,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 1,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 1,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 1,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 1,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 1,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 1,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-0",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-0",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 2,
+      "total_wager": 26,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 2,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 2,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 2,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 2,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 2,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 2,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 2,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 2,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 2,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 2,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 2,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 2,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 2,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-1",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-1",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 3,
+      "total_wager": 39,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 3,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 3,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 3,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 3,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 3,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 3,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 3,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 3,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 3,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 3,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 3,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 3,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 3,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-2",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-2",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 4,
+      "total_wager": 52,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 4,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 4,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 4,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 4,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 4,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 4,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 4,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 4,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 4,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 4,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 4,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 4,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 4,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-3",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-3",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 5,
+      "total_wager": 78,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 6,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 6,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 6,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 6,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 6,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 6,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 6,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 6,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 6,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 6,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 6,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 6,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 6,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-4",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-4",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 6,
+      "total_wager": 104,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 8,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 8,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 8,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 8,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 8,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 8,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 8,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 8,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 8,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 8,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 8,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 8,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 8,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-5",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-5",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 7,
+      "total_wager": 130,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 10,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 10,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 10,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 10,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 10,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 10,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 10,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 10,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 10,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 10,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 10,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 10,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 10,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-6",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-6",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 8,
+      "total_wager": 195,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 15,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 15,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 15,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 15,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 15,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 15,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 15,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 15,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 15,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 15,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 15,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 15,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 15,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-7",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-7",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 9,
+      "total_wager": 260,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 20,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 20,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 20,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 20,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 20,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 20,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 20,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 20,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 20,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 20,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 20,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 20,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 20,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-8",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-8",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 10,
+      "total_wager": 325,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 25,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 25,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 25,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 25,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 25,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 25,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 25,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 25,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 25,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 25,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 25,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 25,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 25,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-9",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-9",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 11,
+      "total_wager": 390,
+      "on_win": "repeat",
+      "on_loss": "next",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 30,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 30,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 30,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 30,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 30,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 30,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 30,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 30,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 30,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 30,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 30,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 30,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 30,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-10",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-10",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    },
+    {
+      "stage_number": 12,
+      "total_wager": 520,
+      "on_win": "repeat",
+      "on_loss": "reset",
+      "optional_rules": {
+        "reset_on_empty_board": true,
+        "reset_on_new_session_high": true,
+        "reset_on_profitable_session": true
+      },
+      "bets": [
+        {
+          "position": "split-0-00",
+          "amount": 40,
+          "groupId": "M"
+        },
+        {
+          "position": "split-1-2",
+          "amount": 40,
+          "groupId": "A"
+        },
+        {
+          "position": "split-4-5",
+          "amount": 40,
+          "groupId": "B"
+        },
+        {
+          "position": "split-7-8",
+          "amount": 40,
+          "groupId": "C"
+        },
+        {
+          "position": "split-10-11",
+          "amount": 40,
+          "groupId": "D"
+        },
+        {
+          "position": "split-13-14",
+          "amount": 40,
+          "groupId": "E"
+        },
+        {
+          "position": "split-16-17",
+          "amount": 40,
+          "groupId": "F"
+        },
+        {
+          "position": "split-19-20",
+          "amount": 40,
+          "groupId": "G"
+        },
+        {
+          "position": "split-22-23",
+          "amount": 40,
+          "groupId": "H"
+        },
+        {
+          "position": "split-25-26",
+          "amount": 40,
+          "groupId": "I"
+        },
+        {
+          "position": "split-28-29",
+          "amount": 40,
+          "groupId": "J"
+        },
+        {
+          "position": "split-31-32",
+          "amount": 40,
+          "groupId": "K"
+        },
+        {
+          "position": "split-34-35",
+          "amount": 40,
+          "groupId": "L"
+        }
+      ],
+      "dynamic_rules": [
+        {
+          "id": "stw1-11",
+          "condition": "win",
+          "target": "winning_bets",
+          "action": "remove"
+        },
+        {
+          "id": "stw2-11",
+          "condition": "dozen_reaches_2_wins",
+          "target": "winning_dozen_bets",
+          "action": "remove",
+          "win_count_threshold": 2
+        }
+      ]
+    }
+  ]
+}

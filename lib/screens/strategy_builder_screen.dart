@@ -371,6 +371,18 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     });
   }
 
+  void _adjustInsideBets(int delta) {
+    if (!_active.bets.any((bet) => isInsideBet(bet.position))) return;
+    setState(() {
+      _pushHistory();
+      for (final bet in _active.bets) {
+        if (isInsideBet(bet.position)) bet.amount += delta;
+      }
+      _active.bets.removeWhere((bet) => bet.amount <= 0);
+      _recalcWager(_active);
+    });
+  }
+
   void _doubleBet() {
     if (_active.bets.isEmpty) return;
     setState(() {
@@ -1363,6 +1375,16 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
             (_activeIndex == 0 || _stages[_activeIndex - 1].bets.isEmpty)
                 ? null
                 : _repeatBet),
+        for (final delta in [1, -1])
+          Tooltip(
+            message: delta == 1
+                ? 'Add 1 to every inside bet'
+                : 'Subtract 1 from every inside bet; remove bets at zero',
+            child: _tableBtn(delta == 1 ? '+1' : '−1', null,
+                _active.bets.any((bet) => isInsideBet(bet.position))
+                    ? () => _adjustInsideBets(delta)
+                    : null),
+          ),
         _tableBtn('DOUBLE', null, _active.bets.isEmpty ? null : _doubleBet,
             leadingText: '2x'),
         _tableBtn('UNDO', Icons.undo, _history.isEmpty ? null : _undo),
@@ -1760,6 +1782,17 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
     );
   }
 
+  Map<String, String> _ruleGroupOptions(String? selected) {
+    final groups = <String>{..._customGroups,
+      ..._active.bets.map((b) => b.groupId).whereType<String>(),
+      if (selected != null && selected.isNotEmpty) selected,
+    };
+    return {'': 'Select Group',
+      for (final group in groups) group:
+        'Group ${group.replaceFirst('Group ', '').trim()}',
+    };
+  }
+
   Widget _dynamicRuleRow(DynamicRule rule, int idx) {
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -1811,6 +1844,8 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                     RuleCondition.oneGroupRemainsAndNegativeProfit:
                         '1 Group Remains & Negative Profit',
                     RuleCondition.any: 'On Any Spin Result',
+                    RuleCondition.dozenReaches2Wins: 'Dozen Reaches N Wins',
+                    RuleCondition.groupWinThreshold: 'Group Reaches N Wins',
                   },
                   onChanged: (v) => setState(() => rule.condition = v),
                 ),
@@ -1825,10 +1860,49 @@ class _StrategyBuilderScreenState extends State<StrategyBuilderScreen> {
                     RuleTarget.losingBets: 'Only Losing Bets',
                     RuleTarget.winningGroup: 'Winning Group(s) (Tagged)',
                     RuleTarget.losingGroup: 'Losing Group(s) (Tagged)',
+                    RuleTarget.winningGroupExcept: 'Winning Groups Except Anchor',
+                    RuleTarget.specificGroup: 'Specific Group Tag',
+                    RuleTarget.winningDozenBets: 'All Bets in Winning Dozen',
                   },
                   onChanged: (v) => setState(() => rule.target = v),
                 ),
               ),
+              if (rule.target == RuleTarget.winningGroupExcept)
+                _ruleField('Exempt Group Tag (Do NOT remove)',
+                  _dropdown<String>(
+                    value: rule.exemptGroup ?? '',
+                    items: _ruleGroupOptions(rule.exemptGroup),
+                    onChanged: (v) => setState(() => rule.exemptGroup = v),
+                  )),
+              if (rule.target == RuleTarget.specificGroup ||
+                  rule.condition == RuleCondition.groupWinThreshold)
+                _ruleField('Target Group Tag',
+                  _dropdown<String>(
+                    value: rule.targetGroup ?? '',
+                    items: _ruleGroupOptions(rule.targetGroup),
+                    onChanged: (v) => setState(() => rule.targetGroup = v),
+                  )),
+              if ({RuleTarget.specificGroup, RuleTarget.winningGroup,
+                    RuleTarget.winningGroupExcept}.contains(rule.target) ||
+                  {RuleCondition.dozenReaches2Wins,
+                    RuleCondition.groupWinThreshold}.contains(rule.condition))
+                _ruleField('Wins Required (Threshold)',
+                  _numberField(
+                    value: rule.winCountThreshold ??
+                        (rule.condition == RuleCondition.dozenReaches2Wins ||
+                         rule.condition == RuleCondition.groupWinThreshold ? 2 : 1),
+                    onChanged: (n) => setState(() =>
+                        rule.winCountThreshold = n == null ? null :
+                            (n.toInt() < 1 ? 1 : n.toInt())),
+                  )),
+              if (rule.target == RuleTarget.winningDozenBets)
+                _ruleField('Dozen', _dropdown<int>(
+                  value: rule.dozenNumber ?? 0,
+                  items: const {0: 'Winning Dozen', 1: '1st Dozen',
+                    2: '2nd Dozen', 3: '3rd Dozen'},
+                  onChanged: (v) => setState(() =>
+                      rule.dozenNumber = v == 0 ? null : v),
+                )),
               _ruleField(
                 'Execute action...',
                 _dropdown<String>(

@@ -32,6 +32,8 @@ class RuleCondition {
   static const String lossSessionLoss = 'loss_session_loss';
   static const String lossSessionProfit = 'loss_session_profit';
   static const String any = 'any';
+  static const String dozenReaches2Wins = 'dozen_reaches_2_wins';
+  static const String groupWinThreshold = 'group_win_threshold';
   static const String winSessionHighNotReached = 'win_session_high_not_reached';
   static const String oneGroupRemainsAndNegativeProfit =
       '1_group_remains_and_negative_profit';
@@ -44,6 +46,9 @@ class RuleTarget {
   static const String allBets = 'all_bets';
   static const String winningGroup = 'winning_group';
   static const String losingGroup = 'losing_group';
+  static const String winningGroupExcept = 'winning_group_except';
+  static const String specificGroup = 'specific_group';
+  static const String winningDozenBets = 'winning_dozen_bets';
 }
 
 /// What the dynamic rule does to the targeted bets.
@@ -61,6 +66,10 @@ class DynamicRule {
   String target;
   String action;
   num? value;
+  String? exemptGroup;
+  String? targetGroup;
+  int? winCountThreshold;
+  int? dozenNumber;
 
   DynamicRule({
     required this.id,
@@ -68,6 +77,10 @@ class DynamicRule {
     required this.target,
     required this.action,
     this.value,
+    this.exemptGroup,
+    this.targetGroup,
+    this.winCountThreshold,
+    this.dozenNumber,
   });
 
   factory DynamicRule.fromJson(Map<String, dynamic> json) => DynamicRule(
@@ -77,6 +90,10 @@ class DynamicRule {
         target: json['target']?.toString() ?? RuleTarget.allBets,
         action: json['action']?.toString() ?? RuleActionType.multiply,
         value: json['value'] as num?,
+        exemptGroup: json['exempt_group']?.toString(),
+        targetGroup: json['target_group']?.toString(),
+        winCountThreshold: (json['win_count_threshold'] as num?)?.toInt(),
+        dozenNumber: (json['dozen_number'] as num?)?.toInt(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -85,6 +102,10 @@ class DynamicRule {
         'target': target,
         'action': action,
         if (value != null) 'value': value,
+        if (exemptGroup != null) 'exempt_group': exemptGroup,
+        if (targetGroup != null) 'target_group': targetGroup,
+        if (winCountThreshold != null) 'win_count_threshold': winCountThreshold,
+        if (dozenNumber != null) 'dozen_number': dozenNumber,
       };
 
   DynamicRule clone() => DynamicRule(
@@ -93,6 +114,10 @@ class DynamicRule {
         target: target,
         action: action,
         value: value,
+        exemptGroup: exemptGroup,
+        targetGroup: targetGroup,
+        winCountThreshold: winCountThreshold,
+        dozenNumber: dozenNumber,
       );
 }
 
