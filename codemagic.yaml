@@ -1,45 +1,34 @@
-# codemagic.yaml
 workflows:
   ios-testflight:
     name: iOS TestFlight Release
     max_build_duration: 30
     instance_type: mac_mini_m2
-    
+    integrations:
+      app_store_connect: new key
     environment:
       flutter: stable
       xcode: latest
       groups:
         - junko
-      # These env vars must be set in Codemagic UI (app_store_credentials group):
-      #   APP_STORE_CONNECT_ISSUER_ID   - Your Issuer ID
-      #   APP_STORE_CONNECT_KEY_IDENTIFIER - Your Key ID
-      #   APP_STORE_CONNECT_PRIVATE_KEY - Contents of the .p8 file
-    
+      vars:
+        APP_STORE_APPLE_ID: 6787383059
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.junkobodieroulette.app
     scripts:
       - name: Set up code signing
-        script: |
-          app-store-connect fetch-signing-files "com.junkobodieroulette.app" \
-            --type IOS_APP_STORE \
-            --create
-          keychain initialize
-          app-store-connect certificates list --type IOS_DISTRIBUTION --save
-          keychain add-certificates
-          xcode-project use-profiles
-      
+        script: xcode-project use-profiles
       - name: Get Flutter packages
         script: flutter pub get
-      
       - name: Build IPA
-        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
-    
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist \
+            --build-number=$((LATEST + 1))
     artifacts:
       - build/ios/ipa/*.ipa
-    
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
-        submit_to_app_store: false
-
