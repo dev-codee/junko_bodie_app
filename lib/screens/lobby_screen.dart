@@ -38,7 +38,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Future<void> _checkDisclaimer() async {
     final prefs = await SharedPreferences.getInstance();
-    final bool hideDisclaimer = prefs.getBool('hide_simulator_disclaimer') ?? false;
+    final bool hideDisclaimer =
+        prefs.getBool('hide_simulator_disclaimer') ?? false;
 
     if (!hideDisclaimer && mounted) {
       showDialog(
@@ -50,8 +51,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
             builder: (context, setState) {
               return Dialog(
                 backgroundColor: const Color(0xFF0F2E21),
-                insetPadding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 24,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
@@ -100,11 +103,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
                             Expanded(
                               child: InkWell(
                                 onTap: () => setState(
-                                    () => dontShowAgain = !dontShowAgain),
+                                  () => dontShowAgain = !dontShowAgain,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -113,12 +118,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                         height: 22,
                                         child: Checkbox(
                                           value: dontShowAgain,
-                                          onChanged: (val) => setState(() =>
-                                              dontShowAgain = val ?? false),
+                                          onChanged: (val) => setState(
+                                            () => dontShowAgain = val ?? false,
+                                          ),
                                           activeColor: const Color(0xFFD4BC81),
                                           checkColor: const Color(0xFF0F2E21),
                                           side: const BorderSide(
-                                              color: Colors.white54, width: 1.5),
+                                            color: Colors.white54,
+                                            width: 1.5,
+                                          ),
                                           materialTapTargetSize:
                                               MaterialTapTargetSize.shrinkWrap,
                                           visualDensity: VisualDensity.compact,
@@ -128,7 +136,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                       const Text(
                                         'Do not show this again',
                                         style: TextStyle(
-                                            color: Colors.white70, fontSize: 13),
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -142,7 +152,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                   final p =
                                       await SharedPreferences.getInstance();
                                   await p.setBool(
-                                      'hide_simulator_disclaimer', true);
+                                    'hide_simulator_disclaimer',
+                                    true,
+                                  );
                                 }
                                 if (context.mounted) {
                                   Navigator.of(context).pop();
@@ -151,13 +163,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
                               style: TextButton.styleFrom(
                                 foregroundColor: const Color(0xFFD4BC81),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
                               ),
                               child: const Text(
                                 'I UNDERSTAND',
                                 style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.2),
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                             ),
                           ],
@@ -382,6 +397,25 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                                   curve: Curves.easeOutCubic,
                                                 ),
                                       ),
+                                      const SizedBox(width: 24),
+                                      Expanded(
+                                        child:
+                                            _PlayCard(
+                                              icon: Icons.groups_rounded,
+                                              iconColor: const Color(
+                                                0xFFC9A44C,
+                                              ),
+                                              label: 'PLAY WITH FRIENDS',
+                                              description:
+                                                  'Invite friends or join a private roulette tournament.',
+                                              onTap: () => context.push(
+                                                '/tournament/private',
+                                              ),
+                                            ).animate().fadeIn(
+                                              duration: 600.ms,
+                                              delay: 400.ms,
+                                            ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -542,89 +576,90 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-          onTap: () => context.push('/profile'),
-          child: Container(
-            height: 60,
-            padding: const EdgeInsets.fromLTRB(10, 8, 16, 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x05000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Avatar
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 1.0),
+              onTap: () => context.push('/profile'),
+              child: Container(
+                height: 60,
+                padding: const EdgeInsets.fromLTRB(10, 8, 16, 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
                   ),
-                  child: ClipOval(
-                    child: avatarUrl != null
-                        ? Image.network(
-                            avatarUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _defaultAvatar(),
-                          )
-                        : _defaultAvatar(),
-                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x05000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-
-                // Name & balance
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                        height: 1,
+                    // Avatar
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.gold, width: 1.0),
+                      ),
+                      child: ClipOval(
+                        child: avatarUrl != null
+                            ? Image.network(
+                                avatarUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _defaultAvatar(),
+                              )
+                            : _defaultAvatar(),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    const SizedBox(width: 10),
+
+                    // Name & balance
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.circle,
-                          size: 10,
-                          color: AppColors.gold.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          '1,000', // TODO: From game provider
-                          style: TextStyle(
-                            fontSize: 12,
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFA47D25),
+                            color: Colors.black,
                             height: 1,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: AppColors.gold.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '1,000', // TODO: From game provider
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFA47D25),
+                                height: 1,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ],
-                ),
-              ],
-            ), // closes Row
-          ), // closes Container
-        ), // closes GestureDetector
-      ), // closes Align
-    ), // closes Expanded
-
+                ), // closes Row
+              ), // closes Container
+            ), // closes GestureDetector
+          ), // closes Align
+        ), // closes Expanded
         // Logo center
         Column(
           mainAxisSize: MainAxisSize.min,
@@ -650,9 +685,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           ],
         ),
 
-        Expanded(
-          child: const SizedBox(),
-        ),
+        Expanded(child: const SizedBox()),
       ],
     );
   }

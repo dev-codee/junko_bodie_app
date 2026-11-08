@@ -5,6 +5,9 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'package:junko_bodie/config/private_tournament_routes.dart';
+import 'package:junko_bodie/screens/private_tournament_screen.dart';
+import 'package:junko_bodie/screens/private_tournament_lobby_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:junko_bodie/providers/auth_provider.dart';
@@ -55,7 +58,12 @@ GoRouter buildRouter(AuthProvider auth) {
       // Not logged in → force to login screen
       if (!isAuthenticated) {
         if (isOnLogin) return null;
-        return '/login';
+        return isPrivateTournamentDestination(state.uri.path)
+            ? Uri(
+                path: '/login',
+                queryParameters: {'next': state.uri.path},
+              ).toString()
+            : '/login';
       }
 
       // Force password reset if flagged
@@ -65,6 +73,12 @@ GoRouter buildRouter(AuthProvider auth) {
       } else if (isOnUpdatePassword) {
         return '/lobby';
       }
+
+      if (isOnLogin && privateLoginDestination(state.uri) != null) {
+        return privateLoginDestination(state.uri);
+      }
+      // APIs authorize membership; this exception only opens tournament screens.
+      if (isFreeTournamentRoute(state.uri.path)) return null;
 
       // Enforce subscription paywall
       if (!hasSubscription) {
@@ -121,6 +135,16 @@ GoRouter buildRouter(AuthProvider auth) {
         builder: (context, state) => const TournamentListScreen(),
       ),
       GoRoute(
+        path: '/tournament/private',
+        builder: (context, state) => const PrivateTournamentScreen(),
+      ),
+      GoRoute(
+        path: '/tournament/private/:id',
+        builder: (context, state) => PrivateTournamentLobbyScreen(
+          tournamentId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
         path: '/tournament/:id',
         name: 'tournament_game',
         builder: (context, state) {
@@ -160,7 +184,8 @@ GoRouter buildRouter(AuthProvider auth) {
         path: '/strategies/debug',
         name: 'strategies_debug',
         builder: (context, state) {
-          final id = state.uri.queryParameters['strategyId'] ??
+          final id =
+              state.uri.queryParameters['strategyId'] ??
               state.uri.queryParameters['id'];
           return StrategyDebuggerScreen(strategyId: id);
         },
@@ -169,7 +194,8 @@ GoRouter buildRouter(AuthProvider auth) {
         path: '/simulation/setup',
         name: 'simulation_setup',
         builder: (context, state) {
-          final id = state.uri.queryParameters['strategyId'] ??
+          final id =
+              state.uri.queryParameters['strategyId'] ??
               state.uri.queryParameters['id'];
           return SimulationSetupScreen(strategyId: id);
         },
@@ -188,7 +214,8 @@ GoRouter buildRouter(AuthProvider auth) {
         path: '/simulation/history',
         name: 'simulation_history',
         builder: (context, state) {
-          final id = state.uri.queryParameters['strategyId'] ??
+          final id =
+              state.uri.queryParameters['strategyId'] ??
               state.uri.queryParameters['id'];
           return SimulationHistoryScreen(strategyId: id);
         },

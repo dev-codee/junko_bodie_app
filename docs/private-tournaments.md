@@ -1,0 +1,14 @@
+# Private tournaments — app
+
+- **Entry points:** home lobby friends card and subscription screen → **Play with Friends**. Free users do not need checkout.
+- **Screens:** `private_tournament_screen.dart` creates/joins/resumes; `private_tournament_lobby_screen.dart` shows the code, roster and host controls; `private_tournament_results.dart` shows standings without public points.
+- **API service:** `TournamentService` calls `GET/POST /api/tournament/private`, `POST /private/join`, and existing `/:id`, `/:id/start`, `/:id/leave` endpoints. `ApiService` sends the Supabase bearer token. Codes stay strings, preserving leading zeros.
+- **Free entry:** the backend checks verified Gmail, Outlook, Hotmail, iCloud and Proton addresses. Each player reserves an entry on admission; all free entries are consumed atomically when the host starts. Leaving/cancelling beforehand preserves them. The app trusts server eligibility, not a local counter.
+- **Lobby:** 2–6 humans, no bots; host starts/cancels, guests leave. Polls every two seconds; pauses in background and refreshes on resume. Closed/expired rooms display a recovery action.
+- **Gameplay:** the existing provider/table handles five-spin rounds. Private matches use five rounds of five spins. With fewer than six players, eliminations begin later so the final is in round five. Server owns spins, eliminations and completion. Player matching uses profile ID; entering a game clears previous local state and ignores stale requests.
+- **Finish and leave:** complete the local wheel and result popup before elimination, next round, or winner UI. Completed-round spin data supports delayed-poll recovery without replaying acknowledged results. Private finals show a trophy overlay on the table before final standings. Leave tournament explicitly forfeits through the API, clears the provider session after success, and allows a new eligible entry. Other players see Left in standings and a departure banner; the last remaining player wins. Backgrounding/disconnection does not automatically forfeit. Free entries used at start remain used.
+- **Access:** router permits private screens and authenticated session URLs without subscription; APIs still enforce membership. Other premium screens remain gated. Existing in-app membership purchases remain unchanged.
+- **Backend requirement:** deploy the web private-tournament APIs first. Both clients share the same MongoDB sessions and free-entry ledger. No scheduled events or brackets are included.
+- **Future:** add event registration/bracket orchestration above the existing table session; mobile can continue consuming the same session APIs.
+
+Checks: `flutter test test/private_tournament_test.dart test/private_tournament_flow_test.dart test/chip_adjustment_test.dart test/bankroll_apply_button_test.dart` (22 passed). Flutter analysis reports no errors; existing project lint/deprecation notices remain. Live phone testing requires the backend deployment.

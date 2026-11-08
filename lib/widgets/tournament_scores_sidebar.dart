@@ -20,9 +20,7 @@ class TournamentScoresSidebar extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [Color(0xCC163C30), Color(0xE60C2319)],
         ),
-        border: Border(
-          left: BorderSide(color: Color(0x30C9A44C), width: 1.5),
-        ),
+        border: Border(left: BorderSide(color: Color(0x30C9A44C), width: 1.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +63,10 @@ class TournamentScoresSidebar extends StatelessWidget {
                 // list's vertical padding), capped at a comfortable max height.
                 const double listVPad = 8.0;
                 final double rowExtent =
-                    ((constraints.maxHeight - listVPad) / count).clamp(32.0, 50.0);
+                    ((constraints.maxHeight - listVPad) / count).clamp(
+                      32.0,
+                      50.0,
+                    );
                 // Compact the inner content when rows get short so nothing clips.
                 final bool tight = rowExtent < 42.0;
                 final double avatarSize = tight ? 18.0 : 20.0;
@@ -77,7 +78,8 @@ class TournamentScoresSidebar extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final s = scores[index];
                     final String pid = s['player_id']?.toString() ?? '';
-                    final String username = s['username'] ?? '';
+                    final String username =
+                        '${s['username'] ?? ''}${s['forfeited_at'] != null ? ' · Left' : ''}';
                     final double chips = (s['chips'] ?? 0.0).toDouble();
                     final int rank = s['rank'] ?? 0;
                     final bool isMe = myPlayerId != null && pid == myPlayerId;
@@ -88,29 +90,39 @@ class TournamentScoresSidebar extends StatelessWidget {
                     final Color playerColor = _parseHexColor(colorHex);
 
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
-                        color: isMe ? const Color(0x20C9A44C) : const Color(0x0AFFFFFF),
+                        color: isMe
+                            ? const Color(0x20C9A44C)
+                            : const Color(0x0AFFFFFF),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: isMe
                               ? const Color(0xFFC9A44C)
                               : isEliminated
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.white10,
+                              ? Colors.red.withOpacity(0.2)
+                              : Colors.white10,
                           width: isMe ? 1.5 : 1,
                         ),
                         boxShadow: isMe
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFFC9A44C).withOpacity(0.1),
+                                  color: const Color(
+                                    0xFFC9A44C,
+                                  ).withOpacity(0.1),
                                   blurRadius: 4,
-                                )
+                                ),
                               ]
                             : null,
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         child: Row(
                           children: [
                             // Rank Number / Crown
@@ -118,11 +130,17 @@ class TournamentScoresSidebar extends StatelessWidget {
                               width: 20,
                               child: Center(
                                 child: rank == 1 && !isEliminated
-                                    ? const Icon(Icons.emoji_events, color: Color(0xFFE5C060), size: 13)
+                                    ? const Icon(
+                                        Icons.emoji_events,
+                                        color: Color(0xFFE5C060),
+                                        size: 13,
+                                      )
                                     : Text(
                                         '$rank',
                                         style: TextStyle(
-                                          color: isEliminated ? Colors.white38 : const Color(0xFFC9A44C),
+                                          color: isEliminated
+                                              ? Colors.white38
+                                              : const Color(0xFFC9A44C),
                                           fontWeight: FontWeight.w900,
                                           fontSize: 11,
                                         ),
@@ -137,7 +155,9 @@ class TournamentScoresSidebar extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isEliminated ? Colors.red.withOpacity(0.5) : playerColor,
+                                  color: isEliminated
+                                      ? Colors.red.withOpacity(0.5)
+                                      : playerColor,
                                   width: 1.5,
                                 ),
                               ),
@@ -146,7 +166,8 @@ class TournamentScoresSidebar extends StatelessWidget {
                                     ? Image.network(
                                         avatarUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(isEliminated),
+                                        errorBuilder: (_, __, ___) =>
+                                            _buildDefaultAvatar(isEliminated),
                                       )
                                     : _buildDefaultAvatar(isEliminated),
                               ),
@@ -165,15 +186,21 @@ class TournamentScoresSidebar extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: isEliminated ? Colors.white30 : Colors.white,
+                                      color: isEliminated
+                                          ? Colors.white30
+                                          : Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: tight ? 10 : 11,
                                       height: 1.0,
-                                      decoration: isEliminated ? TextDecoration.lineThrough : null,
+                                      decoration: isEliminated
+                                          ? TextDecoration.lineThrough
+                                          : null,
                                     ),
                                   ),
                                   Text(
-                                    isEliminated ? 'ELIMINATED' : '\$${chips.toStringAsFixed(0)}',
+                                    isEliminated
+                                        ? 'ELIMINATED'
+                                        : '\$${chips.toStringAsFixed(0)}',
                                     style: TextStyle(
                                       color: isEliminated
                                           ? Colors.red.withOpacity(0.7)
@@ -190,16 +217,22 @@ class TournamentScoresSidebar extends StatelessWidget {
                             // Active Wager Chip Badge
                             if (wager > 0 && !isEliminated)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF0F3220),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFC9A44C), width: 1),
+                                  border: Border.all(
+                                    color: const Color(0xFFC9A44C),
+                                    width: 1,
+                                  ),
                                   boxShadow: const [
                                     BoxShadow(
                                       color: Color(0x20C9A44C),
                                       blurRadius: 4,
-                                    )
+                                    ),
                                   ],
                                 ),
                                 child: Text(
@@ -230,7 +263,9 @@ class TournamentScoresSidebar extends StatelessWidget {
       color: const Color(0xFF0B2B1D),
       child: Icon(
         Icons.person,
-        color: isEliminated ? Colors.red.withOpacity(0.3) : const Color(0xFFC9A44C),
+        color: isEliminated
+            ? Colors.red.withOpacity(0.3)
+            : const Color(0xFFC9A44C),
         size: 16,
       ),
     );

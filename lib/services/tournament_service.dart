@@ -1,4 +1,5 @@
 import 'package:junko_bodie/models/tournament.dart';
+import 'package:junko_bodie/models/private_tournament_access.dart';
 import 'package:junko_bodie/models/round.dart';
 import 'package:junko_bodie/models/spin.dart';
 import 'package:junko_bodie/services/api_service.dart';
@@ -7,6 +8,8 @@ import 'package:junko_bodie/services/api_service.dart';
 class TournamentDetails {
   final Tournament tournament;
   final Round? activeRound;
+  final Round? roundEndRound;
+  final Spin? roundEndSpin;
   final Spin? latestSpin;
   final List<dynamic> history;
   final int serverTime;
@@ -16,6 +19,8 @@ class TournamentDetails {
   TournamentDetails({
     required this.tournament,
     this.activeRound,
+    this.roundEndRound,
+    this.roundEndSpin,
     this.latestSpin,
     required this.history,
     required this.serverTime,
@@ -28,6 +33,12 @@ class TournamentDetails {
         tournament: Tournament.fromJson(json),
         activeRound: json['active_round'] != null
             ? Round.fromJson(json['active_round'])
+            : null,
+        roundEndRound: json['round_end']?['round'] != null
+            ? Round.fromJson(json['round_end']['round'])
+            : null,
+        roundEndSpin: json['round_end']?['spin'] != null
+            ? Spin.fromJson(json['round_end']['spin'])
             : null,
         latestSpin: json['latest_spin'] != null
             ? Spin.fromJson(json['latest_spin'])
@@ -90,7 +101,38 @@ class EliminationResult {
 
 /// Service for managing tournament execution, lobby, rounds, and bets.
 class TournamentService {
-  final ApiService _api = ApiService();
+  final ApiService _api;
+  TournamentService({ApiService? api}) : _api = api ?? ApiService();
+
+  Future<PrivateTournamentAccess> privateAccess() async =>
+      PrivateTournamentAccess.fromJson(
+        await _api.get('/api/tournament/private'),
+      );
+
+  Future<Tournament> createPrivate(String wheelType) async =>
+      Tournament.fromJson(
+        await _api.post(
+          '/api/tournament/private',
+          body: {'wheel_type': wheelType},
+        ),
+      );
+
+  Future<Tournament> joinPrivate(String code) async {
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      throw const FormatException('Enter a six-digit joining code.');
+    }
+    return Tournament.fromJson(
+      await _api.post('/api/tournament/private/join', body: {'code': code}),
+    );
+  }
+
+  Future<void> startPrivate(String id) async {
+    await _api.post('/api/tournament/$id/start');
+  }
+
+  Future<void> leavePrivate(String id) async {
+    await _api.post('/api/tournament/$id/leave');
+  }
 
   /// Create a new tournament or join an existing queue.
   ///

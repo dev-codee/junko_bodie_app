@@ -9,6 +9,7 @@ import 'package:junko_bodie/services/tournament_service.dart';
 import 'package:junko_bodie/services/user_service.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
 import 'package:junko_bodie/logic/bets.dart';
+import 'package:junko_bodie/logic/tournament_presentation.dart';
 
 const List<String> playerColors = [
   '#2563EB', // Sapphire Blue
@@ -20,8 +21,8 @@ const List<String> playerColors = [
 ];
 
 class TournamentProvider extends ChangeNotifier {
-  final TournamentService _tournamentService = TournamentService();
-  final UserService _userService = UserService();
+  final TournamentService _tournamentService;
+  final UserService _userService;
 
   Player? currentUserProfile;
   TournamentDetails? _details;
@@ -63,12 +64,15 @@ class TournamentProvider extends ChangeNotifier {
   final List<Timer> _botTimers = [];
   int _serverTimeOffset = 0;
   int _bettingDeadline = 0;
-  String? _dismissedSpinId;
+  final Set<String> _acknowledgedSpins = {};
+  bool _sawActiveTournament = false;
   String? _spinSubmittedKey;
   String? _lastResetKey;
   String? _generatedKey;
   bool _hasRestoredBets = false;
   bool _isFetching = false;
+  String? _pollingId;
+  int _sessionGeneration = 0;
   int _consecutiveErrors = 0;
   final Map<String, Set<String>> _otherPlayerBets = {};
   bool _requestingFirstRound = false;
@@ -91,26 +95,20 @@ class TournamentProvider extends ChangeNotifier {
   TournamentPlayer? get me {
     if (tournament == null || currentUserProfile == null) return null;
     final String myId = currentUserProfile!.id ?? '';
-    final String myUsername = currentUserProfile!.username;
-
-    // Find the player entry that matches user ID or username
-    for (var p in tournament!.players) {
-      if (!p.isBot) {
-        if ((myId.isNotEmpty && p.playerId == myId) ||
-            p.username == myUsername) {
-          return p;
-        }
-      }
+    for (final player in tournament!.players) {
+      if (!player.isBot && myId.isNotEmpty && player.playerId == myId)
+        return player;
     }
-    // Fallback: first non-bot player
-    return tournament!.players.firstWhere(
-      (p) => !p.isBot,
-      orElse: () => tournament!.players.first,
-    );
+    return null;
   }
 
-  TournamentProvider() {
-    _init();
+  TournamentProvider({
+    TournamentService? tournamentService,
+    UserService? userService,
+    bool initialize = true,
+  }) : _tournamentService = tournamentService ?? TournamentService(),
+       _userService = userService ?? UserService() {
+    if (initialize) _init();
   }
 
   Future<void> _init() async {
@@ -134,6 +132,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void placeBet(String betId) {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
 
     final mePlayer = me;
     if (mePlayer == null) return;
@@ -201,6 +202,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void removeBet(String betId) {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
 
     final existing = bets[betId];
     if (existing == null || existing.chips.isEmpty) return;
@@ -221,6 +225,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void clearBets() {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
     bets.clear();
     _betPlacementHistory.clear();
     deleteMode = false;
@@ -231,6 +238,9 @@ class TournamentProvider extends ChangeNotifier {
   /// Toggle delete mode — while active, tapping a bet zone removes its bet.
   void toggleDeleteMode() {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
     deleteMode = !deleteMode;
     soundEngine.playSwoosh();
     notifyListeners();
@@ -239,6 +249,9 @@ class TournamentProvider extends ChangeNotifier {
   /// Remove all chips from a single bet zone (used by delete mode).
   void clearZone(String betId) {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
     if (!bets.containsKey(betId)) return;
     bets.remove(betId);
     _betPlacementHistory.removeWhere((e) => e['betId'] == betId);
@@ -250,6 +263,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void undo() {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
     if (_betPlacementHistory.isEmpty) return;
 
     final lastAction = _betPlacementHistory.removeLast();
@@ -277,16 +293,25 @@ class TournamentProvider extends ChangeNotifier {
     _syncBetsDebounced();
   }
 
-  bool get hasInsideChips => bets.values.any((bet) => isInsideBet(bet.betId) && bet.chips.isNotEmpty);
+  bool get hasInsideChips =>
+      bets.values.any((bet) => isInsideBet(bet.betId) && bet.chips.isNotEmpty);
 
   /// Whether every inside chip can be increased by one.
-  bool get canIncrementAllChips => (phase == 'betting' || phase == 'waiting') && hasInsideChips &&
-      totalBet + bets.values.where((bet) => isInsideBet(bet.betId)).fold<int>(0, (sum, bet) => sum + bet.chips.length)
-          <= (me?.currentChips ?? 0);
+  bool get canIncrementAllChips =>
+      (phase == 'betting' || phase == 'waiting') &&
+      hasInsideChips &&
+      totalBet +
+              bets.values
+                  .where((bet) => isInsideBet(bet.betId))
+                  .fold<int>(0, (sum, bet) => sum + bet.chips.length) <=
+          (me?.currentChips ?? 0);
 
   /// Adjust every chip and preserve Undo's placement order.
   bool adjustAllChips(int delta) {
-    if ((delta != 1 && delta != -1) || (phase != 'betting' && phase != 'waiting') || !hasInsideChips) return false;
+    if ((delta != 1 && delta != -1) ||
+        (phase != 'betting' && phase != 'waiting') ||
+        !hasInsideChips)
+      return false;
     final next = adjustBetChips(bets, delta);
     final nextTotal = next.values.fold(0.0, (sum, bet) => sum + bet.amount);
     if (delta == 1 && nextTotal > (me?.currentChips ?? 0)) {
@@ -301,7 +326,9 @@ class TournamentProvider extends ChangeNotifier {
         entry['amount'] = (entry['amount'] as double) + delta;
       }
     }
-    _betPlacementHistory.removeWhere((entry) => (entry['amount'] as double) <= 0);
+    _betPlacementHistory.removeWhere(
+      (entry) => (entry['amount'] as double) <= 0,
+    );
     if (bets.isEmpty) deleteMode = false;
     fundError = null;
     soundEngine.playSwoosh();
@@ -312,6 +339,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void doubleAllBets() {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
 
     final mePlayer = me;
     if (mePlayer == null) return;
@@ -354,6 +384,9 @@ class TournamentProvider extends ChangeNotifier {
 
   void rebet() {
     if (phase != 'betting' && phase != 'waiting') return;
+    if (tournament?.isPrivate == true &&
+        (phase != 'betting' || me?.status != 'active'))
+      return;
     if (lastSpinBets.isEmpty) return;
 
     final mePlayer = me;
@@ -442,6 +475,13 @@ class TournamentProvider extends ChangeNotifier {
       wheelType = tourney.wheelType ?? 'american';
 
       // Clear local state
+      _details = null;
+      lastSpinResult = null;
+      lastPlayerPayout = null;
+      showResult = false;
+      _acknowledgedSpins.clear();
+      _sawActiveTournament = false;
+      phase = 'waiting';
       bets.clear();
       lastSpinBets.clear();
       events.clear();
@@ -484,7 +524,56 @@ class TournamentProvider extends ChangeNotifier {
     return 'Failed to start matchmaking: $raw';
   }
 
+  Future<void> openTournament(String id) async {
+    stopPolling();
+    final generation = _sessionGeneration;
+    _details = null;
+    currentUserProfile = null;
+    currentRound = 1;
+    currentSpin = 1;
+    phase = 'waiting';
+    showResult = false;
+    bets.clear();
+    lastSpinBets.clear();
+    events.clear();
+    scores.clear();
+    botBets.clear();
+    history.clear();
+    _betPlacementHistory.clear();
+    _otherPlayerBets.clear();
+    _announcedBettingSpins.clear();
+    _spinSubmittedKey = null;
+    _lastResetKey = null;
+    _generatedKey = null;
+    _hasRestoredBets = false;
+    _announcedLeaderId = null;
+    _announcedElimId = null;
+    _acknowledgedSpins.clear();
+    _sawActiveTournament = false;
+    lastSpinResult = null;
+    lastPlayerPayout = null;
+    eliminatedPlayer = null;
+    roundId = null;
+    _bettingDeadline = 0;
+    _consecutiveErrors = 0;
+    connectionStatus = 'connected';
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    await fetchUserProfile();
+    if (generation != _sessionGeneration) return;
+    if (currentUserProfile?.id == null) {
+      error = 'Could not load your player profile. Please retry.';
+      isLoading = false;
+      notifyListeners();
+      return;
+    }
+    await loadTournament(tourneyId: id);
+    if (generation == _sessionGeneration) ensurePolling(id);
+  }
+
   void _startPolling(String tourneyId) {
+    _pollingId = tourneyId;
     _pollingTimer?.cancel();
     debugPrint('[TournamentProvider] startPolling tourneyId=$tourneyId');
     _pollingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -501,11 +590,18 @@ class TournamentProvider extends ChangeNotifier {
   /// Public entry point for screens to ensure polling is running for a given
   /// tournament id. Idempotent — calling twice is safe.
   void ensurePolling(String tourneyId) {
-    if (_pollingTimer != null && _pollingTimer!.isActive) return;
+    if (_pollingId == tourneyId &&
+        _pollingTimer != null &&
+        _pollingTimer!.isActive)
+      return;
     _startPolling(tourneyId);
   }
 
   void stopPolling() {
+    _sessionGeneration++;
+    _pollingId = null;
+    _isFetching = false;
+    _debounceSyncTimer?.cancel();
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _lobbyTimer?.cancel();
@@ -526,6 +622,7 @@ class TournamentProvider extends ChangeNotifier {
     final tId = tourneyId ?? tournament?.id;
     if (tId == null || _isFetching) return;
 
+    final generation = _sessionGeneration;
     _isFetching = true;
     final wasOffline =
         connectionStatus == 'offline' || connectionStatus == 'reconnecting';
@@ -535,7 +632,18 @@ class TournamentProvider extends ChangeNotifier {
     }
 
     try {
-      final data = await _tournamentService.getTournamentDetails(tId);
+      final incoming = await _tournamentService.getTournamentDetails(tId);
+      if (generation != _sessionGeneration) return;
+      final data = presentTournamentDetails(
+        incoming,
+        previous: _details,
+        localPhase: phase,
+        resultId: lastSpinResult?['id']?.toString(),
+        showingResult: showResult,
+        acknowledged: _acknowledgedSpins,
+        wasActive: _sawActiveTournament,
+      );
+      if (incoming.tournament.status == 'active') _sawActiveTournament = true;
       _details = data;
 
       // Diagnostic: confirm the polling loop is actually receiving data and
@@ -546,7 +654,7 @@ class TournamentProvider extends ChangeNotifier {
           'status=${data.tournament.status} round=${data.tournament.currentRound} '
           'spinsDone=${data.activeRound?.spinsCompleted ?? 0} '
           'bettingDeadline=${data.bettingDeadline} '
-          'botBets=${(data.activeRound?.botBets as List?)?.length ?? 0}',
+          'botBets=${data.activeRound?.botBets?.length ?? 0}',
         );
         return true;
       }());
@@ -565,12 +673,10 @@ class TournamentProvider extends ChangeNotifier {
         _lastResetKey = null;
         _generatedKey = null;
         _hasRestoredBets = false;
-        showResult = false;
-        _dismissedSpinId = null;
+        if (!['spinning', 'result'].contains(serverPhase)) showResult = false;
         botBets.clear();
         bets.clear();
         allSpinBets.clear();
-        lastPlayerPayout = null;
         _otherPlayerBets.clear();
         connectionStatus = 'connected';
         _consecutiveErrors = 0;
@@ -627,12 +733,9 @@ class TournamentProvider extends ChangeNotifier {
 
       // Sync spins completed
       int spinsDone = data.activeRound?.spinsCompleted ?? 0;
-      int actualSpin = spinsDone + 1;
+      int actualSpin = data.activeRound == null ? currentSpin : spinsDone + 1;
 
-      if ((phase == 'spinning' ||
-              phase == 'result' ||
-              serverPhase == 'spinning' ||
-              serverPhase == 'result') &&
+      if ((serverPhase == 'spinning' || serverPhase == 'result') &&
           data.latestSpin != null) {
         if (data.latestSpin!.roundId.toString() ==
             data.activeRound?.id.toString()) {
@@ -655,7 +758,8 @@ class TournamentProvider extends ChangeNotifier {
       // POST /round/start to create round 1. The watchdog in the GET
       // handler activates the tournament but does NOT create the round —
       // that's the client's job, identical on web and mobile.
-      if (data.tournament.status == 'active' &&
+      if (!data.tournament.isPrivate &&
+          data.tournament.status == 'active' &&
           serverPhase == 'betting' &&
           data.activeRound == null &&
           !_requestingFirstRound) {
@@ -687,6 +791,7 @@ class TournamentProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     } catch (e, st) {
+      if (generation != _sessionGeneration) return;
       _consecutiveErrors++;
       error = e.toString();
       debugPrint(
@@ -702,91 +807,35 @@ class TournamentProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     } finally {
-      _isFetching = false;
+      if (generation == _sessionGeneration) _isFetching = false;
     }
   }
 
   void _syncPhaseAndTimer(String serverPhase, TournamentDetails data) {
-    const Map<String, double> phasePriority = {
-      'waiting': 0,
-      'betting': 1,
-      'locked': 2,
-      'spinning': 3,
-      'round_complete': 3.5,
-      'result': 4,
-      'elimination': 5,
-      'completed': 6,
-    };
-
-    final double currentPriority = phasePriority[phase] ?? 0;
-    final double serverPriority = phasePriority[serverPhase] ?? 0;
-
-    // Transitioning from betting/locked -> spinning: Save bets for rebet, clear current wagers
     if ((serverPhase == 'spinning' || serverPhase == 'result') &&
-        (phase == 'betting' || phase == 'locked')) {
-      if (bets.isNotEmpty) {
-        lastSpinBets = Map<String, PlacedBet>.from(bets);
-        bets.clear();
-        _hasRestoredBets = true;
-      }
+        (phase == 'betting' || phase == 'locked') &&
+        bets.isNotEmpty) {
+      lastSpinBets = Map<String, PlacedBet>.from(bets);
+      bets.clear();
+      _hasRestoredBets = true;
     }
-
-    if (serverPhase == 'betting' &&
-        (phase == 'spinning' || phase == 'result')) {
-      // Keep wheel animating/result active until manual dismissal
-      if (activeRound?.bettingEndsAt != null) {
-        final deadlineTime = activeRound!.bettingEndsAt.millisecondsSinceEpoch;
-        final serverTimeNow =
-            DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
-        if (deadlineTime - serverTimeNow < 40000) {
-          phase = 'betting';
-        }
-      }
-    } else if (serverPhase == 'betting' && phase == 'locked') {
-      // Wait for server to advance
-    } else if (serverPhase == 'result' && phase == 'spinning') {
-      // Local spin plays until completeSpin is called
-    } else if (serverPriority > currentPriority || serverPhase == 'betting') {
-      final spinId =
-          data.latestSpin?.id ??
-          '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
-      if (serverPhase == 'result' && _dismissedSpinId == spinId) {
-        phase = currentSpin == 5 ? 'result' : 'betting';
-      } else {
-        phase = serverPhase;
-        if (serverPhase == 'result' &&
-            data.latestSpin != null &&
-            data.latestSpin!.roundId == data.activeRound?.id) {
-          // Sync spin result
-          _captureSpinResult(data.latestSpin!);
-        }
-      }
-    }
-
-    // Result popup visibility
+    final spinKey = '$currentRound-$currentSpin';
+    final stillLocked =
+        serverPhase == 'betting' &&
+        phase == 'locked' &&
+        _spinSubmittedKey == spinKey;
+    if (!stillLocked) phase = serverPhase;
     if (serverPhase == 'spinning') {
-      if (phase != 'result') showResult = false;
+      showResult = false;
       if (data.latestSpin != null &&
           data.latestSpin!.roundId == data.activeRound?.id) {
         _captureSpinResult(data.latestSpin!);
       }
-    } else if (serverPhase == 'result') {
-      final spinId =
-          data.latestSpin?.id ??
-          '${data.latestSpin?.roundId}-${data.latestSpin?.spinNumber}';
-      if (spinId != _dismissedSpinId && phase != 'spinning') {
-        showResult = true;
-      }
-    }
-
-    // Capture spin results for late joiners or refreshes
-    if ((serverPhase == 'spinning' || serverPhase == 'result') &&
+    } else if (serverPhase == 'result' &&
         data.latestSpin != null &&
-        phase != 'result' &&
-        phase != 'spinning') {
-      if (data.latestSpin!.roundId == data.activeRound?.id) {
-        _captureSpinResult(data.latestSpin!);
-      }
+        !_acknowledgedSpins.contains(data.latestSpin!.id)) {
+      _captureSpinResult(data.latestSpin!);
+      showResult = true;
     }
 
     // Announce leader / phase events
@@ -837,30 +886,8 @@ class TournamentProvider extends ChangeNotifier {
   PlayerResult? _findMyPlayerResult(List<PlayerResult>? results) {
     if (results == null || currentUserProfile == null) return null;
     final String myId = currentUserProfile!.id ?? '';
-    final String myUsername = currentUserProfile!.username;
-
-    for (var pr in results) {
-      final String pid = pr.playerId;
-      if (myId.isNotEmpty && pid == myId) {
-        return pr;
-      }
-
-      // Lookup in tournament players as fallback
-      final tp = tournament?.players.firstWhere(
-        (p) => p.playerId == pid,
-        orElse: () => TournamentPlayer(
-          playerId: '',
-          username: '',
-          avatarUrl: '',
-          isBot: false,
-          startingChips: 0,
-          currentChips: 0,
-          status: '',
-        ),
-      );
-      if (tp != null && !tp.isBot && tp.username == myUsername) {
-        return pr;
-      }
+    for (final result in results) {
+      if (myId.isNotEmpty && result.playerId == myId) return result;
     }
     return null;
   }
@@ -924,8 +951,9 @@ class TournamentProvider extends ChangeNotifier {
 
     // Elimination announcements
     if (eliminatedPlayer != null && phase == 'elimination') {
-      final expectedElimRound = currentRound == 5
-          ? (tournament?.status == 'completed' ? 5 : 4)
+      final finalRound = tournament?.totalRounds ?? 5;
+      final expectedElimRound = currentRound == finalRound
+          ? (tournament?.status == 'completed' ? finalRound : finalRound - 1)
           : (currentRound - 1);
       if (eliminatedPlayer!.eliminatedRound == expectedElimRound) {
         final elimId = eliminatedPlayer!.playerId;
@@ -934,10 +962,9 @@ class TournamentProvider extends ChangeNotifier {
               eliminatedPlayer!.eliminatedRound ?? (currentRound - 1);
           final bool isMe =
               currentUserProfile != null &&
-              ((currentUserProfile!.id != null &&
-                      elimId == currentUserProfile!.id) ||
-                  (eliminatedPlayer!.username == currentUserProfile!.username &&
-                      !eliminatedPlayer!.isBot));
+              currentUserProfile!.id != null &&
+              elimId == currentUserProfile!.id &&
+              !eliminatedPlayer!.isBot;
 
           final leader = _findLeader(scores);
           String? newLeaderName;
@@ -994,9 +1021,9 @@ class TournamentProvider extends ChangeNotifier {
       double currentWager = 0.0;
       final bool isMe =
           currentUserProfile != null &&
-          ((currentUserProfile!.id != null &&
-                  p.playerId == currentUserProfile!.id) ||
-              (p.username == currentUserProfile!.username && !p.isBot));
+          currentUserProfile!.id != null &&
+          p.playerId == currentUserProfile!.id &&
+          !p.isBot;
 
       if (p.isBot) {
         currentWager = botBets
@@ -1030,6 +1057,7 @@ class TournamentProvider extends ChangeNotifier {
         'points_earned': p.pointsEarned,
         'avatar_url': p.avatarUrl,
         'eliminated_round': p.eliminatedRound,
+        'forfeited_at': p.forfeitedAt?.toIso8601String(),
       };
     }).toList();
 
@@ -1054,9 +1082,9 @@ class TournamentProvider extends ChangeNotifier {
 
       final bool isMe =
           currentUserProfile != null &&
-          ((currentUserProfile!.id != null &&
-                  p.playerId == currentUserProfile!.id) ||
-              (p.username == currentUserProfile!.username && !p.isBot));
+          currentUserProfile!.id != null &&
+          p.playerId == currentUserProfile!.id &&
+          !p.isBot;
       if (isMe) continue;
 
       final serverBets = p.pendingBets;
@@ -1264,6 +1292,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void _startLobbyTimer() {
+    if (tournament?.isPrivate == true) return;
     _lobbyTimer?.cancel();
     // Local fallback start time so the countdown ticks even when the server
     // response is missing or the tournament object hasn't materialized yet.
@@ -1297,6 +1326,7 @@ class TournamentProvider extends ChangeNotifier {
     final tourneyId = tournament?.id;
     final rId = activeRound?.id;
     if (tourneyId == null || rId == null || me == null) return;
+    if (tournament?.isPrivate == true && me?.status != 'active') return;
 
     final spinKey = '$currentRound-$currentSpin';
     if (_spinSubmittedKey == spinKey) return;
@@ -1363,21 +1393,40 @@ class TournamentProvider extends ChangeNotifier {
 
   void dismissResult() {
     if (lastSpinResult?['id'] != null) {
-      _dismissedSpinId = lastSpinResult['id'];
+      _acknowledgedSpins.add(lastSpinResult['id'].toString());
     }
     showResult = false;
 
-    if (phase == 'result') {
-      if (currentSpin == totalSpins) {
-        loadTournament(); // Poll to trigger elimination
-      } else {
-        phase = 'betting';
-      }
+    if (tournament?.status == 'completed') {
+      phase = 'completed';
+    } else {
+      phase = 'round_complete';
+      unawaited(loadTournament());
     }
     notifyListeners();
   }
 
+  Future<void> leaveTournament() async {
+    final t = tournament;
+    if (t?.isPrivate == true &&
+        t?.status == 'active' &&
+        me?.status == 'active') {
+      await _tournamentService.leavePrivate(t!.id!);
+    }
+    stopPolling();
+    _details = null;
+    phase = 'waiting';
+    showResult = false;
+    bets.clear();
+    lastSpinResult = null;
+    notifyListeners();
+  }
+
   Future<void> declareWinner() async {
+    if (tournament?.isPrivate == true) {
+      await loadTournament();
+      return;
+    }
     final tourneyId = tournament?.id;
     if (tourneyId == null) return;
 

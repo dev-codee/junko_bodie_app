@@ -29,7 +29,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     try {
       final isSub = await _purchasesService.isSubscribed();
       final packages = await _purchasesService.getOfferings();
-      
+
       if (mounted) {
         setState(() {
           _isSubscribed = isSub;
@@ -47,16 +47,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _purchasePackage(Package package) async {
     setState(() => _isLoading = true);
     final success = await _purchasesService.purchasePackage(package);
-    
+
     if (mounted) {
       if (success) {
         _isSubscribed = true;
         // Update global auth state
         await context.read<AuthProvider>().checkSubscription();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Subscription successful! Welcome to the club.')),
+            const SnackBar(
+              content: Text('Subscription successful! Welcome to the club.'),
+            ),
           );
           context.go('/lobby');
         }
@@ -64,7 +66,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         setState(() {
           _isLoading = false;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Purchase cancelled or failed. Please try again.')),
+            const SnackBar(
+              content: Text('Purchase cancelled or failed. Please try again.'),
+            ),
           );
         });
       }
@@ -74,7 +78,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _restorePurchases() async {
     setState(() => _isLoading = true);
     final result = await _purchasesService.restorePurchasesDebug();
-    
+
     if (mounted) {
       if (result == 'success') {
         _isSubscribed = true;
@@ -116,11 +120,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _isSubscribed
-              ? _buildActiveSubscriptionView()
-              : _buildPackagesView(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/tournament/private'),
+              icon: const Icon(Icons.group),
+              label: const Text('Play with Friends — one free tournament'),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _isSubscribed
+                ? _buildActiveSubscriptionView()
+                : _buildPackagesView(),
+          ),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -159,7 +177,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Widget _buildPackagesView() {
     if (_packages.isEmpty) {
-      return const Center(child: Text('No subscription packages available right now.'));
+      return const Center(
+        child: Text('No subscription packages available right now.'),
+      );
     }
 
     return ListView.builder(
@@ -178,7 +198,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               children: [
                 Text(
                   package.storeProduct.title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(package.storeProduct.description),
@@ -191,12 +214,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       children: [
                         Text(
                           package.storeProduct.priceString,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         if (package.storeProduct.introductoryPrice != null)
                           const Text(
                             'Free Trial Available!',
-                            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                       ],
                     ),

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:junko_bodie/widgets/private_tournament_results.dart';
+import 'package:junko_bodie/widgets/private_tournament_finish_overlay.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,18 +25,17 @@ import 'package:junko_bodie/logic/payouts.dart';
 class TournamentGameScreen extends StatefulWidget {
   final String tournamentId;
 
-  const TournamentGameScreen({
-    super.key,
-    required this.tournamentId,
-  });
+  const TournamentGameScreen({super.key, required this.tournamentId});
 
   @override
   State<TournamentGameScreen> createState() => _TournamentGameScreenState();
 }
 
 class _TournamentGameScreenState extends State<TournamentGameScreen> {
-  bool _showResult = false;
-  bool _showWinCelebration = false;
+  bool _privateStandingsShown = false;
+  bool _leaving = false;
+  bool _exitApproved = false;
+  TournamentProvider? _provider;
 
   // Round-transition overlays (mirror the web's "Match Found" + "Round N
   // Starting" full-screen moments shown at each round boundary).
@@ -60,9 +61,10 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
     // Initial load and start polling. ensurePolling is idempotent so it's safe
     // to call even when matchmaking already started the loop.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = Provider.of<TournamentProvider>(context, listen: false);
-      provider.loadTournament(tourneyId: widget.tournamentId);
-      provider.ensurePolling(widget.tournamentId);
+      _provider = provider;
+      provider.openTournament(widget.tournamentId);
     });
 
     soundEngine.playTourneyBackgroundMusic();
@@ -78,40 +80,61 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     // Restore default system UI
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
-    
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+
     _matchStartTimer?.cancel();
     _roundStartTimer?.cancel();
 
     // Stop polling
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<TournamentProvider>(context, listen: false);
-      provider.stopPolling();
-    });
+    _provider?.stopPolling();
 
     soundEngine.stopTourneyBackgroundMusic();
     super.dispose();
   }
 
-  void _handleDismissResult(TournamentProvider provider) {
-    setState(() {
-      _showResult = false;
-      _showWinCelebration = false;
-    });
-    provider.dismissResult();
-  }
-
-  void _showResultPopup(TournamentProvider provider) {
-    if (provider.lastPlayerPayout != null) {
-      setState(() {
-        _showResult = true;
-        final double net = (provider.lastPlayerPayout['netResult'] ?? 0.0).toDouble();
-        if (net > 0) {
-          _showWinCelebration = true;
-        }
-      });
-    } else {
-      provider.dismissResult();
+  Future<void> _leaveTournament(TournamentProvider provider) async {
+    if (_leaving) return;
+    final forfeiting =
+        provider.tournament?.isPrivate == true &&
+        provider.tournament?.status == 'active' &&
+        provider.me?.status == 'active';
+    if (forfeiting) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Leave tournament?'),
+          content: const Text(
+            'You will forfeit and cannot rejoin this match. If only one player remains, they win. Your used free entry will not be restored.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Stay'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Leave tournament'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    setState(() => _leaving = true);
+    try {
+      await provider.leaveTournament();
+      if (!mounted) return;
+      setState(() => _exitApproved = true);
+      context.go('/lobby');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _leaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to leave. Please try again. $error')),
+      );
     }
   }
 
@@ -119,14 +142,56 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
   Widget build(BuildContext context) {
     return Consumer<TournamentProvider>(
       builder: (context, provider, child) {
-        // Handle result popups
-        final isResultPhase = provider.phase == 'result';
-        if (isResultPhase && !_showResult && provider.lastSpinResult != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showResultPopup(provider);
-          });
+        final tournament = provider.tournament;
+        if (tournament == null &&
+            !provider.isLoading &&
+            provider.error != null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Tournament')),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Unable to open this tournament. Check your connection and access.',
+                  ),
+                  FilledButton(
+                    onPressed: () =>
+                        provider.openTournament(widget.tournamentId),
+                    child: const Text('Retry'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/tournament/private'),
+                    child: const Text('Play with Friends'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
-
+        if (tournament?.isPrivate == true) {
+          if (tournament!.status == 'waiting' ||
+              tournament.status == 'cancelled') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted)
+                context.go('/tournament/private/${widget.tournamentId}');
+            });
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if ((tournament.status == 'completed' && _privateStandingsShown) ||
+              (tournament.status != 'completed' &&
+                  provider.me?.status == 'eliminated' &&
+                  !provider.showResult &&
+                  ![
+                    'spinning',
+                    'result',
+                    'elimination',
+                  ].contains(provider.phase))) {
+            return PrivateTournamentResults(tournament: tournament);
+          }
+        }
         // Detect round boundaries to show the match-found / round-starting
         // transition overlays (mirrors the web tournament flow).
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,8 +216,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           );
         }
 
-        final bool canBet = provider.phase == 'betting';
-        
+        final bool canBet =
+            provider.phase == 'betting' && provider.me?.status == 'active';
+
         final mePlayer = provider.me;
         final double balance = (mePlayer?.currentChips ?? 0.0).toDouble();
         final double totalBet = provider.totalBet;
@@ -160,11 +226,17 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         // Custom model mapper for ResultDisplay compatibility
         SpinResult? resultModel;
         if (provider.lastSpinResult != null) {
-          final int num = int.tryParse(provider.lastSpinResult['number']?.toString() ?? '') ?? 0;
+          final int num =
+              int.tryParse(
+                provider.lastSpinResult['number']?.toString() ?? '',
+              ) ??
+              0;
           resultModel = SpinResult(
             id: provider.lastSpinResult['id']?.toString() ?? '',
             number: num,
-            displayNumber: provider.lastSpinResult['displayNumber']?.toString() ?? RNG.getDisplayNumber(num),
+            displayNumber:
+                provider.lastSpinResult['displayNumber']?.toString() ??
+                RNG.getDisplayNumber(num),
             color: RNG.getNumberColor(num),
             parity: RNG.getParity(num),
             dozen: RNG.getDozen(num),
@@ -175,9 +247,12 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
         PayoutResult? payoutModel;
         if (provider.lastPlayerPayout != null) {
-          final double net = (provider.lastPlayerPayout['netResult'] ?? 0.0).toDouble();
-          final double wagered = (provider.lastPlayerPayout['totalWagered'] ?? 0.0).toDouble();
-          final double returned = (provider.lastPlayerPayout['totalReturned'] ?? 0.0).toDouble();
+          final double net = (provider.lastPlayerPayout['netResult'] ?? 0.0)
+              .toDouble();
+          final double wagered =
+              (provider.lastPlayerPayout['totalWagered'] ?? 0.0).toDouble();
+          final double returned =
+              (provider.lastPlayerPayout['totalReturned'] ?? 0.0).toDouble();
           payoutModel = PayoutResult(
             netResult: net,
             totalWagered: wagered,
@@ -188,10 +263,12 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         }
 
         // Identify if me is eliminated
-        final isMeEliminated = mePlayer != null && mePlayer.status == 'eliminated';
+        final isMeEliminated =
+            mePlayer != null && mePlayer.status == 'eliminated';
         // Identify if tournament completed
-        final isCompleted = provider.phase == 'completed' || provider.tournament?.status == 'completed';
-        
+        final isCompleted =
+            provider.phase == 'completed' && !provider.showResult;
+
         final bool isSpinning = provider.phase == 'spinning';
 
         // Show the elimination screen persistently once I'm out (not just during
@@ -199,178 +276,255 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         // doesn't flash and drop me back onto the board.
         // However, if the tournament is completed, we hide this overlay so the
         // Summary (TournamentWinnerOverlay) can be shown instead.
-        final showElimOverlay = isMeEliminated && !isCompleted;
+        final showElimOverlay =
+            tournament?.isPrivate != true &&
+            isMeEliminated &&
+            !isCompleted &&
+            !provider.showResult &&
+            !['spinning', 'result'].contains(provider.phase);
 
-        return Scaffold(
-          backgroundColor: const Color(0xFF050B08),
-          endDrawer: Drawer(
-            width: 250.0,
+        return PopScope(
+          canPop: _exitApproved,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) _leaveTournament(provider);
+          },
+          child: Scaffold(
             backgroundColor: const Color(0xFF050B08),
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TournamentScoresSidebar(
-                    scores: provider.scores,
-                    myPlayerId: mePlayer?.playerId,
+            endDrawer: Drawer(
+              width: 250.0,
+              backgroundColor: const Color(0xFF050B08),
+              child: Column(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TournamentScoresSidebar(
+                      scores: provider.scores,
+                      myPlayerId: mePlayer?.playerId,
+                    ),
                   ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: TournamentEventsFeed(
-                    events: provider.events,
+                  Expanded(
+                    flex: 3,
+                    child: TournamentEventsFeed(events: provider.events),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          body: Stack(
-            children: [
-              // 1. Main Gameplay Felt Table
-              AnimatedPadding(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                padding: isSpinning
-                    ? EdgeInsets.zero
-                    : const EdgeInsets.only(top: 48, bottom: 58),
-                child: Padding(
+            body: Stack(
+              children: [
+                // 1. Main Gameplay Felt Table
+                AnimatedPadding(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                   padding: isSpinning
                       ? EdgeInsets.zero
-                      : const EdgeInsets.only(left: 0.0, right: 5.0),
-                  child: LayoutBuilder(
-                    builder: (context, tableConstraints) {
-                      final double tableWidth = math.max(tableConstraints.maxWidth, 850.0);
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: tableWidth,
-                          child: const TournamentRouletteTable(),
-                        ),
-                      );
-                    },
+                      : const EdgeInsets.only(top: 48, bottom: 58),
+                  child: Padding(
+                    padding: isSpinning
+                        ? EdgeInsets.zero
+                        : const EdgeInsets.only(left: 0.0, right: 5.0),
+                    child: LayoutBuilder(
+                      builder: (context, tableConstraints) {
+                        final double tableWidth = math.max(
+                          tableConstraints.maxWidth,
+                          850.0,
+                        );
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: tableWidth,
+                            child: const TournamentRouletteTable(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              
-              // 2. Scoreboard Pull Handle (Right Edge)
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: const Alignment(0, 0.6),
-                  child: Builder(
-                    builder: (ctx) => GestureDetector(
-                      onTap: () {
-                        soundEngine.playClick();
-                        Scaffold.of(ctx).openEndDrawer();
-                      },
-                      onHorizontalDragEnd: (details) {
-                        if (details.primaryVelocity != null && details.primaryVelocity! < 0) {
+
+                // 2. Scoreboard Pull Handle (Right Edge)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Align(
+                    alignment: const Alignment(0, 0.6),
+                    child: Builder(
+                      builder: (ctx) => GestureDetector(
+                        onTap: () {
                           soundEngine.playClick();
                           Scaffold.of(ctx).openEndDrawer();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.only(left: 4, right: 2, top: 20, bottom: 20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC9A44C).withOpacity(0.9),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
+                        },
+                        onHorizontalDragEnd: (details) {
+                          if (details.primaryVelocity != null &&
+                              details.primaryVelocity! < 0) {
+                            soundEngine.playClick();
+                            Scaffold.of(ctx).openEndDrawer();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            right: 2,
+                            top: 20,
+                            bottom: 20,
                           ),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(-2, 0)),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.arrow_back_ios_new, size: 9, color: Color(0xFF0F2E21)),
-                            const SizedBox(width: 2),
-                            RotatedBox(
-                              quarterTurns: 3,
-                              child: const Text(
-                                'SCORES',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                  color: Color(0xFF0F2E21),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC9A44C).withOpacity(0.9),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(8),
+                              bottomLeft: Radius.circular(8),
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black45,
+                                blurRadius: 4,
+                                offset: Offset(-2, 0),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 9,
+                                color: Color(0xFF0F2E21),
+                              ),
+                              const SizedBox(width: 2),
+                              RotatedBox(
+                                quarterTurns: 3,
+                                child: const Text(
+                                  'SCORES',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.5,
+                                    color: Color(0xFF0F2E21),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // 2. Top Header Bar
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                top: isSpinning ? -48 : 0,
-                left: 0,
-                right: 0,
-                child: _buildHeader(provider),
-              ),
+                // 2. Top Header Bar
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  top: isSpinning ? -48 : 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildHeader(provider),
+                ),
 
-              // 3. Bottom footer
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                bottom: isSpinning ? -68 : 0,
-                left: 0,
-                right: 0,
-                child: _buildFooter(provider, canBet, balance, totalBet, mePlayer),
-              ),
+                // 3. Bottom footer
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  bottom: isSpinning ? -68 : 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildFooter(
+                    provider,
+                    canBet,
+                    balance,
+                    totalBet,
+                    mePlayer,
+                  ),
+                ),
 
-              // 4. Result Display Overlay
-              ResultDisplay(
-                result: resultModel,
-                payout: payoutModel,
-                visible: _showResult,
-                onDismiss: () => _handleDismissResult(provider),
-              ),
+                // 4. Result Display Overlay
+                ResultDisplay(
+                  result: resultModel,
+                  payout: payoutModel,
+                  visible: provider.showResult,
+                  tournamentMode: true,
+                  onDismiss: provider.dismissResult,
+                ),
 
-              // 5. Confetti celebration
-              WinCelebration(
-                show: _showWinCelebration,
-              ),
+                // 5. Confetti celebration
+                WinCelebration(
+                  show:
+                      provider.showResult &&
+                      (provider.lastPlayerPayout?['netResult'] ?? 0) > 0,
+                ),
 
-              // 6. Elimination screen overlay
-              TournamentEliminationOverlay(
-                player: _findScoreFor(provider.scores, mePlayer?.playerId.toString()),
-                visible: showElimOverlay,
-                onDismiss: () {
-                  provider.stopPolling();
-                  context.go('/lobby');
-                },
-              ),
+                // 6. Elimination screen overlay
+                TournamentEliminationOverlay(
+                  player: _findScoreFor(
+                    provider.scores,
+                    mePlayer?.playerId.toString(),
+                  ),
+                  visible: showElimOverlay,
+                  onDismiss: () {
+                    provider.stopPolling();
+                    context.go(
+                      provider.tournament?.isPrivate == true
+                          ? '/tournament/private'
+                          : '/lobby',
+                    );
+                  },
+                ),
 
-              // 7. Tournament Winner overlay
-              TournamentWinnerOverlay(
-                tournament: provider.tournament?.toJson(),
-                mePlayer: _findScoreFor(provider.scores, mePlayer?.playerId.toString()),
-                visible: isCompleted,
-                onExit: () {
-                  provider.stopPolling();
-                  context.go('/lobby');
-                },
-              ),
+                // 7. Tournament Winner overlay
+                TournamentWinnerOverlay(
+                  tournament: provider.tournament?.toJson(),
+                  mePlayer: _findScoreFor(
+                    provider.scores,
+                    mePlayer?.playerId.toString(),
+                  ),
+                  visible: isCompleted && tournament?.isPrivate != true,
+                  onExit: () {
+                    provider.stopPolling();
+                    context.go(
+                      provider.tournament?.isPrivate == true
+                          ? '/tournament/private'
+                          : '/lobby',
+                    );
+                  },
+                ),
 
-              // 8. Funds Error Toast display
-              if (provider.fundError != null)
-                _buildToast(provider),
+                if (tournament?.isPrivate == true && isCompleted)
+                  PrivateTournamentFinishOverlay(
+                    tournament: tournament!,
+                    currentPlayerId: provider.me?.playerId,
+                    onContinue: () =>
+                        setState(() => _privateStandingsShown = true),
+                  ),
+                if (tournament?.isPrivate == true &&
+                    tournament!.players.any((p) => p.forfeitedAt != null) &&
+                    !isCompleted)
+                  Positioned(
+                    top: 48,
+                    left: 0,
+                    right: 0,
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Container(
+                        color: const Color(0xFF332919),
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          '${tournament.players.where((p) => p.forfeitedAt != null).map((p) => p.username).join(', ')} left the tournament. Play continues with the remaining players.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFFF2D495),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
-              // 9. Round-transition overlays (top-most)
-              if (_showMatchStart)
-                _buildMatchFoundOverlay(provider),
-              if (_showRoundStart)
-                _buildRoundStartOverlay(provider),
-            ],
+                // 8. Funds Error Toast display
+                if (provider.fundError != null) _buildToast(provider),
+
+                // 9. Round-transition overlays (top-most)
+                if (_showMatchStart) _buildMatchFoundOverlay(provider),
+                if (_showRoundStart) _buildRoundStartOverlay(provider),
+              ],
+            ),
           ),
         );
       },
@@ -395,14 +549,20 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         children: [
           // Lobby exit button
           TextButton.icon(
-            onPressed: () {
-              soundEngine.playClick();
-              provider.stopPolling();
-              context.go('/lobby');
-            },
-            icon: const Icon(Icons.chevron_left, color: Color(0xFFC9A44C), size: 16),
-            label: const Text(
-              'LOBBY',
+            onPressed: _leaving ? null : () => _leaveTournament(provider),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: Color(0xFFC9A44C),
+              size: 16,
+            ),
+            label: Text(
+              _leaving
+                  ? 'LEAVING…'
+                  : provider.tournament?.isPrivate == true &&
+                        provider.me?.status == 'active' &&
+                        provider.tournament?.status == 'active'
+                  ? 'LEAVE TOURNAMENT'
+                  : 'LOBBY',
               style: TextStyle(
                 color: Color(0xFFC9A44C),
                 fontSize: 10,
@@ -413,15 +573,15 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             style: TextButton.styleFrom(
               padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
               backgroundColor: const Color(0xFFC9A44C).withOpacity(0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
           ),
           const SizedBox(width: 16),
 
           // Horizontal spin history row
-          Expanded(
-            child: _SpinHistoryList(history: provider.history),
-          ),
+          Expanded(child: _SpinHistoryList(history: provider.history)),
 
           // Settings Button
           IconButton(
@@ -432,7 +592,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 builder: (context) => const SettingsModal(),
               );
             },
-            icon: const Icon(Icons.settings, color: Color(0xFFF5EDD5), size: 20),
+            icon: const Icon(
+              Icons.settings,
+              color: Color(0xFFF5EDD5),
+              size: 20,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -445,7 +609,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 soundEngine.playClick();
                 Scaffold.of(ctx).openEndDrawer();
               },
-              icon: const Icon(Icons.emoji_events, color: Color(0xFFC9A44C), size: 22),
+              icon: const Icon(
+                Icons.emoji_events,
+                color: Color(0xFFC9A44C),
+                size: 22,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -458,7 +626,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'ROUND ${provider.currentRound} OF 5',
+                'ROUND ${provider.currentRound} OF ${provider.tournament?.totalRounds ?? 5}',
                 style: const TextStyle(
                   color: Color(0xFFC9A44C),
                   fontSize: 11,
@@ -503,11 +671,13 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        border: Border(
-          top: BorderSide(color: Color(0xFFC9A44C), width: 1.5),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFC9A44C), width: 1.5)),
         boxShadow: [
-          BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, -3)),
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 12,
+            offset: Offset(0, -3),
+          ),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(12, 3, 12, 3),
@@ -544,7 +714,10 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    _footerPill('TOTAL BET', '\$${totalBet.toStringAsFixed(0)}'),
+                    _footerPill(
+                      'TOTAL BET',
+                      '\$${totalBet.toStringAsFixed(0)}',
+                    ),
 
                     _footerButton('REBET', canRebet, () {
                       soundEngine.playRebetSound();
@@ -563,20 +736,35 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
                     Tooltip(
                       message: 'Add 1 to every inside bet chip',
-                      child: _footerButton('+1', canBet && provider.canIncrementAllChips,
-                          () => provider.adjustAllChips(1)),
+                      child: _footerButton(
+                        '+1',
+                        canBet && provider.canIncrementAllChips,
+                        () => provider.adjustAllChips(1),
+                      ),
                     ),
                     Tooltip(
-                      message: 'Subtract 1 from every inside bet chip; remove chips at zero',
-                      child: _footerButton('−1', canBet && provider.hasInsideChips,
-                          () => provider.adjustAllChips(-1)),
+                      message:
+                          'Subtract 1 from every inside bet chip; remove chips at zero',
+                      child: _footerButton(
+                        '−1',
+                        canBet && provider.hasInsideChips,
+                        () => provider.adjustAllChips(-1),
+                      ),
                     ),
-                    _footerButton('2X', canBet && hasBets && balance >= totalBet * 2, () {
-                      soundEngine.playClick();
-                      provider.doubleAllBets();
-                    }),
+                    _footerButton(
+                      '2X',
+                      canBet && hasBets && balance >= totalBet * 2,
+                      () {
+                        soundEngine.playClick();
+                        provider.doubleAllBets();
+                      },
+                    ),
 
-                    _footerDeleteButton(canBet, provider.deleteMode, provider.toggleDeleteMode),
+                    _footerDeleteButton(
+                      canBet,
+                      provider.deleteMode,
+                      provider.toggleDeleteMode,
+                    ),
 
                     _footerPill('BALANCE', '\$${balance.toStringAsFixed(0)}'),
                   ],
@@ -673,23 +861,23 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           gradient: !enabled
               ? null
               : active
-                  ? const LinearGradient(
-                      colors: [Color(0xFF3A1515), Color(0xFF2A0808)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    )
-                  : const LinearGradient(
-                      colors: [Color(0xFF2A3A2E), Color(0xFF1A2A1E)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
+              ? const LinearGradient(
+                  colors: [Color(0xFF3A1515), Color(0xFF2A0808)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFF2A3A2E), Color(0xFF1A2A1E)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
           color: enabled ? null : const Color(0x33141414),
           border: Border.all(
             color: !enabled
                 ? Colors.white10
                 : active
-                    ? const Color(0xFFF87171)
-                    : const Color(0xFFC9A44C),
+                ? const Color(0xFFF87171)
+                : const Color(0xFFC9A44C),
             width: 1.6,
           ),
           borderRadius: BorderRadius.circular(6),
@@ -701,8 +889,8 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           color: !enabled
               ? Colors.white24
               : active
-                  ? const Color(0xFFF87171)
-                  : const Color(0xFFE4E0D4),
+              ? const Color(0xFFF87171)
+              : const Color(0xFFE4E0D4),
         ),
       ),
     );
@@ -721,7 +909,10 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFFC9A44C).withOpacity(0.5), width: 1.5),
+        border: Border.all(
+          color: const Color(0xFFC9A44C).withOpacity(0.5),
+          width: 1.5,
+        ),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
@@ -740,10 +931,17 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   ? Image.network(
                       avatar,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.person, color: Color(0xFFC9A44C), size: 18),
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person,
+                        color: Color(0xFFC9A44C),
+                        size: 18,
+                      ),
                     )
-                  : const Icon(Icons.person, color: Color(0xFFC9A44C), size: 18),
+                  : const Icon(
+                      Icons.person,
+                      color: Color(0xFFC9A44C),
+                      size: 18,
+                    ),
             ),
           ),
           const SizedBox(width: 8),
@@ -858,9 +1056,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   letterSpacing: -1,
-                  shadows: [
-                    Shadow(color: Color(0x99C9A44C), blurRadius: 40),
-                  ],
+                  shadows: [Shadow(color: Color(0x99C9A44C), blurRadius: 40)],
                 ),
               ),
               const SizedBox(height: 20),
@@ -869,7 +1065,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 width: 220,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, Color(0xFFC9A44C), Colors.transparent],
+                    colors: [
+                      Colors.transparent,
+                      Color(0xFFC9A44C),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -929,9 +1129,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   letterSpacing: -1,
-                  shadows: [
-                    Shadow(color: Color(0x99C9A44C), blurRadius: 40),
-                  ],
+                  shadows: [Shadow(color: Color(0x99C9A44C), blurRadius: 40)],
                 ),
               ),
               const SizedBox(height: 16),
@@ -940,7 +1138,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                 width: 240,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, Color(0xFFC9A44C), Colors.transparent],
+                    colors: [
+                      Colors.transparent,
+                      Color(0xFFC9A44C),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -986,7 +1188,11 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
           ),
           child: Text(
             provider.fundError!,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -1029,9 +1235,12 @@ class _SpinHistoryList extends StatelessWidget {
         itemCount: math.min(history.length, 15),
         itemBuilder: (context, index) {
           final spin = history[index];
-          final String numStr = spin['displayNumber']?.toString() ??
+          final String numStr =
+              spin['displayNumber']?.toString() ??
               (spin['number'] != null
-                  ? RNG.getDisplayNumber(int.tryParse(spin['number'].toString()) ?? 0)
+                  ? RNG.getDisplayNumber(
+                      int.tryParse(spin['number'].toString()) ?? 0,
+                    )
                   : '0');
           final String colorStr = spin['color'] ?? 'green';
           final displayColor = _getColor(colorStr);
@@ -1043,7 +1252,10 @@ class _SpinHistoryList extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: displayColor,
-              border: Border.all(color: const Color(0xFFC9A84C).withOpacity(0.5), width: 1),
+              border: Border.all(
+                color: const Color(0xFFC9A84C).withOpacity(0.5),
+                width: 1,
+              ),
             ),
             alignment: Alignment.center,
             child: Text(
