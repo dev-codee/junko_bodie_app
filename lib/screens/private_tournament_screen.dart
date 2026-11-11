@@ -84,7 +84,12 @@ class _PrivateTournamentScreenState extends State<PrivateTournamentScreen> {
       children: [
         const Text(
           'Your friends. Your table.',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         const Text(
@@ -96,7 +101,7 @@ class _PrivateTournamentScreenState extends State<PrivateTournamentScreen> {
             liveRegion: true,
             child: Text(
               _error!,
-              style: const TextStyle(color: Colors.orangeAccent),
+              style: const TextStyle(color: const Color(0xFF8B2920)),
             ),
           ),
         if (_loading)
@@ -127,51 +132,8 @@ class _PrivateTournamentScreenState extends State<PrivateTournamentScreen> {
               onPressed: () => context.push('/subscribe'),
               child: const Text('View membership'),
             ),
-          const SizedBox(height: 24),
-          const Text(
-            'Create a Tournament',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _wheel,
-            decoration: const InputDecoration(labelText: 'Wheel'),
-            items: const [
-              DropdownMenuItem(
-                value: 'american',
-                child: Text('American (0 and 00)'),
-              ),
-              DropdownMenuItem(value: 'european', child: Text('European (0)')),
-            ],
-            onChanged: _busy
-                ? null
-                : (value) => setState(() => _wheel = value!),
-          ),
-          FilledButton(
-            onPressed: !_busy && access.canEnter ? () => _enter(false) : null,
-            child: Text(_busy ? 'Connecting…' : 'Create a Tournament'),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Join a Tournament',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          TextField(
-            controller: _code,
-            keyboardType: TextInputType.number,
-            maxLength: 6,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Six-digit joining code',
-              hintText: '000000',
-            ),
-          ),
-          FilledButton(
-            onPressed: !_busy && access.canEnter && _code.text.length == 6
-                ? () => _enter(true)
-                : null,
-            child: const Text('Join a Tournament'),
-          ),
+          const SizedBox(height: 20),
+          _entryOptions(access),
         ],
         const SizedBox(height: 24),
         const Text(
@@ -184,4 +146,103 @@ class _PrivateTournamentScreenState extends State<PrivateTournamentScreen> {
       ],
     );
   }
+
+  Widget _entryOptions(PrivateTournamentAccess access) {
+    final create = _entryCard('Create a Tournament', Icons.add_circle_outline, [
+      const Text('Choose your wheel, then invite your friends.'),
+      const SizedBox(height: 16),
+      DropdownButtonFormField<String>(
+        initialValue: _wheel,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Wheel'),
+        items: const [
+          DropdownMenuItem(
+            value: 'american',
+            child: Text('American (0 and 00)'),
+          ),
+          DropdownMenuItem(value: 'european', child: Text('European (0)')),
+        ],
+        onChanged: _busy || !access.canEnter
+            ? null
+            : (value) => setState(() => _wheel = value!),
+      ),
+      const SizedBox(height: 16),
+      FilledButton(
+        onPressed: !_busy && access.canEnter ? () => _enter(false) : null,
+        child: Text(_busy ? 'Connecting…' : 'Create a Tournament'),
+      ),
+    ]);
+    final join = _entryCard('Join a Tournament', Icons.group_outlined, [
+      const Text('Enter the six-digit code shared by your host.'),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _code,
+        keyboardType: TextInputType.number,
+        enabled: !_busy && access.canEnter,
+        maxLength: 6,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(
+          labelText: 'Six-digit joining code',
+          hintText: '000000',
+        ),
+      ),
+      const SizedBox(height: 8),
+      FilledButton(
+        onPressed: !_busy && access.canEnter && _code.text.length == 6
+            ? () => _enter(true)
+            : null,
+        child: const Text('Join a Tournament'),
+      ),
+    ]);
+    return LayoutBuilder(
+      builder: (context, constraints) => constraints.maxWidth >= 680
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: create),
+                const SizedBox(width: 20),
+                Expanded(child: join),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [create, const SizedBox(height: 16), join],
+            ),
+    );
+  }
+
+  Widget _entryCard(String title, IconData icon, List<Widget> children) =>
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFAF0),
+          border: Border.all(color: const Color(0x80C9A44C)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: const Color(0xFF8B6914)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      );
 }

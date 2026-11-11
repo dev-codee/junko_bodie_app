@@ -78,6 +78,7 @@ class Tournament {
   final String status;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final DateTime? startedAt;
   final int currentRound;
   final String? winnerId;
   final List<TournamentPlayer> players;
@@ -97,6 +98,7 @@ class Tournament {
     required this.status,
     required this.createdAt,
     this.completedAt,
+    this.startedAt,
     required this.currentRound,
     this.winnerId,
     required this.players,
@@ -120,6 +122,7 @@ class Tournament {
     completedAt: json['completed_at'] != null
         ? DateTime.parse(json['completed_at'])
         : null,
+    startedAt: DateTime.tryParse(json['started_at']?.toString() ?? ''),
     currentRound: json['current_round'] ?? 1,
     winnerId: json['winner_id']?.toString(),
     players:
@@ -144,6 +147,7 @@ class Tournament {
     'status': status,
     'created_at': createdAt.toIso8601String(),
     'completed_at': completedAt?.toIso8601String(),
+    'started_at': startedAt?.toIso8601String(),
     'current_round': currentRound,
     'winner_id': winnerId,
     'players': players.map((e) => e.toJson()).toList(),

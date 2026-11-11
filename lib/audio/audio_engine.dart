@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -82,14 +83,11 @@ class AudioEngine {
     'win': 'sounds/win.mp3',
     'loss': 'sounds/lose.mp3',
     'click': 'sounds/click.mp3',
-    'swoosh':
-        'sounds/dheerajakam4jor-swoosh-sound-effect-for-fight-scenes-or-transitions-1-149889.mp3',
-    'btnSpin':
-        'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
+    'swoosh': 'sounds/dheerajakam4jor-swoosh-sound-effect-for-fight-scenes-or-transitions-1-149889.mp3',
+    'btnSpin': 'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
     'btn2X': 'sounds/universfield-new-notification-026-380249.mp3',
     'lock': 'sounds/lock.mp3',
-    'thump':
-        'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
+    'thump': 'sounds/skyscraper_seven-click-buttons-ui-menu-sounds-effects-button-7-203601.mp3',
     'denied': 'sounds/denied.mp3',
     'placeBets': 'sounds/placeBets.mp3',
     'background': 'sounds/background.mp3',
@@ -570,6 +568,12 @@ class AudioEngine {
     }
 
     playTournamentCommentary(sequence);
+  }
+
+  void playPrivateCountdownBeat(int beat) {
+    if (_blocked || !_enabled) return;
+    if (beat != 0) playLockSound();
+    announce(beat == 0 ? 'Go!' : '$beat');
   }
 
   void announceMatchFound() {

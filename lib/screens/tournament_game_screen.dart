@@ -1,7 +1,11 @@
 import 'dart:async';
+
 import 'package:junko_bodie/widgets/private_tournament_results.dart';
+import 'package:junko_bodie/widgets/private_tournament_start_countdown.dart';
 import 'package:junko_bodie/widgets/private_tournament_finish_overlay.dart';
+
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -33,6 +37,8 @@ class TournamentGameScreen extends StatefulWidget {
 
 class _TournamentGameScreenState extends State<TournamentGameScreen> {
   bool _privateStandingsShown = false;
+  bool _privateCountdownFinished = false;
+  bool _privateCountdownStarted = false;
   bool _leaving = false;
   bool _exitApproved = false;
   TournamentProvider? _provider;
@@ -192,6 +198,31 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
             return PrivateTournamentResults(tournament: tournament);
           }
         }
+        if (provider.isPrivateStarting) _privateCountdownStarted = true;
+        if (_privateCountdownStarted &&
+            !_privateCountdownFinished &&
+            tournament?.status == 'active' &&
+            provider.currentRound == 1 &&
+            provider.currentSpin == 1) {
+          return PopScope(
+            canPop: _exitApproved,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop) _leaveTournament(provider);
+            },
+            child: Scaffold(
+              body: PrivateTournamentStartCountdown(
+                key: ValueKey(tournament!.id),
+                tournament: tournament,
+                elapsed: provider.privateStartElapsed,
+                onComplete: () {
+                  if (!mounted) return;
+                  setState(() => _privateCountdownFinished = true);
+                  soundEngine.playPlaceBetsSound();
+                },
+              ),
+            ),
+          );
+        }
         // Detect round boundaries to show the match-found / round-starting
         // transition overlays (mirrors the web tournament flow).
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -217,7 +248,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         }
 
         final bool canBet =
-            provider.phase == 'betting' && provider.me?.status == 'active';
+            provider.phase == 'betting' &&
+            !provider.isPrivateStarting &&
+            provider.me?.status == 'active';
 
         final mePlayer = provider.me;
         final double balance = (mePlayer?.currentChips ?? 0.0).toDouble();
@@ -743,8 +776,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                       ),
                     ),
                     Tooltip(
-                      message:
-                          'Subtract 1 from every inside bet chip; remove chips at zero',
+                      message: 'Subtract 1 from every inside bet chip; remove chips at zero',
                       child: _footerButton(
                         '−1',
                         canBet && provider.hasInsideChips,
@@ -985,6 +1017,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
 
   void _maybeTriggerRoundOverlays(TournamentProvider provider) {
     if (provider.tournament?.status != 'active') return;
+
+    // Private starts use the server-synchronized countdown instead.
+    if (provider.tournament?.isPrivate == true) _matchStartShown = true;
 
     // Match Found — shown once at the very start (round 1, spin 1).
     if (!_matchStartShown &&

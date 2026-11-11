@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:junko_bodie/models/tournament.dart';
 import 'package:junko_bodie/models/round.dart';
@@ -10,6 +11,7 @@ import 'package:junko_bodie/services/user_service.dart';
 import 'package:junko_bodie/audio/audio_engine.dart';
 import 'package:junko_bodie/logic/bets.dart';
 import 'package:junko_bodie/logic/tournament_presentation.dart';
+import 'package:junko_bodie/logic/private_tournament_countdown.dart';
 
 const List<String> playerColors = [
   '#2563EB', // Sapphire Blue
@@ -83,6 +85,22 @@ class TournamentProvider extends ChangeNotifier {
   double get totalBet => bets.values.fold(0.0, (sum, b) => sum + b.amount);
 
   Tournament? get tournament => _details?.tournament;
+  int get serverNow =>
+      DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
+
+  Duration get privateStartElapsed => Duration(
+    milliseconds:
+        serverNow - (tournament?.startedAt?.millisecondsSinceEpoch ?? 0),
+  );
+
+  bool get isPrivateStarting =>
+      tournament?.isPrivate == true &&
+      tournament?.status == 'active' &&
+      tournament?.startedAt != null &&
+      currentRound == 1 &&
+      currentSpin == 1 &&
+      privateStartElapsed < privateCountdownDuration;
+
   Round? get activeRound => _details?.activeRound;
   Spin? get latestSpin => _details?.latestSpin;
 
@@ -131,7 +149,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void placeBet(String betId) {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -201,7 +219,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void removeBet(String betId) {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -224,7 +242,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void clearBets() {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -237,7 +255,7 @@ class TournamentProvider extends ChangeNotifier {
 
   /// Toggle delete mode — while active, tapping a bet zone removes its bet.
   void toggleDeleteMode() {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -248,7 +266,7 @@ class TournamentProvider extends ChangeNotifier {
 
   /// Remove all chips from a single bet zone (used by delete mode).
   void clearZone(String betId) {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -262,7 +280,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void undo() {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -338,7 +356,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void doubleAllBets() {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -383,7 +401,7 @@ class TournamentProvider extends ChangeNotifier {
   }
 
   void rebet() {
-    if (phase != 'betting' && phase != 'waiting') return;
+    if (isPrivateStarting || (phase != 'betting' && phase != 'waiting')) return;
     if (tournament?.isPrivate == true &&
         (phase != 'betting' || me?.status != 'active'))
       return;
@@ -928,6 +946,8 @@ class TournamentProvider extends ChangeNotifier {
       }
     }
 
+    if (isPrivateStarting) return;
+
     // Leader announcements
     final isEndOfRound = currentSpin == 5;
     if (phase == 'betting' || (phase == 'result' && !isEndOfRound)) {
@@ -1325,7 +1345,8 @@ class TournamentProvider extends ChangeNotifier {
   Future<void> submitBets(Map<String, PlacedBet> currentBets) async {
     final tourneyId = tournament?.id;
     final rId = activeRound?.id;
-    if (tourneyId == null || rId == null || me == null) return;
+    if (tourneyId == null || rId == null || me == null || isPrivateStarting)
+      return;
     if (tournament?.isPrivate == true && me?.status != 'active') return;
 
     final spinKey = '$currentRound-$currentSpin';

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:junko_bodie/providers/tournament_provider.dart';
 import 'package:junko_bodie/models/player.dart';
@@ -108,6 +109,13 @@ void main() {
       Tournament.fromJson({...session(), 'total_rounds': 1}).totalRounds,
       1,
     );
+    final started = Tournament.fromJson({
+      ...session(),
+      'started_at': '2026-11-11T00:00:00Z',
+    });
+    expect(started.startedAt, DateTime.utc(2026, 11, 11));
+    expect(Tournament.fromJson(started.toJson()).startedAt, started.startedAt);
+    expect(Tournament.fromJson({}).startedAt, isNull);
     expect(t.minPlayers, 2);
     expect(t.maxPlayers, 6);
     expect(Tournament.fromJson(t.toJson()).joinCode, '012345');
@@ -192,7 +200,10 @@ void main() {
     final join = find.widgetWithText(FilledButton, 'Join a Tournament');
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -350),
+    );
     await tester.pumpAndSettle();
     await tester.ensureVisible(join);
     await tester.pumpAndSettle();

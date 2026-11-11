@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:junko_bodie/services/tournament_service.dart';
 import 'package:junko_bodie/services/user_service.dart';
 import 'package:junko_bodie/services/api_service.dart';
 import 'package:junko_bodie/widgets/private_tournament_shell.dart';
+import 'package:junko_bodie/widgets/private_tournament_avatar.dart';
 
 class PrivateTournamentLobbyScreen extends StatefulWidget {
   final String tournamentId;
@@ -145,7 +147,7 @@ class _PrivateTournamentLobbyScreenState
             liveRegion: true,
             child: Text(
               _error!,
-              style: const TextStyle(color: Colors.orangeAccent),
+              style: const TextStyle(color: const Color(0xFF8B2920)),
             ),
           ),
           TextButton(
@@ -172,8 +174,26 @@ class _PrivateTournamentLobbyScreenState
           Text(
             '${t.wheelType == 'european' ? 'European' : 'American'} roulette · No bots',
           ),
-          const SizedBox(height: 16),
-          const Text('Share this code with your friends'),
+          const SizedBox(height: 12),
+          if (_playerId != null && !host)
+            const _GuestWaitingPanel()
+          else if (host)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Text(
+                'Waiting for Host to Start',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          const Text(
+            'Share this code with your friends',
+            textAlign: TextAlign.center,
+          ),
           SelectableText(
             t.joinCode ?? '',
             textAlign: TextAlign.center,
@@ -206,12 +226,58 @@ class _PrivateTournamentLobbyScreenState
           const Text(
             '5 rounds · 5 spins per round. With fewer than six players, eliminations begin later.',
           ),
-          for (final p in t.players)
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text(p.username),
-              trailing: Text(p.playerId == t.hostId ? 'Host' : 'Ready'),
-            ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 600 ? 2 : 1;
+              final width =
+                  (constraints.maxWidth - (columns - 1) * 10) / columns;
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: t.players
+                    .map(
+                      (p) => SizedBox(
+                        width: width,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFAF0),
+                            border: Border.all(color: const Color(0x66C9A44C)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                PrivateTournamentAvatar(avatar: p.avatarUrl),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    p.username,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  p.playerId == t.hostId ? 'Host' : 'Ready',
+                                  style: const TextStyle(
+                                    color: Color(0xFF8B6914),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           if (_playerId == null)
             TextButton(
               onPressed: _loadIdentity,
@@ -223,9 +289,7 @@ class _PrivateTournamentLobbyScreenState
                   ? () => _action(true)
                   : null,
               child: Text(_busy ? 'Please wait…' : 'Start tournament'),
-            )
-          else
-            const Text('Waiting for the host to start…'),
+            ),
           OutlinedButton(
             onPressed: _busy || _playerId == null ? null : () => _action(false),
             child: Text(host ? 'Cancel tournament' : 'Leave lobby'),
@@ -238,4 +302,69 @@ class _PrivateTournamentLobbyScreenState
       ],
     );
   }
+}
+
+class _GuestWaitingPanel extends StatelessWidget {
+  const _GuestWaitingPanel();
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const RadialGradient(
+          colors: [Color(0xFF2A4834), privateGreen],
+          radius: 2,
+        ),
+        border: Border.all(color: const Color(0x99C9A44C)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x80C9A44C)),
+            ),
+            child: const Icon(
+              Icons.hourglass_empty,
+              color: Color(0xFFE4C47C),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Waiting for the host to start…',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 20,
+                    height: 1.2,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFF7EFD9),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'You’re at the table. The tournament begins when your host starts the match.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Color(0xFFD9CBA7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
